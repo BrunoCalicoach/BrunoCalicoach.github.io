@@ -192,7 +192,6 @@ function sessionCard(week, day) {
         max: 500,
         step: 1,
         inputMode: 'numeric',
-        required: true,
         value: saved[set] ?? '',
         placeholder: exercise.reps ?? 'max',
         ariaLabel: exercise.name + ', set ' + (set + 1)
@@ -218,20 +217,26 @@ function sessionCard(week, day) {
     textContent: log ? '✓ Done ' + log.completed_on : 'Not done yet'
   });
 
+  const sessionKey = week.week + '-' + day.day;
   const form = el('form', { class: 'card' },
     el('div', { class: 'flex flex-wrap justify-between items-center gap-x-4' },
       el('h3', { class: 'font-extrabold text-lg', textContent: 'Day ' + day.day + ' · ' + day.title }),
       status
     ),
+    el('p', { class: 'text-gray-500 text-sm mt-2', textContent: 'Enter the reps you did in each set. Grey numbers are your targets.' }),
     ...exercises,
     notes,
     button
   );
+  if (state.savedSession === sessionKey) form.append(message('Session saved.', false));
 
   submitHandler(form, button, async () => {
+    if (inputs.every(({ input }) => input.value === '')) {
+      return { error: 'Enter your reps for at least one set first.' };
+    }
     const results = {};
     inputs.forEach(({ key, input }) => {
-      (results[key] = results[key] || []).push(Number(input.value));
+      (results[key] = results[key] || []).push(input.value === '' ? null : Number(input.value));
     });
     const { data, error } = await db.from('session_logs')
       .upsert({
@@ -245,8 +250,9 @@ function sessionCard(week, day) {
       }, { onConflict: 'user_id,week,day' })
       .select()
       .single();
-    if (error) return { error: 'Your session could not be saved. Please try again.' };
+    if (error) return { error: 'Your session could not be saved: ' + error.message };
     state.logs = state.logs.filter((item) => item.id !== data.id).concat(data);
+    state.savedSession = sessionKey;
     showProgram();
     return null;
   });
@@ -313,6 +319,7 @@ function showProgram() {
     });
     button.addEventListener('click', () => {
       state.week = week.week;
+      state.savedSession = null;
       showProgram();
     });
     return button;

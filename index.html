@@ -670,7 +670,7 @@
             ></textarea>
 
             <!-- Hidden from visitors: catches spam bots -->
-            <input type="text" name="_honey" tabindex="-1" autocomplete="off" style="display:none">
+            <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none">
 
             <button
               type="submit"
@@ -759,7 +759,7 @@
   <script>
     feather.replace();
 
-    // Contact form: messages are forwarded to Bruno's email by FormSubmit
+    // Contact form: messages are forwarded to Bruno's email by Web3Forms
     const contactForm = document.getElementById('contact-form');
     const contactStatus = document.getElementById('contact-status');
 
@@ -777,11 +777,12 @@
       button.textContent = 'Sending...';
 
       const data = Object.fromEntries(new FormData(contactForm));
-      data._subject = 'New message from brunozgela.com';
-      data._template = 'table';
+      data.access_key = '76a0add4-b2a1-4744-8737-71e905655bff';
+      data.subject = 'New message from brunozgela.com';
+      data.from_name = 'Bruno Zgela Coaching website';
 
       try {
-        const response = await fetch('https://formsubmit.co/ajax/bruno.calicoach@gmail.com', {
+        const response = await fetch('https://api.web3forms.com/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(data)

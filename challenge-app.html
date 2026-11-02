@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Challenge | Bruno Zgela Coaching</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="challenge-plan.js"></script>
+
+<style>
+
+body{
+  font-family:'Inter',sans-serif;
+  background:#f5f5f5;
+  color:#111827;
+}
+
+.hero{
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,0.78),rgba(0,0,0,0.92)),
+    url('folder/img1.jpeg');
+  background-size:cover;
+  background-position:center;
+}
+
+.btn-primary{
+  background:#ef4444;
+  color:#ffffff;
+  transition:.25s ease;
+}
+
+.btn-primary:hover{
+  background:#dc2626;
+}
+
+.btn-primary:disabled{
+  opacity:.65;
+  cursor:wait;
+}
+
+.btn-secondary{
+  border:1px solid rgba(255,255,255,0.18);
+  background:rgba(255,255,255,0.05);
+  transition:.25s ease;
+}
+
+.btn-secondary:hover{
+  background:rgba(255,255,255,0.12);
+}
+
+.card{
+  background:#ffffff;
+  border-radius:18px;
+  border:1px solid #ececec;
+  padding:24px;
+}
+
+.field{
+  width:100%;
+  margin-top:8px;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:13px 16px;
+}
+
+.field:focus{
+  outline:none;
+  box-shadow:0 0 0 2px #ef4444;
+}
+
+.set-input{
+  width:64px;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:9px 6px;
+  text-align:center;
+}
+
+.set-input:focus{
+  outline:none;
+  box-shadow:0 0 0 2px #ef4444;
+}
+
+.week-button{
+  min-width:44px;
+  padding:10px 8px;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  background:#ffffff;
+  font-weight:600;
+}
+
+.week-button.active{
+  background:#ef4444;
+  border-color:#ef4444;
+  color:#ffffff;
+}
+
+.link-button{
+  color:#dc2626;
+  font-weight:500;
+}
+
+</style>
+</head>
+
+<body>
+
+<section class="hero text-white">
+
+  <nav class="max-w-7xl mx-auto px-5 py-6 flex justify-between items-center gap-4">
+
+    <a href="index.html" class="font-extrabold tracking-wide">
+      BRUNO ZGELA COACHING
+    </a>
+
+    <button id="sign-out" type="button" class="hidden btn-secondary px-5 py-3 rounded-xl">Log out</button>
+    <a id="back-link" href="challenge.html" class="btn-secondary px-5 py-3 rounded-xl">← Back</a>
+
+  </nav>
+
+  <div class="max-w-3xl mx-auto px-5 pt-6 pb-12">
+
+    <span class="text-red-400 font-semibold">12-WEEK CHALLENGE</span>
+
+    <h1 id="page-title" class="text-4xl sm:text-5xl font-extrabold mt-3">Your account</h1>
+
+  </div>
+
+</section>
+
+<main id="app" class="max-w-3xl mx-auto px-5 py-10" aria-live="polite">
+  <p class="text-gray-500 text-center">Loading...</p>
+</main>
+
+<script src="challenge-app.js"></script>
+
+</body>
+</html>

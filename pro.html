@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Pro Plan | Bruno Zgela Coaching</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/feather-icons"></script>
+
+<style>
+
+body{
+    font-family:Inter,sans-serif;
+    background:#f5f5f5;
+    color:#111827;
+}
+
+.hero{
+    background:
+    linear-gradient(rgba(0,0,0,.75),rgba(0,0,0,.9)),
+    url("folder/img2.jpeg");
+    background-size:cover;
+    background-position:center;
+}
+
+.card{
+    background:white;
+    border-radius:20px;
+    border:1px solid #e5e7eb;
+}
+
+.btn-primary{
+    background:#ef4444;
+    transition:.25s;
+}
+
+.btn-primary:hover{
+    background:#dc2626;
+}
+
+.btn-secondary{
+    border:1px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.05);
+}
+
+.section{
+    padding:80px 0;
+}
+
+
+/* REULAR PLAN FLOATING POPUP */
+
+.regular-popup{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    width:340px;
+    max-width:calc(100vw - 32px);
+    background:#111827;
+    color:white;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:18px;
+    padding:20px;
+    box-shadow:0 15px 40px rgba(0,0,0,.25);
+    z-index:9999;
+
+    transform:translateY(140%);
+    opacity:0;
+    transition:
+        transform .4s ease,
+        opacity .4s ease;
+}
+
+.regular-popup.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+.regular-popup-close{
+    position:absolute;
+    top:10px;
+    right:12px;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,.08);
+    color:#9ca3af;
+    cursor:pointer;
+    font-size:18px;
+    line-height:28px;
+}
+
+.regular-popup-close:hover{
+    background:rgba(255,255,255,.15);
+    color:white;
+}
+
+.regular-popup-label{
+    color:#f87171;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin-bottom:5px;
+}
+
+.regular-popup-title{
+    font-size:20px;
+    font-weight:800;
+    margin-bottom:7px;
+}
+
+.regular-popup-text{
+    color:#d1d5db;
+    font-size:14px;
+    line-height:1.5;
+    margin-bottom:16px;
+}
+
+.regular-popup-link{
+    display:block;
+    text-align:center;
+    background:#ef4444;
+    color:white;
+    padding:11px 16px;
+    border-radius:10px;
+    font-weight:700;
+    text-decoration:none;
+    transition:.25s;
+}
+
+.regular-popup-link:hover{
+    background:#dc2626;
+}
+
+
+/* MOBILE */
+
+@media(max-width:640px){
+
+    .regular-popup{
+        right:16px;
+        bottom:16px;
+        width:auto;
+        padding:18px;
+    }
+
+    .regular-popup-title{
+        font-size:18px;
+    }
+
+}
+
+</style>
+
+
+</head>
+
+<!-- REGULAR PLAN FLOATING POPUP -->
+
+<div id="regularPopup" class="regular-popup">
+
+    <button
+        id="closeRegularPopup"
+        class="regular-popup-close"
+        aria-label="Close">
+        ×
+    </button>
+
+    <div class="regular-popup-label">
+        Looking for cheaper?
+    </div>
+
+    <div class="regular-popup-title">
+        Check out Coaching Regular
+    </div>
+
+    <p class="regular-popup-text">
+        Get everything in the Pro Plan, minus a personalised nutrition plan
+        and customisable sample menus.
+    </p>
+
+    <a href="regular.html" class="regular-popup-link">
+        View Coaching Regular →
+    </a>
+
+</div>
+
+
+<body>
+
+<!-- HERO -->
+
+<section class="hero text-white">
+
+<nav class="max-w-7xl mx-auto px-5 py-6 flex justify-between items-center">
+
+<a href="index.html" class="font-extrabold tracking-wide">
+BRUNO ZGELA COACHING
+</a>
+
+<a href="index.html"
+class="btn-secondary px-5 py-3 rounded-xl">
+← Back
+</a>
+
+</nav>
+
+<div class="max-w-7xl mx-auto px-5 py-24">
+
+<div class="max-w-2xl">
+
+<span class="text-red-400 font-semibold">
+PROGRAM
+</span>
+
+<h1 class="text-5xl font-extrabold mt-3">
+Calisthenics + Nutrition
+</h1>
+
+<p class="mt-6 text-gray-300 leading-8">
+
+For those who want full support throughout their journey, 
+Coaching PRO takes your training to the next level by combining personalized coaching with nutrition guidance.
+Whether your goal is to lose weight, build muscle, improve your performance, or simply develop healthier habits,
+I’ll make sure both your training and nutrition are working together toward the same goal.
+
+</p>
+
+<div class="mt-10">
+
+    <!-- PRICES -->
+    <div class="flex flex-wrap items-center gap-x-10 gap-y-4">
+
+        <!-- FIRST PRICE -->
+        <div>
+            <div class="text-5xl font-extrabold">
+                300€
+            </div>
+
+            <div class="text-gray-300">
+                1-month subscription
+            </div>
+        </div>
+
+        <!-- OR -->
+        <div class="text-gray-400 font-semibold text-lg
+                    w-full md:w-auto
+                    md:order-none">
+            or
+        </div>
+
+        <!-- SECOND PRICE -->
+        <div>
+            <div class="text-5xl font-extrabold text-red-500">
+                840€
+            </div>
+
+            <div class="text-red-500">
+                3-month subscription with a 60€ discount
+            </div>
+        </div>
+
+    </div>
+
+    <!-- APPLY BUTTON -->
+    <div class="mt-8">
+        <a href="https://docs.google.com/forms/d/1ShEa6SKFxMeUu7Smce8yZS9YAor9JRhd_AzznQ_jMzQ/viewform?chromeless=1&edit_requested=true"
+           class="btn-primary inline-block px-8 py-4 rounded-xl font-semibold">
+            Apply Now
+        </a>
+    </div>
+
+</div>
+
+</section>
+
+<!-- OVERVIEW -->
+
+<section class="section">
+
+<div class="max-w-6xl mx-auto px-5">
+
+<div class="grid lg:grid-cols-3 gap-8">
+
+<div class="lg:col-span-2 space-y-8">
+
+<!-- ABOUT -->
+
+<div class="card p-10">
+
+<h2 class="text-3xl font-bold mb-6">
+Program Overview
+</h2>
+
+<p class="text-gray-600 leading-8">
+
+This program is designed specifically around your goals and priorities, while taking into account your current performance level, available equipment, lifestyle, and the time you can dedicate to training.
+You’ll have my full support throughout your journey, with frequent communication of five days per week. I’ll create and update your training plan every week based on your progress, feedback, and individual needs, while also providing personalized nutrition guidance to help you make better choices and build sustainable habits.
+Whether your goal is to improve performance, lose weight, build muscle, or simply create a healthier lifestyle, we’ll make sure your training and nutrition work together to get you there as efficiently as possible.
+
+
+</p>
+
+</div>
+
+<!-- INCLUDED -->
+
+<div class="card p-10">
+
+<h2 class="text-3xl font-bold mb-8">
+What's Included
+</h2>
+
+<div class="grid md:grid-cols-2 gap-6">
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Personal training plan</h3>
+<p class="text-gray-500 text-sm">
+Covered with video tutorials and explanations
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Coach availability <u>5 times a week</u></h3>
+<p class="text-gray-500 text-sm">
+Monday - Friday (12pm - 4pm CEST)
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Training feedback <u>once a week</u></h3>
+<p class="text-gray-500 text-sm">
+Discussing and improving your form, technique 
+and overall performance
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Check in <u>once a week</u></h3>
+<p class="text-gray-500 text-sm">
+Weekly plan updates based on your feedback
+and progress.
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Basic nutritional guidence</h3>
+<p class="text-gray-500 text-sm">
+Helping you with nutrition, hydratation, sleep
+supplementation…
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Nutrition plan</h3>
+<p class="text-gray-500 text-sm">
+A fully personalized nutrition plan tailored to your 
+goals and current level.
+</p>
+</div>
+</div>
+
+<div class="flex gap-4">
+<i data-feather="check-circle" class="text-red-500"></i>
+<div>
+<h3 class="font-bold">Customisable sample menus</h3>
+<p class="text-gray-500 text-sm">
+4 customisable sample menus
+you can use in your meal plan
+</p>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- WEEKLY STRUCTURE -->
+
+<!-- zakomentirao
+
+<div class="card p-10">
+
+<h2 class="text-3xl font-bold mb-8">
+Weekly Structure
+</h2>
+
+<div class="space-y-8">
+
+<div>
+
+<h3 class="font-bold text-xl">
+Weeks 1–2
+</h3>
+
+<p class="text-gray-600 mt-2">
+Explain the first phase.
+</p>
+
+</div>
+
+<div>
+
+<h3 class="font-bold text-xl">
+Weeks 3–5
+</h3>
+
+<p class="text-gray-600 mt-2">
+Explain the progression.
+</p>
+
+</div>
+
+<div>
+
+<h3 class="font-bold text-xl">
+Weeks 6–8
+</h3>
+
+<p class="text-gray-600 mt-2">
+Explain the final phase.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+-->
+
+<!-- FAQ -->
+
+<!-- zakomentirao
+
+<div class="card p-10">
+
+<h2 class="text-3xl font-bold mb-8">
+Frequently Asked Questions
+</h2>
+
+<div class="space-y-8">
+
+<div>
+
+<h3 class="font-semibold">
+Do I need equipment?
+</h3>
+
+<p class="text-gray-500 mt-2">
+Write answer here.
+</p>
+
+</div>
+
+<div>
+
+<h3 class="font-semibold">
+Is this beginner friendly?
+</h3>
+
+<p class="text-gray-500 mt-2">
+Write answer here.
+</p>
+
+</div>
+
+<div>
+
+<h3 class="font-semibold">
+How much time does each workout take?
+</h3>
+
+<p class="text-gray-500 mt-2">
+Write answer here.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+-->
+
+<!-- SIDEBAR -->
+
+<div>
+
+<div class="card p-8 sticky top-10">
+
+<h2 class="text-2xl font-bold">
+Program Summary
+</h2>
+
+<ul class="space-y-5 mt-8">
+
+<li class="flex justify-between">
+<span>Duration</span>
+<strong>Subscription based</strong>
+</li>
+
+<li class="flex justify-between">
+<span>Difficulty</span>
+<strong>Personalised</strong>
+</li>
+
+<li class="flex justify-between">
+<span>Equipment</span>
+<strong>Pull up bar & dip bars</strong>
+</li>
+
+<li class="flex justify-between">
+<span>Workout Time</span>
+<strong>Personalised</strong>
+</li>
+
+<li class="flex justify-between">
+<span>Price </span>
+<strong>300€ - 1 month subscription</strong>
+</li>
+
+<li class="flex justify-between">
+<span></span>
+<strong>or</strong>
+</li>
+
+<li class="flex justify-between">
+<span></span>
+<strong class="text-red-500">840€ - 3 month subscription with a 60€ discount</strong>
+</li>
+
+</ul>
+
+<a href="https://docs.google.com/forms/d/1ShEa6SKFxMeUu7Smce8yZS9YAor9JRhd_AzznQ_jMzQ/viewform?chromeless=1&edit_requested=true"
+class="block text-center mt-10 btn-primary text-white py-4 rounded-xl font-bold">
+
+Start Today
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- FOOTER -->
+
+<footer class="bg-slate-900 text-white py-12">
+
+<div class="max-w-7xl mx-auto px-5 flex justify-between items-center">
+
+<div>
+
+<h3 class="font-bold">
+BRUNO ZGELA COACHING
+</h3>
+
+<p class="text-gray-400 mt-2">
+Helping people build strength through calisthenics.
+</p>
+
+</div>
+
+<div class="flex gap-5">
+
+<a href="https://instagram.com/bruno.zgela">
+<i data-feather="instagram"></i>
+</a>
+
+<a href="https://youtube.com/@bruno_zgela">
+<i data-feather="youtube"></i>
+</a>
+
+<a href="mailto:bzcoaching@gmail.com">
+<i data-feather="mail"></i>
+</a>
+
+</div>
+
+</div>
+
+</footer>
+
+<script>
+feather.replace();
+
+const regularPopup = document.getElementById("regularPopup");
+const closeRegularPopup = document.getElementById("closeRegularPopup");
+
+let popupClosed = false;
+
+function handleScroll() {
+    if (window.scrollY > 300 && !popupClosed) {
+        regularPopup.classList.add("show");
+    }
+}
+
+window.addEventListener("scroll", handleScroll);
+
+closeRegularPopup.addEventListener("click", function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    popupClosed = true;
+    regularPopup.classList.remove("show");
+});
+</script>
+
+</body>
+</html>

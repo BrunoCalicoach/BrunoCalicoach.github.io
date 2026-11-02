@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bruno Zgela Coaching</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f5f5;
+      color: #111827;
+    }
+
+    .hero-bg {
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(0,0,0,0.75),
+          rgba(0,0,0,0.88)
+        ),
+        url('folder/img2.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .glass {
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      border: 1px solid #ececec;
+      transition: 0.25s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    .plan-card {
+      border-radius: 22px;
+      overflow: hidden;
+      transition: 0.25s ease;
+    }
+
+    .plan-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .popular-card {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255,78,78,0.96),
+          rgba(216,21,21,0.96)
+        ),
+        url('http://static.photos/fitness/1200x630/2');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid #ececec;
+    }
+
+    .btn-primary {
+      background: #ef4444;
+      transition: .25s ease;
+    }
+
+    .btn-primary:hover {
+      background: #dc2626;
+    }
+
+    .btn-secondary {
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
+      transition: .25s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .section-spacing {
+      padding-top: 80px;
+      padding-bottom: 80px;
+    }
+
+    @media(max-width:640px) {
+      .section-spacing {
+        padding-top: 56px;
+        padding-bottom: 56px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HERO -->
+<section class="hero-bg text-white">
+
+  <nav class="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
+
+    <a href="index.html"
+       class="font-extrabold tracking-wide text-sm sm:text-base">
+      BRUNO ZGELA COACHING
+    </a>
+
+    <a href="index.html"
+       class="btn-secondary px-5 py-3 rounded-xl font-medium">
+      Back Home
+    </a>
+
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-5 pt-10 pb-20">
+
+    <!-- Desktop: 2 columns | Mobile: 1 column -->
+    <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+      <!-- HERO TEXT -->
+      <div class="max-w-3xl">
+
+        <span class="text-red-500 font-semibold uppercase tracking-wider">
+          About Me
+        </span>
+
+        <h1 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+          Calisthenics Has Been
+          <span class="text-red-500">
+            My Life For Over 15 Years
+          </span>
+        </h1>
+
+        <p class="mt-6 text-gray-300 leading-relaxed max-w-2xl">
+          My name is Bruno Žgela and I have dedicated more than 15 years
+          to mastering bodyweight training, movement, strength and athletic
+          development. Through competing, coaching and thousands of hours
+          of practice, I have developed a system that helps people build
+          strength, confidence and a body they can be proud of.
+        </p>
+
+      </div>
+
+      <!-- HERO IMAGE -->
+      <div class="flex justify-center lg:justify-end mt-8 lg:mt-0">
+
+        <img
+          src="folder/img0.png"
+          alt="Bruno Žgela"
+          class="w-full max-w-md lg:max-w-lg rounded-3xl shadow-2xl object-cover"
+        >
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+  <!-- STORY -->
+  <section class="section-spacing bg-white">
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+
+        <div>
+
+          <h2 class="text-3xl sm:text-4xl font-extrabold">
+            My Journey
+          </h2>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+            I started my calisthenics journey in 2013, as a 13 year 
+            old kid inspired by the freedom of street workout and the 
+            idea that you can build incredible strength using nothing 
+            more than your own body. Coming from a background in 
+            sports, including football and wrestling, I developed the 
+            discipline, determination, and competitive mindset that 
+            continue to guide me today.
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            Along the way I learned that real progress doesn't come
+            from shortcuts. It comes from consistency, intelligent
+            programming and patience. These are the principles I now
+            teach every client.
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            Today my goal is simple: help people avoid years of mistakes
+            and achieve results faster with proper guidance.
+          </p>
+
+        </div>
+
+        <div>
+
+          <img
+            src="folder/img5.jpg"
+            alt="Bruno Zgela"
+            class="rounded-3xl shadow-lg w-full"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <br><br>
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+            Throughout my calisthenics journey, I have always been 
+            driven by one goal: to continuously push the limits of what 
+            the human body can achieve through bodyweight training.
+
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            After more than a decade of dedicated practice,
+            I have specialized in endurance calisthenics - a discipline 
+            that combines strength, stamina, mental toughness, and 
+            the ability to perform under extreme fatigue.
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            Today my goal is simple: help people avoid years of mistakes
+            and achieve results faster with proper guidance.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+<br>
+
+<section class="section-spacing bg-[#f5f5f5]" id="features">
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="text-center mb-14">
+
+        <h2 class="text-3xl sm:text-4xl font-extrabold">
+          Some of my best personal achievements include:
+        </h2>
+
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div class="card p-7 text-center">
+
+          <i class="fa-solid fa-dumbbell text-red-500"></i>
+
+          <h3 class="font-bold text-lg">
+            DIPS
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            420 Repetition in one set (while resting only in upper position of the exercise)
+            117 Repetitions with 20kg added weight
+          </p>
+
+        </div>
+
+        <div class="card p-7 text-center">
+
+         <i class="fa-solid fa-dumbbell text-red-500"></i>
+
+          <h3 class="font-bold text-lg">
+            PUSH UPS
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            1000 repetitions without leaving a push up position
+          </p>
+
+        </div>
+
+        <div class="card p-7 text-center">
+
+          <i class="fa-solid fa-dumbbell text-red-500"></i>
+
+          <h3 class="font-bold text-lg">
+            PULL UPS
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            60 Consecutive repetitions without leaving the bar
+            Total of 1000 repetitions in 1 hour
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+        <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+            My experience in pushing the limits of endurance and 
+            strength allows me to understand the challenges athletes 
+            face at every level. Through my coaching, I help others 
+            build their strength, improve their technique, and create 
+            the discipline needed to reach their own goals.
+
+
+
+          </p>
+
+        </div>
+
+         <div>
+
+          <img
+            src="folder/img6.jpg"
+            alt="Bruno Zgela"
+            class="rounded-3xl shadow-lg w-full"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+    <br>
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+
+          <h2 class="text-3xl sm:text-4xl font-extrabold">
+            My Titles & Competition Achievements
+          </h2>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+            Throughout my calisthenics career, I have had the 
+            opportunity to compete among some of the strongest 
+            athletes in the world and represent my country on both 
+            national and international stages.
+
+            My dedication to endurance calisthenics has led me to 
+            achieve multiple championship results, including national 
+            titles in Croatia and podium finishes at major international 
+            competitions.
+          </p>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+
+            My dedication to endurance calisthenics has led me to 
+            achieve multiple championship results, including national 
+            titles in Croatia and podium finishes at major international 
+            competitions.
+          </p>
+
+        </div>
+
+    </div>
+    <br>
+
+    <section class="section-spacing bg-[#f5f5f5]" id="features">
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="text-center mb-14">
+
+        <h2 class="text-3xl sm:text-4xl font-extrabold">
+             Some of my biggest achievements include:
+        </h2>
+
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div class="card p-7">
+
+          <h3 class="font-bold text-lg">
+            🏆 Multiple-time Croatian National Champion
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            I have achieved multiple first-place finishes at 
+            national-level competitions, becoming one of the leading 
+            endurance calisthenics athletes in Croatia.
+          </p>
+
+        </div>
+
+        <div class="card p-7">
+
+          <h3 class="font-bold text-lg">
+            🥇 1st Place – Beast of the Barz European Championship (Sweden)
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Winning this competition was one of the most memorable 
+            moments of my career. It was a true test of strength, 
+            endurance, and mental toughness against top athletes 
+            from across Europe.
+          </p>
+
+        </div>
+
+        <div class="card p-7">
+
+          <h3 class="font-bold text-lg">
+            🥈 2nd Place – SWCF World Championship (Latvia)
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Competing at the world level and finishing as vice 
+            champion was a milestone that confirmed my place among 
+            the best endurance calisthenics athletes internationally.
+          </p>
+
+        </div>
+
+        <div class="card p-7">
+
+          <h3 class="font-bold text-lg">
+            🥇 1st Place – International Championship (Serbia)
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Another important victory that strengthened my 
+            experience as a competitive athlete and pushed me to 
+            continue improving.
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+        <!-- NAKON NABRAJANJA USPJEHA-->
+      <div class="max-w-7xl mx-auto px-5">
+
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+
+          <div>
+
+            <p class="mt-6 text-gray-600 leading-relaxed">
+            These achievements represent years of discipline, 
+            consistency, and a commitment to pushing the limits of 
+            what is possible with bodyweight training.
+            </p>
+
+            <p class="mt-5 text-gray-600 leading-relaxed">
+              Beyond medals and rankings, every competition has 
+              helped me develop a deeper understanding of training, 
+              preparation, and performance — knowledge that I now use 
+              to help my coaching clients reach their own goals.
+            </p>
+
+        </div>
+
+        <div>
+
+          <img
+            src="folder/img10.jpg"
+            alt="Bruno Zgela"
+            class="rounded-3xl shadow-lg w-full"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+      <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+        <div>
+
+          <p class="mt-6 text-gray-600 leading-relaxed">
+            My journey has taught me that progress is not built 
+            overnight. Real results come from consistency, smart 
+            programming, proper technique, and the willingness to 
+            challenge yourself every day.
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            I believe calisthenics is for everyone. 
+            Whether your goal is to build strength, achieve advanced 
+            skills, transform your physique, or simply become more 
+            capable in your own body, the right approach can help 
+            you get there.
+
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            My training philosophy is built around mastering 
+            the fundamentals, creating sustainable progress, and 
+            developing both physical and mental strength. 
+            I focus not only on the exercises themselves, 
+            but on teaching people how to train with purpose and 
+            understand their own potential.
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            Today, I use everything I have learned throughout my 
+            athletic journey to help others achieve their goals through 
+            personalized calisthenics coaching.
+
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            My mission is to guide people through the process of 
+            becoming stronger, more confident, and more capable — 
+            regardless of their starting point. I want to provide the 
+            knowledge, structure, and support that I wish I had when 
+            I was first beginning my own journey.
+
+
+          </p>
+
+          <p class="mt-5 text-gray-600 leading-relaxed">
+            Whether you are taking your first steps into calisthenics 
+            or looking to reach a higher level of performance, I will 
+            help you build the strength, skills, and mindset needed 
+            to keep progressing.
+
+
+          </p>
+
+            <p class="mt-5 text-gray-600 leading-relaxed">
+            For me, calisthenics has never been just about performing
+            impressive skills or achieving physical milestones. 
+            It represents discipline, growth, and the constant pursuit 
+            of becoming better than I was yesterday.
+
+
+          </p>
+
+           <p class="mt-5 text-gray-600 leading-relaxed">
+            My goal is to share my experience, inspire others, and 
+            prove that with the right guidance and commitment, your 
+            body can become one of the most powerful tools you have.
+          </p>
+
+        </div>
+
+        <div>
+
+          <img
+            src="folder/img2.jpeg"
+            alt="Bruno Zgela"
+            class="rounded-3xl shadow-lg w-full"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- STATS -->
+  <section class="section-spacing bg-[#f7f7f7]">
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="grid md:grid-cols-4 gap-6">
+
+        <div class="card p-8 text-center">
+
+          <div class="text-red-500 text-5xl font-extrabold">
+            15+
+          </div>
+
+          <p class="mt-3 text-gray-500">
+            Years Training
+          </p>
+
+        </div>
+
+        <div class="card p-8 text-center">
+
+          <div class="text-red-500 text-5xl font-extrabold">
+            100+
+          </div>
+
+          <p class="mt-3 text-gray-500">
+            Clients Helped
+          </p>
+
+        </div>
+
+        <div class="card p-8 text-center">
+
+          <div class="text-red-500 text-5xl font-extrabold">
+            1000+
+          </div>
+
+          <p class="mt-3 text-gray-500">
+            Workouts Designed
+          </p>
+
+        </div>
+
+        <div class="card p-8 text-center">
+
+          <div class="text-red-500 text-5xl font-extrabold">
+            15+
+          </div>
+
+          <p class="mt-3 text-gray-500">
+            Years Experience
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- PHILOSOPHY -->
+  <section class="section-spacing bg-white">
+
+    <div class="max-w-7xl mx-auto px-5">
+
+      <div class="text-center mb-14">
+
+        <h2 class="text-3xl sm:text-4xl font-extrabold">
+          My Coaching Philosophy
+        </h2>
+
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <div class="card p-7">
+
+          <div class="text-red-500 mb-5">
+            <i data-feather="activity" class="w-7 h-7"></i>
+          </div>
+
+          <h3 class="font-bold text-lg">
+            Movement First
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Learn proper movement patterns before chasing advanced skills.
+          </p>
+
+        </div>
+
+        <div class="card p-7">
+
+          <div class="text-red-500 mb-5">
+            <i data-feather="trending-up" class="w-7 h-7"></i>
+          </div>
+
+          <h3 class="font-bold text-lg">
+            Progressive Overload
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Every program is designed around measurable progress.
+          </p>
+
+        </div>
+
+        <div class="card p-7">
+
+          <div class="text-red-500 mb-5">
+            <i data-feather="shield" class="w-7 h-7"></i>
+          </div>
+
+          <h3 class="font-bold text-lg">
+            Longevity
+          </h3>
+
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Build strength and mobility that lasts for decades.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- CTA -->
+  <section class="section-spacing bg-[#0f172a] text-white">
+
+    <div class="max-w-4xl mx-auto px-5 text-center">
+
+      <h2 class="text-4xl font-extrabold">
+        Ready To Train Together?
+      </h2>
+
+      <p class="mt-5 text-gray-300">
+        Whether you're a beginner or an advanced athlete,
+        I'll help you reach your goals faster.
+      </p>
+
+      <a href="index.html#plans"
+         class="btn-primary inline-block mt-8 px-8 py-4 rounded-xl font-semibold">
+        View Coaching Plans
+      </a>
+
+    </div>
+
+  </section>
+
+  <script>
+    feather.replace();
+  </script>
+
+</body>
+</html>

@@ -66,6 +66,17 @@ body{
   line-height:1.45;
 }
 
+/* Keeps fieldset titles inside the card instead of on its border */
+legend.question-title{
+  float:left;
+  width:100%;
+  margin-bottom:4px;
+}
+
+legend.question-title + *{
+  clear:both;
+}
+
 .required::after{
   content:" *";
   color:#ef4444;

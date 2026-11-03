@@ -79,7 +79,7 @@ function setInputs(exercise) {
 function exerciseCard(exercise, target) {
   const meta = [exercise.rest && 'Rest: ' + exercise.rest, exercise.tempo && 'Tempo: ' + exercise.tempo, (target ? target.load : exercise.load)].filter(Boolean).join(' · ');
   if (exercise.kind === 'fixed') {
-    return `<div class="exercise exercise-unchanged">
+    return `<div class="exercise exercise-unchanged text-center">
       <div class="exercise-title">${esc(exercise.name)}</div>
       <div class="target mt-1">${esc(exercise.text)}</div>
       <div class="exercise-info mt-1">${esc(meta)}</div>
@@ -89,9 +89,11 @@ function exerciseCard(exercise, target) {
   const entry = draft.ex[exercise.id];
   const tag = target.lighter ? '<span class="tag tag-lighter">Lighter</span>' : target.rebuilt ? '<span class="tag tag-rebuilt">Rebuilt</span>' : '';
   return `<div class="exercise">
-    <div class="flex flex-wrap items-center gap-2"><span class="exercise-title">${esc(exercise.name)}</span>${tag}</div>
-    <div class="target mt-1">Target: ${esc(shortTarget(exercise, target))}</div>
-    <div class="exercise-info mt-1">${esc(meta)}</div>
+    <div class="exercise-head">
+      <div class="flex flex-wrap items-center justify-center gap-2"><span class="exercise-title">${esc(exercise.name)}</span>${tag}</div>
+      <div class="target mt-1">Target: ${esc(shortTarget(exercise, target))}</div>
+      <div class="exercise-info mt-1">${esc(meta)}</div>
+    </div>
     <div class="set-grid mt-3">${setInputs(exercise)}</div>
     <label class="easy-row mt-3">
       <input id="${exercise.id}-easy" type="checkbox" class="easy-box" data-ex="${exercise.id}"${entry.tooEasy ? ' checked' : ''}> This was too easy

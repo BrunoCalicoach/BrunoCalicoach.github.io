@@ -39,7 +39,7 @@ function makeDraft(plan, weeks) {
   [1, 2, 3, 4].forEach((day) => { next.days[day] = defaultDay(); });
   plan.exercises.forEach((exercise) => {
     if (exercise.kind === 'fixed') return;
-    next.ex[exercise.id] = { actual: fillActual(exercise, targets[exercise.id], week, 'hit'), tooEasy: false, type: 'hit' };
+    next.ex[exercise.id] = { actual: fillActual(exercise, targets[exercise.id], week, 'hit'), tooEasy: false };
   });
   return next;
 }
@@ -76,14 +76,10 @@ function exerciseCard(exercise, target) {
   }
   const entry = draft.ex[exercise.id];
   const tag = target.lighter ? '<span class="tag tag-lighter">Lighter</span>' : target.rebuilt ? '<span class="tag tag-rebuilt">Rebuilt</span>' : '';
-  const button = (type, label) => `<button type="button" class="quick${entry.type === type ? ' active' : ''}" data-quick="${type}" data-ex="${exercise.id}">${label}</button>`;
   return `<div class="exercise">
     <div class="flex flex-wrap items-center gap-2"><span class="font-semibold">${esc(exercise.name)}</span>${tag}</div>
     <div class="target mt-1">Target: ${esc(shortTarget(exercise, target))}</div>
     <div class="text-xs text-gray-500 mt-1">${esc(meta)}</div>
-    <div class="flex flex-wrap gap-2 mt-3">
-      ${button('hit', 'Hit target')}${button('close', 'Close miss')}${button('big', 'Big miss')}
-    </div>
     <div class="flex flex-wrap gap-2 mt-3">${setInputs(exercise)}</div>
     <label class="flex items-center gap-2 mt-3 text-sm">
       <input id="${exercise.id}-easy" type="checkbox" class="easy-box" data-ex="${exercise.id}"${entry.tooEasy ? ' checked' : ''}> This was too easy
@@ -113,7 +109,7 @@ function weekPanel(plan, weeks) {
     </div>
   </section>`).join('');
   return `<div class="grid gap-5">
-    ${week > 1 ? '' : '<p class="text-sm text-gray-600">Week 1 is the adaptation week. Everything starts filled in as "hit". Change only what you want to test, then finish the week.</p>'}
+    <p class="text-sm text-gray-600">${week > 1 ? '' : 'Week 1 is the adaptation week. '}Reps start filled in with the target. Change any set where you did something different, then finish the week.</p>
     ${days}
     <div class="flex flex-wrap gap-3">
       <button type="button" class="btn-primary" data-action="finish">Finish week ${week}</button>
@@ -274,14 +270,6 @@ testApp.addEventListener('click', (event) => {
     lastMessage = `${scenario.label}: all 12 weeks are filled in. ${scenario.description}`;
     saveTestState();
     render();
-  } else if (target.dataset.quick) {
-    const exercise = plan.exercises.find((item) => item.id === target.dataset.ex);
-    const week = currentWeek();
-    const weekTarget = runPlan(plan, testState.logs)[week - 1].targets[exercise.id];
-    const entry = draft.ex[exercise.id];
-    entry.type = target.dataset.quick;
-    entry.actual = fillActual(exercise, weekTarget, week, entry.type);
-    render();
   } else if (target.dataset.action === 'finish') {
     finishWeek();
   } else if (target.dataset.action === 'undo') {
@@ -313,10 +301,7 @@ testApp.addEventListener('change', (event) => {
   } else if (field.classList.contains('checkin')) {
     draft.days[field.dataset.day][field.dataset.key] = Number(field.value);
   } else if (field.classList.contains('set-input')) {
-    const entry = draft.ex[field.dataset.ex];
-    entry.actual[Number(field.dataset.set)] = Number(field.value) || 0;
-    entry.type = '';
-    render();
+    draft.ex[field.dataset.ex].actual[Number(field.dataset.set)] = Number(field.value) || 0;
   } else if (field.classList.contains('easy-box')) {
     draft.ex[field.dataset.ex].tooEasy = field.checked;
   }

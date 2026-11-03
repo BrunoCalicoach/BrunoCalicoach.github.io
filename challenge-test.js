@@ -338,4 +338,11 @@ testApp.addEventListener('change', (event) => {
   }
 });
 
+// The toggle event does not bubble, so it is caught on the way down
+testApp.addEventListener('toggle', (event) => {
+  if (event.target.id !== 'test-tools') return;
+  testState.toolsOpen = event.target.open;
+  saveTestState();
+}, true);
+
 render();

@@ -83,7 +83,7 @@ function exerciseCard(exercise, target) {
       <div class="exercise-title">${esc(exercise.name)}</div>
       <div class="target mt-1">${esc(exercise.text)}</div>
       <div class="exercise-info mt-1">${esc(meta)}</div>
-      <div class="text-sm text-gray-600 mt-1">Stays the same each week</div>
+      <div class="text-sm text-gray-700 mt-1">Stays the same each week</div>
     </div>`;
   }
   const entry = draft.ex[exercise.id];

@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 
+<script>
+// Runs before the page draws, so dark mode does not flash white first
+(function () {
+  let saved = null;
+  try { saved = localStorage.getItem('challengeTheme'); } catch (error) { /* Storage can be blocked */ }
+  const dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+})();
+</script>
+
 <title>Challenge Test | Bruno Zgela Coaching</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -469,6 +479,173 @@ body{
   border-color:#10b981;
 }
 
+.theme-toggle{
+  min-height:44px;
+  padding:8px 16px;
+  border-radius:12px;
+  font-weight:500;
+  white-space:nowrap;
+}
+
+/* Dark mode */
+html[data-theme="dark"]{
+  color-scheme:dark;
+}
+
+html[data-theme="dark"] body{
+  background:#111318;
+  color:#f3f4f6;
+}
+
+html[data-theme="dark"] .card{
+  background:#1c1f26;
+  border-color:#2d323c;
+}
+
+html[data-theme="dark"] .exercise{
+  background:#2b2f38;
+  border-color:#3d434f;
+}
+
+html[data-theme="dark"] .exercise-title{
+  color:#f9fafb;
+}
+
+html[data-theme="dark"] .target{
+  color:#fca5a5;
+}
+
+html[data-theme="dark"] .exercise-info{
+  color:#e5e7eb;
+}
+
+html[data-theme="dark"] .set-label,
+html[data-theme="dark"] .text-gray-500,
+html[data-theme="dark"] .text-gray-600,
+html[data-theme="dark"] .text-gray-700{
+  color:#d1d5db;
+}
+
+html[data-theme="dark"] .step,
+html[data-theme="dark"] .set-input,
+html[data-theme="dark"] .easy-row,
+html[data-theme="dark"] .checkin-button,
+html[data-theme="dark"] .day-tab,
+html[data-theme="dark"] .tab,
+html[data-theme="dark"] .scenario,
+html[data-theme="dark"] .btn-outline{
+  background:#1c1f26;
+  border-color:#4b5563;
+  color:#f3f4f6;
+}
+
+html[data-theme="dark"] .step:active,
+html[data-theme="dark"] .btn-outline:hover{
+  background:#3d434f;
+}
+
+html[data-theme="dark"] .checkin-button.active,
+html[data-theme="dark"] .day-tab.active{
+  background:#f3f4f6;
+  border-color:#f3f4f6;
+  color:#111827;
+}
+
+html[data-theme="dark"] .tab.active{
+  background:#ef4444;
+  border-color:#ef4444;
+  color:#ffffff;
+}
+
+html[data-theme="dark"] .scenario:hover,
+html[data-theme="dark"] .scenario.active{
+  border-color:#ef4444;
+}
+
+html[data-theme="dark"] .easy-row:has(input:checked),
+html[data-theme="dark"] .message{
+  background:#3b1518;
+  border-color:#ef4444;
+}
+
+html[data-theme="dark"] .tag-lighter{
+  background:#4c1d95;
+  color:#ede9fe;
+}
+
+html[data-theme="dark"] .tag-rebuilt{
+  background:#1e3a8a;
+  color:#dbeafe;
+}
+
+html[data-theme="dark"] .plan-table th,
+html[data-theme="dark"] .plan-table td{
+  border-color:#2d323c;
+}
+
+html[data-theme="dark"] .exercise-name{
+  background:#1c1f26;
+}
+
+html[data-theme="dark"] .plan-table thead th,
+html[data-theme="dark"] .plan-table thead .exercise-name,
+html[data-theme="dark"] .day-row th{
+  background:#262a33;
+}
+
+html[data-theme="dark"] .plan-table thead th.done-week{
+  background:#f3f4f6;
+  color:#111827;
+}
+
+html[data-theme="dark"] .planned{
+  color:#a3acb9;
+}
+
+html[data-theme="dark"] .status-hit{
+  background:#12392c;
+}
+
+html[data-theme="dark"] .status-close{
+  background:#453208;
+}
+
+html[data-theme="dark"] .status-big{
+  background:#4a1c1c;
+}
+
+html[data-theme="dark"] .status-low{
+  background:#2e2557;
+}
+
+html[data-theme="dark"] .changed{
+  box-shadow:inset 0 0 0 2px #60a5fa;
+}
+
+html[data-theme="dark"] .swatch{
+  border-color:#4b5563;
+}
+
+html[data-theme="dark"] .why{
+  border-left-color:#4b5563;
+}
+
+html[data-theme="dark"] .status-border-close{
+  border-left-color:#f59e0b;
+}
+
+html[data-theme="dark"] .status-border-big{
+  border-left-color:#ef4444;
+}
+
+html[data-theme="dark"] .status-border-low{
+  border-left-color:#8b5cf6;
+}
+
+html[data-theme="dark"] .status-border-hit{
+  border-left-color:#10b981;
+}
+
 </style>
 </head>
 
@@ -481,6 +658,8 @@ body{
     <a href="index.html" class="font-extrabold tracking-wide">
       BRUNO ZGELA COACHING
     </a>
+
+    <button id="theme-toggle" type="button" class="theme-toggle btn-secondary">Dark mode</button>
 
   </nav>
 
@@ -503,7 +682,7 @@ body{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-test.js?v=9"></script>
+<script src="challenge-test.js?v=10"></script>
 
 </body>
 </html>

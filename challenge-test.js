@@ -339,6 +339,23 @@ testApp.addEventListener('change', (event) => {
   }
 });
 
+const themeToggle = document.getElementById('theme-toggle');
+
+function showThemeLabel() {
+  themeToggle.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light mode' : 'Dark mode';
+}
+
+themeToggle.addEventListener('click', () => {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  showThemeLabel();
+  try {
+    localStorage.setItem('challengeTheme', theme);
+  } catch (error) { /* See loadTestState */ }
+});
+
+showThemeLabel();
+
 // The toggle event does not bubble, so it is caught on the way down
 testApp.addEventListener('toggle', (event) => {
   if (event.target.id !== 'test-tools') return;

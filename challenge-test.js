@@ -68,7 +68,7 @@ function setInputs(exercise) {
 function exerciseCard(exercise, target) {
   const meta = [exercise.rest && 'Rest: ' + exercise.rest, exercise.tempo && 'Tempo: ' + exercise.tempo, (target ? target.load : exercise.load)].filter(Boolean).join(' · ');
   if (exercise.kind === 'fixed') {
-    return `<div class="exercise fixed">
+    return `<div class="exercise exercise-unchanged">
       <div class="font-semibold">${esc(exercise.name)}</div>
       <div class="text-sm text-gray-600 mt-1">${esc(exercise.text)}</div>
       <div class="text-xs text-gray-500 mt-1">${esc(meta)} · Stays the same each week</div>

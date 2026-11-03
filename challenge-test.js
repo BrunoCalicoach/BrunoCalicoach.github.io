@@ -141,7 +141,7 @@ function planPanel(plan, weeks, baseline) {
     let dayRow = '';
     if (exercise.day !== lastDay) {
       lastDay = exercise.day;
-      dayRow = `<tr class="day-row"><th colspan="13">Day ${exercise.day}</th></tr>`;
+      dayRow = `<tr class="day-row"><th colspan="13"><span class="day-label">Day ${exercise.day}</span></th></tr>`;
     }
     const cells = weeks.map((item, i) => {
       const adapted = shortTarget(exercise, item.targets[exercise.id]);

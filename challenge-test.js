@@ -35,7 +35,7 @@ function makeDraft(plan, weeks) {
   const week = currentWeek();
   if (week > 12) return null;
   const targets = weeks[week - 1].targets;
-  const next = { week, days: {}, ex: {} };
+  const next = { week, activeDay: 1, days: {}, ex: {} };
   [1, 2, 3, 4].forEach((day) => { next.days[day] = defaultDay(); });
   plan.exercises.forEach((exercise) => {
     if (exercise.kind === 'fixed') return;
@@ -44,25 +44,36 @@ function makeDraft(plan, weeks) {
   return next;
 }
 
-function checkinSelect(day, key, label, min, max) {
+function checkinButtons(day, key, label, max) {
   const value = draft.days[day][key];
-  let options = '';
-  for (let n = min; n <= max; n += 1) options += `<option value="${n}"${n === value ? ' selected' : ''}>${n}</option>`;
-  return `<label class="text-sm text-gray-600">${label}
-    <select id="d${day}-${key}" class="checkin block mt-1" data-day="${day}" data-key="${key}">${options}</select>
-  </label>`;
+  let buttons = '';
+  for (let n = 1; n <= max; n += 1) {
+    buttons += `<button type="button" class="checkin-button${n === value ? ' active' : ''}" aria-pressed="${n === value}" data-checkin="${key}" data-day="${day}" data-value="${n}">${n}</button>`;
+  }
+  return `<div role="group" aria-label="${label}">
+    <div class="checkin-label">${label}</div>
+    <div class="checkin-row">${buttons}</div>
+  </div>`;
+}
+
+function setLabel(exercise, i) {
+  if (exercise.kind === 'superset') return `${i % 2 ? 'Rows' : 'Push-ups'} ${Math.floor(i / 2) + 1}`;
+  return `${exercise.kind === 'emom' ? 'Round' : 'Set'} ${i + 1}`;
 }
 
 function setInputs(exercise) {
-  const entry = draft.ex[exercise.id];
-  if (exercise.kind === 'superset') {
-    return entry.actual.map((value, i) => `<label class="set-label">${i % 2 ? 'Rows' : 'Push'} ${Math.floor(i / 2) + 1}
-      <input id="${exercise.id}-${i}" class="set-input" type="number" min="0" inputmode="numeric" value="${value}" data-ex="${exercise.id}" data-set="${i}">
-    </label>`).join('');
-  }
-  return entry.actual.map((value, i) => `<label class="set-label">${exercise.kind === 'emom' ? 'Round' : 'Set'} ${i + 1}
-    <input id="${exercise.id}-${i}" class="set-input" type="number" min="0" inputmode="numeric" value="${value}" data-ex="${exercise.id}" data-set="${i}">
-  </label>`).join('');
+  return draft.ex[exercise.id].actual.map((value, i) => {
+    const label = setLabel(exercise, i);
+    const data = `data-ex="${exercise.id}" data-set="${i}"`;
+    return `<div>
+      <label class="set-label" for="${exercise.id}-${i}">${label}</label>
+      <div class="stepper">
+        <button type="button" class="step" data-step="-1" ${data} aria-label="One rep less, ${label}">&minus;</button>
+        <input id="${exercise.id}-${i}" class="set-input" type="number" min="0" inputmode="numeric" value="${value}" ${data}>
+        <button type="button" class="step" data-step="1" ${data} aria-label="One rep more, ${label}">+</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function exerciseCard(exercise, target) {
@@ -80,8 +91,8 @@ function exerciseCard(exercise, target) {
     <div class="flex flex-wrap items-center gap-2"><span class="font-semibold">${esc(exercise.name)}</span>${tag}</div>
     <div class="target mt-1">Target: ${esc(shortTarget(exercise, target))}</div>
     <div class="text-xs text-gray-500 mt-1">${esc(meta)}</div>
-    <div class="flex flex-wrap gap-2 mt-3">${setInputs(exercise)}</div>
-    <label class="flex items-center gap-2 mt-3 text-sm">
+    <div class="set-grid mt-3">${setInputs(exercise)}</div>
+    <label class="easy-row mt-3">
       <input id="${exercise.id}-easy" type="checkbox" class="easy-box" data-ex="${exercise.id}"${entry.tooEasy ? ' checked' : ''}> This was too easy
     </label>
   </div>`;
@@ -97,22 +108,24 @@ function weekPanel(plan, weeks) {
     </div>`;
   }
   const targets = weeks[week - 1].targets;
-  const days = [1, 2, 3, 4].map((day) => `<section class="card">
-    <h3 class="text-xl font-bold">Day ${day}</h3>
-    <div class="flex flex-wrap gap-4 mt-3">
-      ${checkinSelect(day, 'energy', 'Energy (1-5)', 1, 5)}
-      ${checkinSelect(day, 'sleep', 'Sleep (1-5)', 1, 5)}
-      ${checkinSelect(day, 'effort', 'Session effort (1-10)', 1, 10)}
+  const day = draft.activeDay;
+  return `<div class="grid gap-4">
+    <p class="text-sm text-gray-600">${week > 1 ? '' : 'Week 1 is the adaptation week. '}Reps start filled in with the target. Change any set where you did something different.</p>
+    <div class="day-tabs" role="group" aria-label="Choose a workout">
+      ${[1, 2, 3, 4].map((n) => `<button type="button" class="day-tab${n === day ? ' active' : ''}" aria-pressed="${n === day}" data-day-tab="${n}">Day ${n}</button>`).join('')}
     </div>
-    <div class="exercise-list mt-4">
-      ${plan.exercises.filter((exercise) => exercise.day === day).map((exercise) => exerciseCard(exercise, targets[exercise.id])).join('')}
-    </div>
-  </section>`).join('');
-  return `<div class="grid gap-5">
-    <p class="text-sm text-gray-600">${week > 1 ? '' : 'Week 1 is the adaptation week. '}Reps start filled in with the target. Change any set where you did something different, then finish the week.</p>
-    ${days}
-    <div class="flex flex-wrap gap-3">
-      <button type="button" class="btn-primary" data-action="finish">Finish week ${week}</button>
+    <section class="card grid gap-4">
+      <h3 class="text-xl font-bold">Week ${week}, Day ${day}</h3>
+      ${checkinButtons(day, 'energy', 'Energy today: 1 very low, 5 very high', 5)}
+      ${checkinButtons(day, 'sleep', 'Sleep last night: 1 very badly, 5 very well', 5)}
+      <div class="exercise-list">
+        ${plan.exercises.filter((exercise) => exercise.day === day).map((exercise) => exerciseCard(exercise, targets[exercise.id])).join('')}
+      </div>
+      ${checkinButtons(day, 'effort', 'How hard was this session? 1 very easy, 10 maximum', 10)}
+    </section>
+    <div class="action-row">
+      ${day < 4 ? `<button type="button" class="btn-primary" data-day-tab="${day + 1}">Next: Day ${day + 1}</button>` : ''}
+      <button type="button" class="${day === 4 ? 'btn-primary' : 'btn-outline'}" data-action="finish">Finish week ${week}</button>
       ${week > 1 ? '<button type="button" class="btn-outline" data-action="undo">Undo last week</button>' : ''}
     </div>
   </div>`;
@@ -165,7 +178,7 @@ function planPanel(plan, weeks, baseline) {
       <h3 class="text-xl font-bold px-5 pt-5">Targets by week</h3>
       <div class="table-wrap"><table class="plan-table"><thead><tr><th class="exercise-name">Exercise</th>${header}</tr></thead><tbody>${rows}</tbody></table></div>
     </div>
-    <p class="text-sm text-gray-600">Weeks not logged yet assume every target is hit. Legs, knee raises and tricep extensions stay the same, so they are left out.</p>
+    <p class="text-sm text-gray-600">Swipe the tables sideways to see all 12 weeks. Weeks not logged yet assume every target is hit. Legs, knee raises and tricep extensions stay the same, so they are left out.</p>
   </div>`;
 }
 
@@ -210,23 +223,26 @@ function render() {
     : weekPanel(plan, weeks);
 
   testApp.innerHTML = `<div class="grid gap-5">
-    <section class="card">
-      <div class="flex flex-wrap gap-4 items-end justify-between">
-        <label class="font-medium">Test athlete
-          <select id="athlete" class="field-select block mt-2">
-            ${Object.keys(TEST_PLANS).map((key) => `<option value="${key}"${key === testState.athlete ? ' selected' : ''}>${esc(TEST_PLANS[key].label)}: ${esc(TEST_PLANS[key].description)}</option>`).join('')}
-          </select>
-        </label>
-        <button type="button" class="btn-outline" data-action="reset">Start over</button>
+    <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}>
+      <summary class="tools-summary">Test tools: ${esc(plan.label)}</summary>
+      <div class="grid gap-3 mt-3">
+        <h2 class="font-semibold">Test athlete</h2>
+        <div class="scenario-grid">
+          ${Object.keys(TEST_PLANS).map((key) => `<button type="button" class="scenario${key === testState.athlete ? ' active' : ''}" aria-pressed="${key === testState.athlete}" data-athlete="${key}">
+            <span class="font-semibold block">${esc(TEST_PLANS[key].label)}</span>
+            <span class="text-sm text-gray-600 block mt-1">${esc(TEST_PLANS[key].description)}</span>
+          </button>`).join('')}
+        </div>
+        <h2 class="font-semibold mt-2">Run all 12 weeks as</h2>
+        <div class="scenario-grid">
+          ${TEST_SCENARIOS.map((scenario) => `<button type="button" class="scenario" data-scenario="${scenario.id}">
+            <span class="font-semibold block">${esc(scenario.label)}</span>
+            <span class="text-sm text-gray-600 block mt-1">${esc(scenario.description)}</span>
+          </button>`).join('')}
+        </div>
+        <button type="button" class="btn-outline mt-2" data-action="reset">Start over</button>
       </div>
-      <h2 class="font-semibold mt-5">Run all 12 weeks as</h2>
-      <div class="scenario-grid mt-2">
-        ${TEST_SCENARIOS.map((scenario) => `<button type="button" class="scenario" data-scenario="${scenario.id}">
-          <span class="font-semibold block">${esc(scenario.label)}</span>
-          <span class="text-xs text-gray-600 block mt-1">${esc(scenario.description)}</span>
-        </button>`).join('')}
-      </div>
-    </section>
+    </details>
     ${lastMessage ? `<div class="message" role="status">${esc(lastMessage)}</div>` : ''}
     <div class="tab-row" role="tablist">
       ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${key === testState.tab}" class="tab${key === testState.tab ? ' active' : ''}" data-tab="${key}">${esc(label)}</button>`).join('')}
@@ -263,10 +279,35 @@ testApp.addEventListener('click', (event) => {
     lastMessage = '';
     saveTestState();
     render();
+  } else if (target.dataset.dayTab) {
+    draft.activeDay = Number(target.dataset.dayTab);
+    lastMessage = '';
+    render();
+    document.querySelector('.day-tabs').scrollIntoView({ block: 'start' });
+  } else if (target.dataset.step) {
+    const entry = draft.ex[target.dataset.ex];
+    const set = Number(target.dataset.set);
+    entry.actual[set] = Math.max(0, (Number(entry.actual[set]) || 0) + Number(target.dataset.step));
+    document.getElementById(`${target.dataset.ex}-${set}`).value = entry.actual[set];
+  } else if (target.dataset.checkin) {
+    draft.days[target.dataset.day][target.dataset.checkin] = Number(target.dataset.value);
+    target.parentElement.querySelectorAll('button').forEach((button) => {
+      button.classList.toggle('active', button === target);
+      button.setAttribute('aria-pressed', button === target);
+    });
+  } else if (target.dataset.athlete) {
+    testState.athlete = target.dataset.athlete;
+    testState.logs = {};
+    testState.tab = 'week';
+    draft = null;
+    lastMessage = '';
+    saveTestState();
+    render();
   } else if (target.dataset.scenario) {
     const scenario = TEST_SCENARIOS.find((item) => item.id === target.dataset.scenario);
     testState.logs = scenarioLogs(plan, scenario);
     testState.tab = 'plan';
+    testState.toolsOpen = false;
     lastMessage = `${scenario.label}: all 12 weeks are filled in. ${scenario.description}`;
     saveTestState();
     render();
@@ -290,17 +331,7 @@ testApp.addEventListener('click', (event) => {
 
 testApp.addEventListener('change', (event) => {
   const field = event.target;
-  if (field.id === 'athlete') {
-    testState.athlete = field.value;
-    testState.logs = {};
-    testState.tab = 'week';
-    draft = null;
-    lastMessage = '';
-    saveTestState();
-    render();
-  } else if (field.classList.contains('checkin')) {
-    draft.days[field.dataset.day][field.dataset.key] = Number(field.value);
-  } else if (field.classList.contains('set-input')) {
+  if (field.classList.contains('set-input')) {
     draft.ex[field.dataset.ex].actual[Number(field.dataset.set)] = Number(field.value) || 0;
   } else if (field.classList.contains('easy-box')) {
     draft.ex[field.dataset.ex].tooEasy = field.checked;

@@ -554,7 +554,7 @@ const TEST_MAIN = ['Pull ups Submax', 'Dips', 'Pull ups EMOM', 'Dips EMOM'];
 const TEST_SCENARIOS = [
   { id: 'all', label: 'Hits every target', description: 'The plan exactly as drafted.', pick: () => 'hit' },
   { id: 'pull', label: 'Pull-ups get hard', description: 'Close misses on submax pull-ups and the pull-up EMOM in weeks 5 to 8.', pick: (exercise, week) => (['Pull ups Submax', 'Pull ups EMOM'].includes(exercise.name) && week >= 5 && week <= 8 ? 'close' : 'hit') },
-  { id: 'first', label: 'Beats first sets', description: 'Goes 2 reps past every first-set target from week 2.', pick: (exercise, week) => (exercise.kind === 'straight' && week >= 2 ? 'first' : 'hit') },
+  { id: 'first', label: 'Beats first sets', description: 'Goes 2 reps past the first-set targets in weeks 3, 6 and 9.', pick: (exercise, week) => (exercise.kind === 'straight' && [3, 6, 9].includes(week) ? 'first' : 'hit') },
   { id: 'strong', label: 'Finds it too easy', description: 'Ticks "too easy" on pull-ups, dips and both EMOMs from week 2.', pick: (exercise, week) => (TEST_MAIN.includes(exercise.name) && exercise.kind !== 'circuit' && week >= 2 ? 'easy' : 'hit') },
   { id: 'circuit', label: 'Circuit gets hard', description: 'Close misses on the Day 4 circuit in weeks 5 and 6.', pick: (exercise, week) => (exercise.kind === 'circuit' && (week === 5 || week === 6) ? 'close' : 'hit') },
   { id: 'bad', label: 'One bad week', description: 'Week 6: poor sleep, low energy, big misses on everything.', pick: (exercise, week) => (week === 6 ? 'big' : 'hit'), day: (week) => (week === 6 ? { energy: 2, sleep: 2, effort: 9 } : defaultDay()) },

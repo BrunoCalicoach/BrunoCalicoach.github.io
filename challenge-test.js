@@ -303,8 +303,8 @@ function render() {
     .concat(Object.keys(TEST_PLANS).map((key) => [key, TEST_PLANS[key].label, TEST_PLANS[key].description]));
 
   testApp.innerHTML = `<div class="grid gap-5">
-    <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}>
-      <summary class="tools-summary">Test tools: ${esc(plan.label)}</summary>
+    <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}${location.hash === '#tools' ? '' : ' hidden'}>
+      <summary class="tools-summary">Test tools${showForm ? '' : ': ' + esc(plan.label)}</summary>
       <div class="grid gap-3 mt-3">
         <h2 class="font-semibold">Test athlete</h2>
         <div class="scenario-grid">

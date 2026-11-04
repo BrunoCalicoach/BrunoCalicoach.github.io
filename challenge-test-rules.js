@@ -184,16 +184,24 @@ const TEST_FIELDS = [
 ];
 const MUSCLE_UP_SWITCH = 3;
 
-// 0 is B-Low, 1 is B-Medium, 2 is B-High. Below B-Low stays at B-Low; above B-High keeps scaling up at the same rate.
+// 0 is B-Low, 1 is B-Medium, 2 is B-High. Below B-Low stays at B-Low.
+// Above B-High, 2.5 means results 50% above it, so the plan keeps B-High's shape at 1.5 times the reps.
 function planPosition(value, anchors) {
   const [low, medium, high] = anchors;
+  if (value > high) return 1 + value / high;
   const position = value <= medium ? (value - low) / (medium - low) : 1 + (value - medium) / (high - medium);
   return Math.max(0, position);
 }
 
 function blend(values, position) {
   const [low, medium, high] = values;
+  if (position > 2) return high * (position - 1);
   return position <= 1 ? low + (medium - low) * position : medium + (high - medium) * (position - 1);
+}
+
+// A shorter superset gains sets by repeating its last pair
+function paddedPairs(reps, length) {
+  return Array.from({ length }, (_, i) => (i < reps.length ? reps[i] : reps[reps.length - 2 + ((i - reps.length) % 2)]));
 }
 
 function padded(reps, length) {
@@ -281,7 +289,9 @@ function blendExercise(anchors, p) {
     if (medium.kind === 'superset') {
       const pullSide = medium.name.startsWith('Push') ? 1 : 0;
       const positionFor = (set) => (set % 2 === pullSide ? p.pullMax : p.pushMax);
-      return { reps: blendReps(lists, positionFor, position) };
+      const longest = Math.max(...lists.map((reps) => reps.length));
+      const count = lists[position < 0.5 ? 0 : position < 1.5 ? 1 : 2].length;
+      return { reps: blendReps(lists.map((reps) => paddedPairs(reps, longest)), positionFor, position).slice(0, count) };
     }
     return { reps: blendReps(lists, () => position, position) };
   });
@@ -293,7 +303,10 @@ function blendExercise(anchors, p) {
 function blendSkill(anchorMedium, anchorHigh, position) {
   const exercise = Object.assign({}, anchorMedium);
   exercise.seq = anchorMedium.seq.map((entry, i) => ({
-    reps: entry.reps.map((n, set) => Math.max(1, Math.round(n + (anchorHigh.seq[i].reps[set] - n) * position)))
+    reps: entry.reps.map((n, set) => {
+      const top = anchorHigh.seq[i].reps[set];
+      return Math.max(1, Math.round(position > 1 ? top * position : n + (top - n) * position));
+    })
   }));
   return exercise;
 }
@@ -302,7 +315,7 @@ function buildPersonalPlan(results) {
   const [low, medium, high] = ['low', 'medium', 'high'].map(preparePlan);
   const p = testPositions(results);
   const realMuscleUps = results.mu >= MUSCLE_UP_SWITCH;
-  const muPosition = Math.max(0, (results.mu - MUSCLE_UP_SWITCH) / (6 - MUSCLE_UP_SWITCH));
+  const muPosition = results.mu > 6 ? results.mu / 6 : Math.max(0, (results.mu - MUSCLE_UP_SWITCH) / (6 - MUSCLE_UP_SWITCH));
   const exercises = medium.exercises.map((exercise, i) => {
     const anchors = [low.exercises[i], exercise, high.exercises[i]];
     // Muscle up work depends only on the muscle up result

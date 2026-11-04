@@ -172,6 +172,158 @@ function preparePlan(key) {
   return plan;
 }
 
+// The formula: an athlete's plan is built between B-Low, B-Medium and B-High, exercise by exercise.
+const TEST_FIELDS = [
+  { key: 'pull', label: 'Max pull-ups', anchors: [10, 16, 20] },
+  { key: 'dip', label: 'Max dips', anchors: [15, 22, 30] },
+  { key: 'push', label: 'Max push-ups', anchors: [18, 32, 40] },
+  { key: 'mu', label: 'Max muscle-ups', anchors: [0, 3, 6] },
+  { key: 'beepPull', label: 'Pull-up beep test score', anchors: [5, 8, 10] },
+  { key: 'beepDip', label: 'Dip beep test score', anchors: [6, 10, 13] },
+  { key: 'beepPush', label: 'Push-up beep test score', anchors: [8, 12, 16] }
+];
+const MUSCLE_UP_SWITCH = 3;
+
+// 0 is B-Low, 1 is B-Medium, 2 is B-High; results outside the range stay at the nearest plan
+function planPosition(value, anchors) {
+  const [low, medium, high] = anchors;
+  const position = value <= medium ? (value - low) / (medium - low) : 1 + (value - medium) / (high - medium);
+  return Math.min(2, Math.max(0, position));
+}
+
+function blend(values, position) {
+  const [low, medium, high] = values;
+  return position <= 1 ? low + (medium - low) * position : medium + (high - medium) * (position - 1);
+}
+
+function padded(reps, length) {
+  return Array.from({ length }, (_, i) => (i < reps.length ? reps[i] : reps[reps.length - 1]));
+}
+
+// Blends one list of sets; positionFor can give each set its own position, as supersets need
+function blendReps(lists, positionFor, countPosition) {
+  const count = lists[countPosition < 0.5 ? 0 : countPosition < 1.5 ? 1 : 2].length;
+  const longest = Math.max(...lists.map((reps) => reps.length));
+  const full = lists.map((reps) => padded(reps, longest));
+  return Array.from({ length: count }, (_, i) => Math.max(1, Math.round(blend(full.map((reps) => reps[i]), positionFor(i)))));
+}
+
+// EMOM totals snap to Bruno's patterns: every round the same, or n+1, n, n-1 repeating, or n+1, n alternating
+function emomRounds(total, rounds) {
+  const base = Math.floor(total / 10);
+  const options = [10 * base, 10 * base + 1, 10 * base + 5, 10 * base + 10];
+  const best = options.reduce((a, b) => (Math.abs(b - total) < Math.abs(a - total) ? b : a));
+  const n = Math.floor(best / 10);
+  if (best === 10 * n + 1) return Array.from({ length: rounds }, (_, i) => [n + 1, n, n - 1][i % 3]);
+  if (best === 10 * n + 5) return Array.from({ length: rounds }, (_, i) => (i % 2 ? n : n + 1));
+  return Array(rounds).fill(n);
+}
+
+function testPositions(results) {
+  const position = {};
+  TEST_FIELDS.forEach((field) => { position[field.key] = planPosition(results[field.key], field.anchors); });
+  return {
+    pullMax: position.pull,
+    dipMax: position.dip,
+    pushMax: position.push,
+    // Pull-ups lean on the beep score for long sets; dips and push-ups lean on max reps
+    pullLong: 0.7 * position.beepPull + 0.3 * position.pull,
+    dipLong: 0.7 * position.dip + 0.3 * position.beepDip,
+    pushLong: 0.7 * position.push + 0.3 * position.beepPush,
+    // The circuit is endurance work, so max reps and beep score count equally
+    pullCircuit: 0.5 * position.pull + 0.5 * position.beepPull,
+    dipCircuit: 0.5 * position.dip + 0.5 * position.beepDip,
+    pushCircuit: 0.5 * position.push + 0.5 * position.beepPush
+  };
+}
+
+// The result each exercise follows, by name and day
+function exercisePosition(exercise, p) {
+  const name = exercise.name;
+  if (exercise.kind === 'circuit') {
+    if (name === 'Dips') return p.dipCircuit;
+    if (name === 'Push ups') return p.pushCircuit;
+    if (name === 'Squats') return (p.pullCircuit + p.dipCircuit + p.pushCircuit) / 3;
+    return p.pullCircuit;
+  }
+  if (name === 'Dips EMOM') return p.dipLong;
+  if (name === 'Pull ups EMOM' || name === 'Pull up ladder') return p.pullLong;
+  if (name === 'Dips' || name === 'Chair dips') return p.dipMax;
+  if (name === 'Push ups' || name === 'Inclined push ups') return p.pushMax;
+  return p.pullMax;
+}
+
+function blendExercise(anchors, p) {
+  const [low, medium, high] = anchors;
+  const exercise = Object.assign({}, medium);
+  const position = exercisePosition(medium, p);
+  if (medium.kind === 'fixed' || medium.kind === 'band') return exercise;
+  if (medium.kind === 'circuit') {
+    exercise.firstReps = blendReps([low.firstReps, medium.firstReps, high.firstReps], () => position, position);
+    exercise.baseReps = blendReps([low.baseReps, medium.baseReps, high.baseReps], () => position, position);
+    return exercise;
+  }
+  if (medium.kind === 'skill') return exercise;
+  const steps = Math.min(low.seq.length, medium.seq.length, high.seq.length);
+  exercise.seq = Array.from({ length: steps }, (_, i) => {
+    const lists = [low.seq[i].reps, medium.seq[i].reps, high.seq[i].reps];
+    if (medium.kind === 'range') {
+      return {
+        reps: Array(medium.sets).fill(Math.round(blend(lists.map((reps) => reps[0]), position))),
+        high: Math.round(blend([low.seq[i].high, medium.seq[i].high, high.seq[i].high], position))
+      };
+    }
+    if (medium.kind === 'emom') {
+      const rounds = lists[1].length;
+      const total = blend(lists.map((reps) => repsTotal(padded(reps, 10))), position);
+      return { reps: rounds === 10 ? emomRounds(total, 10) : null };
+    }
+    if (medium.kind === 'superset') {
+      const pullSide = medium.name.startsWith('Push') ? 1 : 0;
+      const positionFor = (set) => (set % 2 === pullSide ? p.pullMax : p.pushMax);
+      return { reps: blendReps(lists, positionFor, position) };
+    }
+    return { reps: blendReps(lists, () => position, position) };
+  });
+  // Week 1 of an EMOM is the first 6 rounds of week 2
+  if (medium.kind === 'emom') exercise.seq[0] = { reps: exercise.seq[1].reps.slice(0, 6) };
+  return exercise;
+}
+
+function blendSkill(anchorMedium, anchorHigh, position) {
+  const exercise = Object.assign({}, anchorMedium);
+  exercise.seq = anchorMedium.seq.map((entry, i) => ({
+    reps: entry.reps.map((n, set) => Math.max(1, Math.round(n + (anchorHigh.seq[i].reps[set] - n) * position)))
+  }));
+  return exercise;
+}
+
+function buildPersonalPlan(results) {
+  const [low, medium, high] = ['low', 'medium', 'high'].map(preparePlan);
+  const p = testPositions(results);
+  const realMuscleUps = results.mu >= MUSCLE_UP_SWITCH;
+  const muPosition = Math.min(1, Math.max(0, (results.mu - MUSCLE_UP_SWITCH) / (6 - MUSCLE_UP_SWITCH)));
+  const exercises = medium.exercises.map((exercise, i) => {
+    const anchors = [low.exercises[i], exercise, high.exercises[i]];
+    // Muscle up work depends only on the muscle up result
+    if (anchors[0].name !== exercise.name) {
+      return realMuscleUps ? blendSkill(exercise, high.exercises[i], muPosition) : Object.assign({}, low.exercises[i]);
+    }
+    return blendExercise(anchors, p);
+  });
+  exercises.forEach((exercise, i) => { exercise.id = 'ex' + i; });
+  return { label: 'Personal plan', description: 'Built from these test results', exercises, ready: true };
+}
+
+function resultNotes(results) {
+  const notes = [];
+  const below = ['pull', 'dip', 'push'].filter((key) => results[key] < TEST_FIELDS.find((f) => f.key === key).anchors[0]);
+  const above = ['pull', 'dip', 'push', 'mu'].filter((key) => results[key] > TEST_FIELDS.find((f) => f.key === key).anchors[2]);
+  if (below.length) notes.push('Below the Level 1 minimum of 10 pull-ups, 15 dips and 18 push-ups. This program may be too demanding.');
+  if (above.length >= 2) notes.push('Above the Level 1 limit on most tests. Level 2 is probably the better fit.');
+  return notes;
+}
+
 function lighterReps(exercise, reps) {
   const lowered = exercise.kind === 'superset'
     ? reps.slice(0, -2).map((n) => Math.max(n - 1, 1))

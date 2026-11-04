@@ -8,9 +8,13 @@ let lastMessage = '';
 function loadTestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(TEST_STORAGE_KEY));
-    if (saved && TEST_PLANS[saved.athlete]) return Object.assign({ tab: 'week', logs: {} }, saved);
+    if (saved && (TEST_PLANS[saved.athlete] || saved.athlete === 'custom')) return Object.assign({ tab: 'week', logs: {} }, saved);
   } catch (error) { /* Storage can be blocked. The page still works until it is closed. */ }
-  return { athlete: 'low', logs: {}, tab: 'week' };
+  return { athlete: 'custom', results: null, logs: {}, tab: 'week' };
+}
+
+function needsResults() {
+  return testState.athlete === 'custom' && (!testState.results || testState.editing);
 }
 
 function saveTestState() {
@@ -24,7 +28,70 @@ function esc(value) {
 }
 
 function activePlan() {
-  return preparePlan(testState.athlete);
+  if (testState.athlete !== 'custom') return preparePlan(testState.athlete);
+  return testState.results ? buildPersonalPlan(testState.results) : preparePlan('medium');
+}
+
+function resultsForm() {
+  const saved = testState.results || {};
+  const fields = TEST_FIELDS.map((field) => {
+    const id = 'result-' + field.key;
+    const value = saved[field.key] === undefined ? '' : saved[field.key];
+    return `<div>
+      <label class="exercise-title block" for="${id}">${esc(field.label)}</label>
+      <div class="stepper mt-2">
+        <button type="button" class="step" data-result="${field.key}" data-change="-1" aria-label="One less, ${esc(field.label)}">&minus;</button>
+        <input id="${id}" class="set-input" type="number" min="0" inputmode="numeric" value="${value}">
+        <button type="button" class="step" data-result="${field.key}" data-change="1" aria-label="One more, ${esc(field.label)}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<section class="card grid gap-5">
+    <div>
+      <h2 class="text-2xl font-bold">Enter test results</h2>
+      <p class="text-gray-600 mt-2">Your 12-week plan is built from these 7 results. Enter 0 for muscle-ups if you can't do one yet.</p>
+    </div>
+    <div class="result-grid">${fields}</div>
+    <p id="results-error" class="target" role="alert" hidden></p>
+    <button type="button" class="btn-primary" data-action="create">${testState.results ? 'Update my plan' : 'Create my plan'}</button>
+    ${testState.results ? '<p class="text-sm text-gray-600">Updating your results starts the plan again from week 1.</p><button type="button" class="btn-outline" data-action="cancel-edit">Keep my current plan</button>' : ''}
+  </section>`;
+}
+
+function createPlanFromForm() {
+  const results = {};
+  const missing = TEST_FIELDS.some((field) => {
+    const raw = document.getElementById('result-' + field.key).value;
+    results[field.key] = Number(raw);
+    return raw === '' || !Number.isFinite(results[field.key]) || results[field.key] < 0;
+  });
+  if (missing) {
+    const error = document.getElementById('results-error');
+    error.textContent = 'Enter a number for all 7 results.';
+    error.hidden = false;
+    return;
+  }
+  testState.results = results;
+  testState.editing = false;
+  testState.logs = {};
+  testState.tab = 'week';
+  draft = null;
+  lastMessage = 'Your plan is ready. Start with week 1, Day 1.';
+  saveTestState();
+  window.scrollTo({ top: 0 });
+  render();
+}
+
+function resultsSummary() {
+  if (testState.athlete !== 'custom' || !testState.results) return '';
+  const summary = TEST_FIELDS.map((field) => `${field.label}: ${testState.results[field.key]}`).join(' · ');
+  const notes = resultNotes(testState.results).map((note) => `<p class="target mt-2">${esc(note)}</p>`).join('');
+  return `<section class="card">
+    <h2 class="font-semibold">Your test results</h2>
+    <p class="text-sm text-gray-600 mt-1">${esc(summary)}</p>
+    ${notes}
+    <button type="button" class="btn-outline mt-3" data-action="edit-results">Change my results</button>
+  </section>`;
 }
 
 function currentWeek() {
@@ -222,14 +289,18 @@ function whyPanel(plan, weeks) {
 
 function render() {
   const plan = activePlan();
+  const showForm = needsResults();
   const weeks = runPlan(plan, testState.logs);
   const baseline = runPlan(plan, {});
   const week = currentWeek();
-  if (!draft || draft.week !== week) draft = makeDraft(plan, weeks);
+  if (!showForm && (!draft || draft.week !== week)) draft = makeDraft(plan, weeks);
   const tabs = [['week', week > 12 ? 'Finished' : `Log week ${week}`], ['plan', 'Whole plan'], ['why', 'Why it changed']];
-  const panel = testState.tab === 'plan' ? planPanel(plan, weeks, baseline)
+  const panel = showForm ? resultsForm()
+    : testState.tab === 'plan' ? planPanel(plan, weeks, baseline)
     : testState.tab === 'why' ? whyPanel(plan, weeks)
     : weekPanel(plan, weeks);
+  const athletes = [['custom', 'Enter test results', 'Build a plan from 7 test results']]
+    .concat(Object.keys(TEST_PLANS).map((key) => [key, TEST_PLANS[key].label, TEST_PLANS[key].description]));
 
   testApp.innerHTML = `<div class="grid gap-5">
     <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}>
@@ -237,25 +308,26 @@ function render() {
       <div class="grid gap-3 mt-3">
         <h2 class="font-semibold">Test athlete</h2>
         <div class="scenario-grid">
-          ${Object.keys(TEST_PLANS).map((key) => `<button type="button" class="scenario${key === testState.athlete ? ' active' : ''}" aria-pressed="${key === testState.athlete}" data-athlete="${key}">
-            <span class="font-semibold block">${esc(TEST_PLANS[key].label)}</span>
-            <span class="text-sm text-gray-600 block mt-1">${esc(TEST_PLANS[key].description)}</span>
+          ${athletes.map(([key, label, description]) => `<button type="button" class="scenario${key === testState.athlete ? ' active' : ''}" aria-pressed="${key === testState.athlete}" data-athlete="${key}">
+            <span class="font-semibold block">${esc(label)}</span>
+            <span class="text-sm text-gray-600 block mt-1">${esc(description)}</span>
           </button>`).join('')}
         </div>
-        <h2 class="font-semibold mt-2">Run all 12 weeks as</h2>
+        ${showForm ? '' : `<h2 class="font-semibold mt-2">Run all 12 weeks as</h2>
         <div class="scenario-grid">
           ${TEST_SCENARIOS.map((scenario) => `<button type="button" class="scenario" data-scenario="${scenario.id}">
             <span class="font-semibold block">${esc(scenario.label)}</span>
             <span class="text-sm text-gray-600 block mt-1">${esc(scenario.description)}</span>
           </button>`).join('')}
         </div>
-        <button type="button" class="btn-outline mt-2" data-action="reset">Start over</button>
+        <button type="button" class="btn-outline mt-2" data-action="reset">Start over</button>`}
       </div>
     </details>
     ${lastMessage ? `<div class="message" role="status">${esc(lastMessage)}</div>` : ''}
-    <div class="tab-row" role="tablist">
+    ${showForm ? '' : resultsSummary()}
+    ${showForm ? '' : `<div class="tab-row" role="tablist">
       ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${key === testState.tab}" class="tab${key === testState.tab ? ' active' : ''}" data-tab="${key}">${esc(label)}</button>`).join('')}
-    </div>
+    </div>`}
     ${panel}
   </div>`;
 }
@@ -283,7 +355,20 @@ testApp.addEventListener('click', (event) => {
   if (!target) return;
   const plan = activePlan();
 
-  if (target.dataset.tab) {
+  if (target.dataset.result) {
+    const field = document.getElementById('result-' + target.dataset.result);
+    field.value = Math.max(0, (Number(field.value) || 0) + Number(target.dataset.change));
+  } else if (target.dataset.action === 'create') {
+    createPlanFromForm();
+  } else if (target.dataset.action === 'edit-results') {
+    testState.editing = true;
+    lastMessage = '';
+    render();
+    window.scrollTo({ top: 0 });
+  } else if (target.dataset.action === 'cancel-edit') {
+    testState.editing = false;
+    render();
+  } else if (target.dataset.tab) {
     testState.tab = target.dataset.tab;
     lastMessage = '';
     saveTestState();
@@ -306,6 +391,8 @@ testApp.addEventListener('click', (event) => {
     });
   } else if (target.dataset.athlete) {
     testState.athlete = target.dataset.athlete;
+    testState.results = null;
+    testState.editing = false;
     testState.logs = {};
     testState.tab = 'week';
     draft = null;

@@ -24,7 +24,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<script src="challenge-test-rules.js?v=14"></script>
+<script src="challenge-test-rules.js?v=15"></script>
 
 <style>
 
@@ -103,6 +103,12 @@ body{
   align-items:center;
   font-weight:600;
   cursor:pointer;
+}
+
+.result-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:20px;
 }
 
 .scenario-grid{
@@ -697,7 +703,7 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-test.js?v=13"></script>
+<script src="challenge-test.js?v=15"></script>
 
 </body>
 </html>

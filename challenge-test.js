@@ -1,5 +1,5 @@
 const testApp = document.getElementById('test-app');
-const TEST_STORAGE_KEY = 'challengeTest';
+const TEST_STORAGE_KEY = 'challengeTestLevel1';
 
 let testState = loadTestState();
 let draft = null;
@@ -57,8 +57,8 @@ function checkinButtons(day, key, label, max) {
 }
 
 function setLabel(exercise, i) {
-  if (exercise.kind === 'superset') return `${i % 2 ? 'Rows' : 'Push-ups'} ${Math.floor(i / 2) + 1}`;
-  return `${exercise.kind === 'emom' ? 'Round' : 'Set'} ${i + 1}`;
+  if (exercise.kind === 'superset') return `${exercise.sides[i % 2]} ${Math.floor(i / 2) + 1}`;
+  return `${exercise.kind === 'emom' || exercise.kind === 'circuit' || exercise.roundLabel ? 'Round' : 'Set'} ${i + 1}`;
 }
 
 function setInputs(exercise) {
@@ -77,7 +77,8 @@ function setInputs(exercise) {
 }
 
 function exerciseCard(exercise, target) {
-  const meta = [exercise.rest && 'Rest: ' + exercise.rest, exercise.tempo && 'Tempo: ' + exercise.tempo, (target ? target.load : exercise.load)].filter(Boolean).join(' · ');
+  const rest = target && target.rest ? target.rest + ' between exercises' : exercise.rest;
+  const meta = [rest && 'Rest: ' + rest, exercise.tempo && 'Tempo: ' + exercise.tempo, target && exercise.kind !== 'band' ? target.load : exercise.load].filter(Boolean).join(' · ');
   if (exercise.kind === 'fixed') {
     return `<div class="exercise exercise-unchanged text-center">
       <div class="exercise-title">${esc(exercise.name)}</div>
@@ -88,11 +89,15 @@ function exerciseCard(exercise, target) {
   }
   const entry = draft.ex[exercise.id];
   const tag = target.lighter ? '<span class="tag tag-lighter">Lighter</span>' : target.rebuilt ? '<span class="tag tag-rebuilt">Rebuilt</span>' : '';
+  const hint = exercise.kind === 'band' ? '3 sets of 3 reps moves you to the next band.'
+    : exercise.kind === 'straight' && currentWeek() > 1 ? 'Go past the first-set target if you feel strong.'
+    : '';
   return `<div class="exercise">
     <div class="exercise-head">
       <div class="flex flex-wrap items-center justify-center gap-2"><span class="exercise-title">${esc(exercise.name)}</span>${tag}</div>
       <div class="target mt-1">Target: ${esc(shortTarget(exercise, target))}</div>
       <div class="exercise-info mt-1">${esc(meta)}</div>
+      ${hint ? `<div class="text-sm text-gray-700 mt-1">${esc(hint)}</div>` : ''}
     </div>
     <div class="set-grid mt-3">${setInputs(exercise)}</div>
     <label class="easy-row mt-3">
@@ -106,7 +111,7 @@ function weekPanel(plan, weeks) {
   if (week > 12) {
     return `<div class="card text-center">
       <h2 class="text-2xl font-bold">All 12 weeks are logged</h2>
-      <p class="text-gray-600 mt-2">In week 13, athletes get a reminder to retest. Open Whole plan to see how the program changed.</p>
+      <p class="text-gray-600 mt-2">In week 13, athletes get a reminder to retest after 2 to 3 days off. Open Whole plan to see how the program changed.</p>
       <button type="button" class="btn-outline mt-4" data-action="undo">Undo last week</button>
     </div>`;
   }
@@ -121,6 +126,7 @@ function weekPanel(plan, weeks) {
       <h3 class="text-xl font-bold">Week ${week}, Day ${day}</h3>
       ${checkinButtons(day, 'energy', 'Energy today: 1 very low, 5 very high', 5)}
       ${checkinButtons(day, 'sleep', 'Sleep last night: 1 very badly, 5 very well', 5)}
+      ${day === 4 ? '<p class="exercise-info">Circuit: do 1 set of each exercise from first to last, then rest 90 seconds. Repeat for every round. Each round number below is one trip through the circuit.</p>' : ''}
       <div class="exercise-list">
         ${plan.exercises.filter((exercise) => exercise.day === day).map((exercise) => exerciseCard(exercise, targets[exercise.id])).join('')}
       </div>
@@ -175,13 +181,13 @@ function planPanel(plan, weeks, baseline) {
     <div class="card card-flush">
       <h3 class="text-xl font-bold px-5 pt-5">Weekly reps</h3>
       <div class="table-wrap"><table class="plan-table"><thead><tr><th class="exercise-name">Total</th>${header}</tr></thead>
-        <tbody>${totalRow('Pull-ups', 'pull')}${totalRow('Dips', 'dip')}${totalRow('Push-ups', 'push')}</tbody></table></div>
+        <tbody>${totalRow('Pull-ups', 'pull')}${totalRow('Chin-ups', 'chin')}${totalRow('Dips', 'dip')}${totalRow('Push-ups', 'push')}</tbody></table></div>
     </div>
     <div class="card card-flush">
       <h3 class="text-xl font-bold px-5 pt-5">Targets by week</h3>
       <div class="table-wrap"><table class="plan-table"><thead><tr><th class="exercise-name">Exercise</th>${header}</tr></thead><tbody>${rows}</tbody></table></div>
     </div>
-    <p class="text-sm text-gray-600">Swipe the tables sideways to see all 12 weeks. Weeks not logged yet assume every target is hit. Legs, knee raises and tricep extensions stay the same, so they are left out.</p>
+    <p class="text-sm text-gray-600">Swipe the tables sideways to see all 12 weeks. Weeks not logged yet assume every target is hit. The split squat superset stays the same, so it is left out.</p>
   </div>`;
 }
 

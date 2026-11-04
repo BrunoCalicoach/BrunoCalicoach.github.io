@@ -1,80 +1,144 @@
-// TEST version of the adaptive challenge rules, used only by challenge-test.html.
-// Plans are Bruno's week 1 with the approved draft 3 pace: one pull step and one push step per workout.
+// TEST version of the Level 1 challenge rules, used only by challenge-test.html.
+// Plans follow Bruno's weeks 1 and 2 and the level-1-plan-v6 draft of weeks 3 to 12.
 
 const TEST_RULES = { closePercent: 0.1, closeReps: 2, weeklyLimit: 0.1, stallSessions: 2 };
 
 const EVERY_WEEK = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const ODD_WEEKS = [2, 3, 5, 7, 9, 11];
-const EVEN_WEEKS = [2, 4, 6, 8, 10, 12];
-const PULLUP_WEEKS = [2, 3, 5, 6, 7, 9, 10, 11]; // Pauses when the superset's rows step up
+const PULL_WEEKS = [2, 3, 5, 6, 7, 9, 10, 11]; // One pull step per workout, shared with the superset's pull side
+const PUSH_WEEKS = [2, 3, 4, 5, 7, 8, 9, 11, 12]; // One push step per workout, shared with the superset's push side
+const SUPERSET_WEEKS = [2, 4, 6, 8, 10, 12];
 const RANGE_WEEKS = [5, 9];
+const BAND_NAMES = ['heavy band', 'medium band', 'light band', 'no band'];
+const BAND_SETS = [2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3];
+const CIRCUIT_REST = ['45 seconds', '40 seconds', '35 seconds', '30 seconds'];
+const KNEE_LIST = ['30, 25, 20, 15, 10, 5', '30, 25, 20, 15, 10, 5', '31, 26, 20, 15, 10, 5', '31, 26, 21, 16, 10, 5', '31, 26, 21, 16, 11, 6', '32, 27, 21, 16, 11, 6', '32, 27, 22, 17, 11, 6', '32, 27, 22, 17, 12, 7', '33, 28, 22, 17, 12, 7', '33, 28, 23, 18, 12, 7', '33, 28, 23, 18, 13, 8', '34, 29, 23, 18, 13, 8'];
 
-function flatRounds(n) { return Array(10).fill(n).join(', '); }
-function altRounds(a, b) { return Array.from({ length: 10 }, (_, i) => (i % 2 ? b : a)).join(', '); }
-function threeRounds(a, b, c) { return Array.from({ length: 10 }, (_, i) => [a, b, c][i % 3]).join(', '); }
+function flatRounds(n, count = 10) { return Array(count).fill(n).join(', '); }
+function altRounds(a, b, count = 10) { return Array.from({ length: count }, (_, i) => (i % 2 ? b : a)).join(', '); }
+function threeRounds(a, b, c, count = 10) { return Array.from({ length: count }, (_, i) => [a, b, c][i % 3]).join(', '); }
+
+// The pull side gains reps in weeks 4, 8 and 12, and every push up set gains 1 rep in weeks 6 and 10
+function supersetSteps(week1, side, push, pushFirst) {
+  const write = (sideReps, added) => sideReps.map((n, i) => {
+    const pushReps = push[i] + added;
+    return pushFirst ? `${pushReps} + ${n}` : `${n} + ${pushReps}`;
+  }).join(', ');
+  const raise = (reps) => {
+    const next = reps.slice();
+    next[next.length - 1] += 1;
+    next[next.length - 2] += 1;
+    return next.sort((a, b) => b - a);
+  };
+  const s1 = raise(side);
+  const s2 = raise(s1);
+  const s3 = raise(s2);
+  return [week1, write(side, 0), write(s1, 0), write(s1, 1), write(s2, 1), write(s2, 2), write(s3, 2)];
+}
+
+// Two rungs gain 1 rep each week, working down the ladder
+function ladderSteps(week1, start) {
+  const reps = start.slice();
+  const list = [week1, reps.join(', ')];
+  let at = 0;
+  for (let i = 0; i < 11; i += 1) {
+    reps[at] += 1;
+    reps[at + 1] += 1;
+    at = (at + 2) % reps.length;
+    list.push(reps.join(', '));
+  }
+  return list;
+}
+
+function level1Plan(p) {
+  return {
+    label: p.label,
+    description: p.description,
+    exercises: [
+      p.skillDayOne,
+      { day: 1, name: 'Pull ups Submax', kind: 'straight', family: 'pull', rest: '180 - 300 sec', weeks: PULL_WEEKS, list: p.pull },
+      { day: 1, name: 'Dips EMOM', kind: 'emom', family: 'dip', rest: 'every 60 sec', weeks: PUSH_WEEKS, list: p.dipEmom },
+      { day: 1, name: 'Push ups + Chin ups superset', kind: 'superset', family: 'push', pushIndex: 0, sideFamily: 'chin', sides: ['Push-ups', 'Chin-ups'], rest: 'under 60 sec', weeks: SUPERSET_WEEKS, list: p.supersetOne },
+      { day: 1, name: 'Knee raises ladder', kind: 'skill', rest: 'under 30 sec', list: KNEE_LIST },
+      { day: 2, name: 'Dips', kind: 'straight', family: 'dip', rest: '180 - 300 sec', weeks: PUSH_WEEKS, list: p.dips },
+      { day: 2, name: 'Pull ups EMOM', kind: 'emom', family: 'pull', rest: 'every 60 sec', weeks: PULL_WEEKS, list: p.pullEmom },
+      { day: 2, name: 'Bodyweight rows + Push ups superset', kind: 'superset', family: 'push', pushIndex: 1, sides: ['Rows', 'Push-ups'], rest: 'under 60 sec', weeks: SUPERSET_WEEKS, list: p.supersetTwo },
+      { day: 2, name: 'Chair dips', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: p.chair },
+      { day: 2, name: 'Split squat + jump squat superset', kind: 'fixed', text: '10 + 10, 4 sets (3 in week 1). Split squat is per leg.', rest: '90 sec' },
+      p.skillDayThree,
+      { day: 3, name: 'Push ups', kind: 'straight', family: 'push', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: p.push },
+      { day: 3, name: 'Pull up ladder', kind: 'ladder', family: 'pull', rest: 'under 60 sec', weeks: EVERY_WEEK, list: p.ladder },
+      { day: 3, name: 'Inclined push ups', kind: 'range', sets: 4, rest: '90 sec', weeks: RANGE_WEEKS, list: p.incline },
+      { day: 3, name: 'Tempo australian chin ups', kind: 'range', sets: 4, rest: '90 - 180 sec', tempo: '0 - 1 - 3 (fast up, 1 sec hold, 3 sec down)', weeks: RANGE_WEEKS, list: p.tempo },
+      { day: 3, name: 'Knee raises ladder', kind: 'skill', rest: 'under 30 sec', list: KNEE_LIST },
+      { day: 4, name: 'Pull ups', kind: 'circuit', family: 'pull', week1: p.circuit[0][0], base: p.circuit[0][1] },
+      { day: 4, name: 'Dips', kind: 'circuit', family: 'dip', week1: p.circuit[1][0], base: p.circuit[1][1] },
+      { day: 4, name: 'Chin ups', kind: 'circuit', family: 'chin', week1: p.circuit[2][0], base: p.circuit[2][1] },
+      { day: 4, name: 'Push ups', kind: 'circuit', family: 'push', week1: p.circuit[3][0], base: p.circuit[3][1] },
+      { day: 4, name: 'Negative pull ups', kind: 'circuit', week1: p.circuit[4][0], base: p.circuit[4][1] },
+      { day: 4, name: 'Squats', kind: 'circuit', week1: p.circuit[5][0], base: p.circuit[5][1] }
+    ]
+  };
+}
 
 const TEST_PLANS = {
-  low: {
+  low: level1Plan({
     label: 'B-Low',
-    description: 'Lowest beginner: 10 pull-ups, 15 dips, 18 push-ups, 0 muscle-ups',
-    exercises: [
-      { day: 1, name: 'Muscle up w/ resistance band attempt', kind: 'skill', rest: '180 - 300 sec', list: ['1, 1', '1, 1', '1, 1, 1', '1, 1, 1', '2, 1, 1', '2, 1, 1', '2, 2, 1', '2, 2, 1', '2, 1, 1', '2, 1, 1', '2, 2, 1', '2, 2, 1'], weights: ['heavy band', 'heavy band', 'heavy band', 'heavy band', 'heavy band', 'heavy band', 'heavy band', 'heavy band', 'medium band', 'medium band', 'medium band', 'medium band'] },
-      { day: 1, name: 'Pull ups', kind: 'straight', family: 'pull', rest: '180 - 300 sec', weeks: PULLUP_WEEKS, list: ['7, 6, 5', '8, 7, 6, 5', '8, 7, 6, 6', '8, 7, 7, 6', '8, 7, 7, 7', '9, 8, 7, 7', '9, 8, 8, 7', '9, 8, 8, 8', '10, 9, 8, 8', '10, 9, 9, 8', '10, 9, 9, 9', '11, 10, 9, 9', '11, 10, 10, 9'] },
-      { day: 1, name: 'Dips EMOM', kind: 'emom', family: 'dip', rest: 'every 60 sec', weeks: ODD_WEEKS, list: [flatRounds(6), flatRounds(7), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8), flatRounds(9), threeRounds(10, 9, 8), altRounds(10, 9), flatRounds(10), threeRounds(11, 10, 9), altRounds(11, 10)] },
-      { day: 1, name: 'Push ups + Bodyweight rows superset', kind: 'superset', family: 'push', sets: 6, rest: 'under 60 sec', weeks: EVEN_WEEKS, list: ['8 + 8', '9 + 8', '9 + 9', '10 + 9', '10 + 10', '11 + 10', '11 + 11', '12 + 11', '12 + 12', '13 + 12', '13 + 13', '14 + 13'] },
-      { day: 1, name: 'Knee raises ladder', kind: 'fixed', text: '5, 6, 7 ... to max', rest: '30 sec interval' },
-      { day: 2, name: 'Dips', kind: 'straight', family: 'dip', rest: '180 - 300 sec', weeks: EVERY_WEEK, list: ['13, 11, 10', '14, 12, 11, 10', '14, 12, 11, 11', '14, 12, 12, 11', '14, 13, 12, 12', '15, 13, 12, 12', '15, 13, 13, 12', '15, 14, 13, 13', '16, 14, 13, 13', '16, 14, 14, 13', '16, 15, 14, 14', '17, 15, 14, 14', '17, 15, 15, 14'] },
-      { day: 2, name: 'Pull ups EMOM', kind: 'emom', family: 'pull', rest: 'every 60 sec', weeks: ODD_WEEKS, list: [flatRounds(5), altRounds(6, 5), flatRounds(6), threeRounds(7, 6, 5), altRounds(7, 6), flatRounds(7), threeRounds(8, 7, 6), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8), flatRounds(9)] },
-      { day: 2, name: 'Neutral pull ups pyramid', kind: 'pyramid', family: 'pull', rest: 'under 60 sec', weeks: EVEN_WEEKS, list: ['2, 4, 6, 6, 4, 2', '4, 6, 8, 6, 4, 2', '4, 6, 8, 8, 4, 2', '3, 6, 9, 6, 3', '3, 6, 9, 9, 3', '3, 6, 9, 9, 6', '3, 6, 9, 9, 6, 3', '4, 7, 10, 7, 4', '4, 7, 10, 10, 4', '4, 7, 10, 10, 7', '4, 7, 10, 10, 7, 4'] },
-      { day: 2, name: 'Chair dips', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: ['10 to 15', '12 to 17', '14 to 19', '16 to 21'] },
-      { day: 2, name: 'Split squat + squat superset', kind: 'fixed', text: '4 sets of 10 + 10', rest: '90 sec', load: 'Weight vest up to 20kg' },
-      { day: 3, name: 'Explosive chest-to-bar pull ups', kind: 'skill', rest: '180 - 300 sec', list: ['3, 2, 1', '3, 2, 2', '3, 3, 2', '3, 3, 3', '4, 3, 3', '4, 3, 3', '4, 4, 3', '4, 4, 3', '4, 4, 4', '4, 4, 4', '5, 4, 4', '5, 4, 4'] },
-      { day: 3, name: 'Dips pyramid', kind: 'pyramid', family: 'dip', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: ['2, 4, 6, 6, 4, 2', '4, 6, 8, 6, 4, 2', '4, 6, 8, 8, 4, 2', '3, 6, 9, 6, 3', '3, 6, 9, 9, 3', '3, 6, 9, 9, 6', '3, 6, 9, 9, 6, 3', '4, 7, 10, 7, 4', '4, 7, 10, 10, 4', '4, 7, 10, 10, 7', '4, 7, 10, 10, 7, 4', '5, 8, 11, 8, 5', '5, 8, 11, 11, 5'] },
-      { day: 3, name: 'Pull up ladder', kind: 'ladder', family: 'pull', rest: 'under 60 sec', weeks: EVERY_WEEK, list: ['6, 5, 4, 3, 2, 1', '7, 5, 4, 3, 2, 1', '7, 6, 4, 3, 2, 1', '7, 6, 5, 3, 2, 1', '7, 6, 5, 4, 2, 1', '7, 6, 5, 4, 3, 1', '7, 6, 5, 4, 3, 2', '8, 6, 5, 4, 3, 2', '8, 7, 5, 4, 3, 2', '8, 7, 6, 4, 3, 2', '8, 7, 6, 5, 3, 2', '8, 7, 6, 5, 4, 2', '8, 7, 6, 5, 4, 3'] },
-      { day: 3, name: 'Inclined push ups', kind: 'range', sets: 4, rest: '90 sec', weeks: RANGE_WEEKS, list: ['14 to 18', '16 to 20', '18 to 22', '20 to 24'] },
-      { day: 3, name: 'Tempo australian chin ups', kind: 'range', sets: 4, rest: '90 - 180 sec', tempo: '0 - 1 - 3', weeks: RANGE_WEEKS, list: ['6 to 8', '7 to 9', '8 to 10', '9 to 11'] },
-      { day: 3, name: 'Knee raises ladder', kind: 'fixed', text: '5, 6, 7 ... to max', rest: '30 sec interval' },
-      { day: 4, name: 'Pull ups pyramid', kind: 'pyramid', family: 'pull', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: ['1, 2, 3, 4, 4, 3, 2, 1', '2, 3, 4, 5, 4, 3, 2, 1', '2, 3, 4, 5, 5, 3, 2, 1', '2, 4, 6, 6, 4, 2', '3, 5, 7, 5, 3', '3, 5, 7, 7, 3', '3, 5, 7, 7, 5', '3, 5, 7, 7, 5, 3', '4, 6, 8, 6, 4', '4, 6, 8, 8, 4', '4, 6, 8, 8, 6', '4, 6, 8, 8, 6, 4', '5, 7, 9, 7, 5'] },
-      { day: 4, name: 'Push ups ladder', kind: 'ladder', family: 'push', rest: 'under 60 sec', weeks: EVERY_WEEK, list: ['14, 12, 10, 8, 6, 4', '15, 13, 10, 8, 6, 4', '15, 13, 11, 9, 6, 4', '15, 13, 11, 9, 7, 5', '16, 14, 11, 9, 7, 5', '16, 14, 12, 10, 7, 5', '16, 14, 12, 10, 8, 6', '17, 15, 12, 10, 8, 6', '17, 15, 13, 11, 8, 6', '17, 15, 13, 11, 9, 7', '18, 16, 13, 11, 9, 7', '18, 16, 14, 12, 9, 7', '18, 16, 14, 12, 10, 8'] },
-      { day: 4, name: 'Bodyweight tricep extensions', kind: 'fixed', text: '4 sets of 10 to 15', rest: '60 - 90 sec' },
-      { day: 4, name: 'Close grip chin ups', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: ['4 to 6', '5 to 7', '6 to 8', '7 to 9'] },
-      { day: 4, name: 'Nordic hamstring curl', kind: 'fixed', text: '3 sets of 4 to 6', rest: '90 - 180 sec', load: 'Weight vest up to 20kg' },
-      { day: 4, name: 'Single leg deadlift', kind: 'fixed', text: '3 sets of 8 to 10', rest: '90 sec', load: 'Weight vest up to 20kg' }
-    ]
-  },
-  high: {
+    description: '10 pull-ups, 15 dips, 18 push-ups, 0 muscle-ups',
+    skillDayOne: { day: 1, name: 'Muscle up w/ resistance band attempt', kind: 'band', rest: '180 - 300 sec' },
+    pull: ['7, 6, 5', '8, 7, 6, 5', '9, 7, 6, 5', '9, 7, 6, 6', '9, 8, 7, 6', '10, 8, 7, 6', '10, 8, 7, 7', '10, 9, 8, 7', '11, 9, 8, 7', '11, 9, 9, 8', '12, 9, 9, 8'],
+    dipEmom: [flatRounds(5, 6), flatRounds(5), altRounds(6, 5), flatRounds(6), threeRounds(7, 6, 5), altRounds(7, 6), flatRounds(7), threeRounds(8, 7, 6), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8)],
+    supersetOne: supersetSteps('12 + 6, 11 + 5, 10 + 4, 9 + 3', [7, 6, 5, 4, 3], [13, 12, 11, 10, 9], true),
+    dips: ['12, 11, 10', '14, 12, 11, 10', '15, 12, 11, 10', '15, 12, 11, 11', '15, 13, 11, 11', '16, 13, 11, 11', '16, 13, 12, 11', '16, 13, 12, 12', '17, 13, 12, 12', '17, 14, 12, 12', '18, 14, 12, 12', '18, 14, 13, 12'],
+    pullEmom: [altRounds(4, 3, 6), altRounds(4, 3), flatRounds(4), threeRounds(5, 4, 3), altRounds(5, 4), flatRounds(5), threeRounds(6, 5, 4), altRounds(6, 5), flatRounds(6), threeRounds(7, 6, 5), altRounds(7, 6), flatRounds(7)],
+    supersetTwo: supersetSteps('6 + 12, 6 + 12, 5 + 10, 4 + 8', [7, 6, 6, 5, 4, 4], [14, 12, 12, 10, 8, 8], false),
+    chair: ['10 to 15', '12 to 17', '14 to 19', '16 to 21'],
+    skillDayThree: { day: 3, name: 'Explosive chest-to-bar pull ups', kind: 'skill', rest: '180 - 300 sec', list: ['3, 2, 1', '3, 2, 2', '3, 3, 2', '3, 3, 3', '4, 3, 3', '4, 3, 3', '4, 4, 3', '4, 4, 3', '4, 4, 4', '4, 4, 4', '5, 4, 4', '5, 4, 4'] },
+    push: ['15, 13, 11', '16, 13, 11, 10', '16, 13, 11, 11', '17, 13, 11, 11', '17, 13, 12, 11', '17, 14, 12, 11', '18, 14, 12, 11', '18, 14, 12, 12', '18, 14, 13, 12', '19, 14, 13, 12', '19, 15, 13, 12', '20, 15, 13, 12', '20, 16, 14, 12'],
+    ladder: ['6, 5, 4, 3, 2, 1', '7, 5, 4, 3, 2, 1', '7, 6, 4, 3, 2, 1', '7, 6, 5, 3, 2, 1', '7, 6, 5, 4, 2, 1', '7, 6, 5, 4, 3, 1', '7, 6, 5, 4, 3, 2', '8, 6, 5, 4, 3, 2', '8, 7, 5, 4, 3, 2', '8, 7, 6, 4, 3, 2', '8, 7, 6, 5, 3, 2', '8, 7, 6, 5, 4, 2', '8, 7, 6, 5, 4, 3'],
+    incline: ['14 to 18', '16 to 20', '18 to 22', '20 to 24'],
+    tempo: ['6 to 8', '7 to 9', '8 to 10', '9 to 11'],
+    circuit: [['5, 5, 4', '6, 5, 5, 4'], ['8, 8, 7', '9, 8, 8, 7'], ['5, 5, 4', '6, 5, 5, 4'], ['10, 10, 9', '11, 10, 10, 9'], ['5, 5, 4', '6, 5, 5, 4'], ['15, 15, 14', '16, 15, 15, 14']]
+  }),
+  medium: level1Plan({
+    label: 'B-Medium',
+    description: '16 pull-ups, 22 dips, 32 push-ups, 3 muscle-ups',
+    skillDayOne: { day: 1, name: 'Muscle ups', kind: 'skill', rest: '180 - 300 sec', list: ['3, 2', '3, 2, 1', '3, 2, 1', '3, 2, 2', '3, 2, 2', '3, 3, 2', '3, 3, 2', '4, 3, 2', '4, 3, 2', '4, 3, 3', '4, 3, 3', '4, 4, 3'] },
+    pull: ['13, 10, 8', '13, 11, 10, 9', '14, 12, 10, 9', '14, 12, 11, 10', '15, 12, 11, 10', '16, 13, 11, 10', '16, 13, 12, 11', '17, 14, 12, 12', '18, 14, 13, 12', '18, 15, 14, 13', '19, 15, 14, 13'],
+    dipEmom: [flatRounds(8, 6), flatRounds(8), altRounds(9, 8), flatRounds(9), threeRounds(10, 9, 8), altRounds(10, 9), flatRounds(10), threeRounds(11, 10, 9), altRounds(11, 10), flatRounds(11), threeRounds(12, 11, 10), altRounds(12, 11)],
+    supersetOne: supersetSteps('20 + 10, 18 + 9, 16 + 8, 14 + 7', [10, 9, 8, 7, 6, 5], [20, 18, 16, 14, 12, 10], true),
+    dips: ['17, 15, 13', '18, 15, 13, 11', '19, 15, 13, 11', '20, 15, 13, 12', '21, 15, 13, 12', '21, 16, 14, 12', '22, 16, 14, 13', '23, 16, 14, 13', '24, 17, 14, 13', '24, 17, 15, 14', '25, 17, 15, 14', '25, 18, 16, 14'],
+    pullEmom: [altRounds(7, 6, 6), altRounds(7, 6), flatRounds(7), threeRounds(8, 7, 6), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8), flatRounds(9), threeRounds(10, 9, 8), altRounds(10, 9), flatRounds(10)],
+    supersetTwo: supersetSteps('12 + 24, 11 + 22, 11 + 22, 10 + 20', [13, 12, 11, 11, 10, 9], [26, 24, 22, 22, 20, 18], false),
+    chair: ['15 to 20', '17 to 22', '19 to 24', '21 to 26'],
+    skillDayThree: { day: 3, name: 'Muscle ups every 2 minutes', kind: 'skill', roundLabel: 'Round', rest: 'every 2 minutes', list: ['2, 1, 1, 1', '2, 2, 1, 1, 1, 1', '2, 2, 1, 1, 1, 1', '2, 2, 2, 1, 1, 1', '2, 2, 2, 1, 1, 1', '2, 2, 2, 2, 1, 1', '2, 2, 2, 2, 1, 1', '2, 2, 2, 2, 2, 1', '2, 2, 2, 2, 2, 1', '2, 2, 2, 2, 2, 2', '2, 2, 2, 2, 2, 2', '3, 2, 2, 2, 2, 2'] },
+    push: ['24, 21, 18', '26, 22, 18, 16', '27, 22, 19, 16', '28, 22, 19, 17', '29, 23, 19, 17', '30, 23, 20, 17', '31, 23, 20, 18', '31, 24, 21, 18', '32, 24, 21, 19', '33, 24, 22, 19', '34, 25, 22, 19', '35, 25, 22, 20', '36, 25, 23, 20'],
+    ladder: ladderSteps('9, 8, 7, 6, 5, 4', [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
+    incline: ['20 to 24', '22 to 26', '24 to 28', '26 to 30'],
+    tempo: ['8 to 10', '9 to 11', '10 to 12', '11 to 13'],
+    circuit: [['7, 6, 5', '7, 7, 6, 5'], ['12, 11, 10', '12, 12, 11, 10'], ['7, 6, 5', '7, 7, 6, 5'], ['13, 13, 12', '13, 13, 13, 12'], ['7, 6, 5', '7, 7, 6, 5'], ['20, 18, 16', '20, 20, 18, 16']]
+  }),
+  high: level1Plan({
     label: 'B-High',
-    description: 'Highest beginner: 16 pull-ups, 22 dips, 32 push-ups, 3 muscle-ups',
-    exercises: [
-      { day: 1, name: 'Muscle ups', kind: 'skill', rest: '180 - 300 sec', list: ['3, 2', '3, 2, 1', '3, 2, 1', '3, 2, 2', '3, 2, 2', '3, 3, 2', '3, 3, 2', '4, 3, 2', '4, 3, 2', '4, 3, 3', '4, 3, 3', '4, 4, 3'] },
-      { day: 1, name: 'Pull ups', kind: 'straight', family: 'pull', rest: '180 - 300 sec', weeks: PULLUP_WEEKS, list: ['14, 12, 11', '15, 13, 12, 11', '15, 13, 13, 12', '15, 14, 13, 13', '16, 14, 14, 13', '16, 15, 14, 14', '17, 15, 15, 14', '17, 16, 15, 15', '18, 16, 16, 15', '18, 17, 16, 16', '19, 17, 17, 16', '19, 18, 17, 17', '20, 18, 18, 17'] },
-      { day: 1, name: 'Dips EMOM', kind: 'emom', family: 'dip', rest: 'every 60 sec', weeks: ODD_WEEKS, list: [flatRounds(9), flatRounds(10), altRounds(11, 10), flatRounds(11), threeRounds(12, 11, 10), altRounds(12, 11), flatRounds(12), threeRounds(13, 12, 11), altRounds(13, 12), flatRounds(13), threeRounds(14, 13, 12), altRounds(14, 13)] },
-      { day: 1, name: 'Push ups + Bodyweight rows superset', kind: 'superset', family: 'push', sets: 6, rest: 'under 60 sec', weeks: EVEN_WEEKS, list: ['16 + 11', '18 + 11', '18 + 12', '20 + 12', '20 + 13', '22 + 13', '22 + 14', '24 + 14', '24 + 15', '26 + 15', '26 + 16', '28 + 16'] },
-      { day: 1, name: 'Tempo bodyweight rows', kind: 'skill', rest: '90 sec', tempo: '0 - 1 - 3', list: ['10, 10, 9, 9, 8, 8', '10, 10, 9, 9, 8, 8', '10, 10, 9, 9, 8, 8', '10, 10, 9, 9, 8, 8', '10, 10, 10, 9, 9, 9', '10, 10, 10, 9, 9, 9', '10, 10, 10, 9, 9, 9', '10, 10, 10, 9, 9, 9', '11, 10, 10, 10, 9, 9', '11, 10, 10, 10, 9, 9', '11, 10, 10, 10, 9, 9', '11, 10, 10, 10, 9, 9'] },
-      { day: 1, name: 'Knee raises ladder', kind: 'fixed', text: '5, 6, 7 ... to max', rest: '30 sec interval' },
-      { day: 2, name: 'Dips', kind: 'straight', family: 'dip', rest: '180 - 300 sec', weeks: EVERY_WEEK, list: ['20, 17, 16', '21, 18, 17, 16', '21, 18, 18, 17', '21, 19, 18, 18', '21, 19, 19, 19', '22, 20, 19, 19', '22, 20, 20, 20', '23, 21, 20, 20', '23, 21, 21, 21', '24, 22, 21, 21', '24, 22, 22, 22', '25, 23, 22, 22', '25, 23, 23, 23'] },
-      { day: 2, name: 'Pull ups EMOM', kind: 'emom', family: 'pull', rest: 'every 60 sec', weeks: ODD_WEEKS, list: [altRounds(7, 6), flatRounds(7), threeRounds(8, 7, 6), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8), flatRounds(9), threeRounds(10, 9, 8), altRounds(10, 9), flatRounds(10), threeRounds(11, 10, 9)] },
-      { day: 2, name: 'Neutral pull ups pyramid', kind: 'pyramid', family: 'pull', rest: 'under 60 sec', weeks: EVEN_WEEKS, list: ['3, 6, 9, 9, 6, 3', '5, 8, 11, 8, 5, 3', '5, 8, 11, 11, 5, 3', '4, 8, 12, 8, 4', '4, 8, 12, 12, 4', '4, 8, 12, 12, 8', '4, 8, 12, 12, 8, 4', '5, 9, 13, 9, 5', '5, 9, 13, 13, 5', '5, 9, 13, 13, 9', '5, 9, 13, 13, 9, 5', '6, 10, 14, 10, 6'] },
-      { day: 2, name: 'Chair dips', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: ['16 to 20', '18 to 22', '20 to 24', '22 to 26'] },
-      { day: 2, name: 'Split squat + squat superset', kind: 'fixed', text: '4 sets of 10 + 10', rest: '90 sec', load: 'Weight vest up to 20kg' },
-      { day: 3, name: 'Muscle ups w/ band ladder', kind: 'skill', rest: '180 - 300 sec', load: 'Light band', list: ['4, 3, 2, 1', '4, 3, 2, 2', '4, 3, 2, 2', '4, 3, 3, 2', '4, 3, 3, 2', '4, 4, 3, 2', '4, 4, 3, 2', '5, 4, 3, 2', '5, 4, 3, 2', '5, 4, 3, 3', '5, 4, 3, 3', '5, 4, 4, 3'] },
-      { day: 3, name: 'Dips pyramid', kind: 'pyramid', family: 'dip', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: ['8, 10, 12, 12, 10, 8', '10, 12, 14, 12, 10, 8', '10, 12, 14, 14, 10, 8', '9, 12, 15, 12, 9', '9, 12, 15, 15, 9', '9, 12, 15, 15, 12', '9, 12, 15, 15, 12, 9', '10, 13, 16, 13, 10', '10, 13, 16, 16, 10', '10, 13, 16, 16, 13', '10, 13, 16, 16, 13, 10', '11, 14, 17, 14, 11', '11, 14, 17, 17, 11'] },
-      { day: 3, name: 'Pull up ladder', kind: 'ladder', family: 'pull', rest: 'under 60 sec', weeks: EVERY_WEEK, list: ['10, 9, 8, 7, 6, 5', '11, 10, 8, 7, 6, 5', '11, 10, 9, 8, 6, 5', '11, 10, 9, 8, 7, 6', '12, 11, 9, 8, 7, 6', '12, 11, 10, 9, 7, 6', '12, 11, 10, 9, 8, 7', '13, 12, 10, 9, 8, 7', '13, 12, 11, 10, 8, 7', '13, 12, 11, 10, 9, 8', '14, 13, 11, 10, 9, 8', '14, 13, 12, 11, 9, 8', '14, 13, 12, 11, 10, 9'] },
-      { day: 3, name: 'Inclined push ups', kind: 'range', sets: 4, rest: '90 sec', weeks: RANGE_WEEKS, list: ['26 to 32', '28 to 34', '30 to 36', '32 to 38'] },
-      { day: 3, name: 'Tempo australian chin ups', kind: 'range', sets: 4, rest: '90 - 180 sec', tempo: '0 - 1 - 3', weeks: RANGE_WEEKS, list: ['8 to 12', '9 to 13', '10 to 14', '11 to 15'] },
-      { day: 3, name: 'Knee raises ladder', kind: 'fixed', text: '5, 6, 7 ... to max', rest: '30 sec interval' },
-      { day: 4, name: 'Pull ups pyramid', kind: 'pyramid', family: 'pull', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: ['2, 4, 6, 8, 8, 6, 4, 2', '3, 5, 7, 9, 8, 6, 4, 2', '3, 5, 7, 9, 9, 6, 4, 2', '4, 7, 10, 10, 7, 4', '5, 8, 11, 8, 5', '5, 8, 11, 11, 5', '5, 8, 11, 11, 8', '5, 8, 11, 11, 8, 5', '6, 9, 12, 9, 6', '6, 9, 12, 12, 6', '6, 9, 12, 12, 9', '6, 9, 12, 12, 9, 6', '7, 10, 13, 10, 7'] },
-      { day: 4, name: 'Push ups ladder', kind: 'ladder', family: 'push', rest: 'under 60 sec', weeks: EVERY_WEEK, list: ['27, 24, 21, 18, 15, 12', '29, 26, 21, 18, 15, 12', '29, 26, 23, 20, 15, 12', '29, 26, 23, 20, 17, 14', '31, 28, 23, 20, 17, 14', '31, 28, 25, 22, 17, 14', '31, 28, 25, 22, 19, 16', '33, 30, 25, 22, 19, 16', '33, 30, 27, 24, 19, 16', '33, 30, 27, 24, 21, 18', '35, 32, 27, 24, 21, 18', '35, 32, 29, 26, 21, 18', '35, 32, 29, 26, 23, 20'] },
-      { day: 4, name: 'Bodyweight tricep extensions', kind: 'fixed', text: '4 sets of 10 to 15', rest: '60 - 90 sec' },
-      { day: 4, name: 'Close grip chin ups', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: ['6 to 8', '7 to 9', '8 to 10', '9 to 11'] },
-      { day: 4, name: 'Nordic hamstring curl', kind: 'fixed', text: '3 sets of 4 to 6', rest: '90 - 180 sec', load: 'Weight vest up to 20kg' },
-      { day: 4, name: 'Single leg deadlift', kind: 'fixed', text: '3 sets of 8 to 10', rest: '90 sec', load: 'Weight vest up to 20kg' }
-    ]
-  }
+    description: '20 pull-ups, 30 dips, 40 push-ups, 6 muscle-ups: the Level 1 upper limit',
+    skillDayOne: { day: 1, name: 'Muscle ups', kind: 'skill', rest: '180 - 300 sec', list: ['4, 3', '4, 3, 2', '4, 3, 2', '4, 3, 3', '4, 3, 3', '4, 4, 3', '4, 4, 3', '5, 4, 3', '5, 4, 3', '5, 4, 4', '5, 4, 4', '5, 5, 4'] },
+    pull: ['15, 13, 11', '16, 13, 11, 10', '17, 14, 11, 11', '18, 14, 12, 12', '19, 14, 13, 12', '20, 15, 13, 13', '20, 15, 14, 14', '21, 16, 15, 14', '22, 16, 15, 15', '22, 17, 16, 15', '23, 17, 16, 15'],
+    dipEmom: [flatRounds(10, 6), flatRounds(10), altRounds(11, 10), flatRounds(11), threeRounds(12, 11, 10), altRounds(12, 11), flatRounds(12), threeRounds(13, 12, 11), altRounds(13, 12), flatRounds(13), threeRounds(14, 13, 12), altRounds(14, 13)],
+    supersetOne: supersetSteps('26 + 13, 24 + 12, 22 + 11, 20 + 10', [14, 13, 12, 11, 10, 9], [28, 26, 24, 22, 20, 18], true),
+    dips: ['24, 21, 18', '25, 21, 19, 16', '26, 21, 19, 17', '27, 22, 19, 17', '28, 22, 20, 17', '29, 22, 20, 18', '30, 23, 20, 18', '31, 23, 21, 18', '32, 23, 21, 19', '33, 24, 21, 19', '34, 24, 22, 19', '34, 25, 22, 20'],
+    pullEmom: [threeRounds(8, 7, 6, 6), threeRounds(8, 7, 6), altRounds(8, 7), flatRounds(8), threeRounds(9, 8, 7), altRounds(9, 8), flatRounds(9), threeRounds(10, 9, 8), altRounds(10, 9), flatRounds(10), threeRounds(11, 10, 9), altRounds(11, 10)],
+    supersetTwo: supersetSteps('14 + 28, 13 + 26, 12 + 24, 11 + 22', [15, 14, 13, 12, 11, 10], [30, 28, 26, 24, 22, 20], false),
+    chair: ['22 to 26', '24 to 28', '26 to 30', '28 to 32'],
+    skillDayThree: { day: 3, name: 'Muscle ups every 2 minutes', kind: 'skill', roundLabel: 'Round', rest: 'every 2 minutes', list: ['3, 2, 2, 1', '3, 3, 2, 2, 1, 1', '3, 3, 2, 2, 1, 1', '3, 3, 2, 2, 2, 1', '3, 3, 2, 2, 2, 1', '3, 3, 2, 2, 2, 2', '3, 3, 2, 2, 2, 2', '3, 3, 3, 2, 2, 2', '3, 3, 3, 2, 2, 2', '3, 3, 3, 3, 2, 2', '3, 3, 3, 3, 2, 2', '3, 3, 3, 3, 3, 2'] },
+    push: ['32, 26, 22', '34, 28, 24, 20', '35, 28, 24, 21', '36, 29, 24, 21', '37, 29, 25, 21', '38, 29, 25, 22', '39, 30, 25, 22', '40, 30, 26, 22', '41, 30, 26, 23', '42, 31, 26, 23', '43, 31, 27, 23', '44, 32, 27, 23', '45, 32, 28, 23'],
+    ladder: ladderSteps('9, 8, 7, 6, 5, 4', [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
+    incline: ['26 to 30', '28 to 32', '30 to 34', '32 to 36'],
+    tempo: ['10 to 12', '11 to 13', '12 to 14', '13 to 15'],
+    circuit: [['8, 7, 6', '8, 8, 7, 6'], ['14, 12, 11', '14, 14, 12, 11'], ['8, 7, 6', '8, 8, 7, 6'], ['16, 14, 13', '16, 16, 14, 13'], ['8, 7, 6', '8, 8, 7, 6'], ['22, 20, 18', '22, 22, 20, 18']]
+  })
 };
 
 function repsTotal(reps) {
-  return reps.reduce((sum, reps) => sum + reps, 0);
+  return reps.reduce((sum, n) => sum + n, 0);
 }
 
 function parseEntry(exercise, text) {
@@ -83,8 +147,7 @@ function parseEntry(exercise, text) {
     return { reps: Array(exercise.sets).fill(low), high };
   }
   if (exercise.kind === 'superset') {
-    const pair = text.split('+').map(Number);
-    return { reps: Array.from({ length: exercise.sets * 2 }, (_, i) => pair[i % 2]) };
+    return { reps: text.split(',').flatMap((pair) => pair.split('+').map(Number)) };
   }
   return { reps: text.split(',').map(Number) };
 }
@@ -94,13 +157,16 @@ function preparePlan(key) {
   if (plan.ready) return plan;
   plan.exercises.forEach((exercise, index) => {
     exercise.id = 'ex' + index;
-    if (exercise.kind === 'fixed') return;
+    if (exercise.kind === 'circuit') {
+      exercise.firstReps = exercise.week1.split(',').map(Number);
+      exercise.baseReps = exercise.base.split(',').map(Number);
+    }
+    if (!exercise.list) return;
     // A skill keeps its weekly list, with repeats. Other exercises only move when they get a step.
     const list = exercise.kind === 'skill'
       ? exercise.list
       : exercise.list.filter((text, i) => i === 0 || text !== exercise.list[i - 1]);
     exercise.seq = list.map((text) => parseEntry(exercise, text));
-    if (exercise.weights) exercise.seq.forEach((entry, i) => { entry.load = exercise.weights[i]; });
   });
   plan.ready = true;
   return plan;
@@ -114,13 +180,33 @@ function lighterReps(exercise, reps) {
   return repsTotal(lowered) < repsTotal(exercise.seq[0].reps) ? exercise.seq[0].reps.slice() : lowered;
 }
 
-function currentTarget(exercise, state) {
+function circuitTarget(exercise, circuit) {
+  if (circuit.stage === 0) return { reps: exercise.firstReps.slice(), rest: CIRCUIT_REST[0], load: '' };
+  const added = Math.floor((circuit.stage - 1) / 4);
+  return {
+    reps: exercise.baseReps.map((n) => n + added),
+    rest: CIRCUIT_REST[(circuit.stage - 1) % 4],
+    load: ''
+  };
+}
+
+function currentTarget(exercise, state, circuit) {
+  if (exercise.kind === 'circuit') return circuitTarget(exercise, circuit);
+  if (exercise.kind === 'band') {
+    return {
+      reps: Array(BAND_SETS[Math.min(state.idx, BAND_SETS.length - 1)]).fill(1),
+      high: 3,
+      load: BAND_NAMES[state.band]
+    };
+  }
   const entry = exercise.seq[state.idx];
   const base = state.custom || entry.reps;
+  const reps = state.lighter ? lighterReps(exercise, base) : base.slice();
+  if (exercise.kind === 'straight' && !state.lighter && state.firstFloor > reps[0]) reps[0] = state.firstFloor;
   return {
-    reps: state.lighter ? lighterReps(exercise, base) : base.slice(),
+    reps,
     high: entry.high,
-    load: entry.load || exercise.load || '',
+    load: exercise.load || '',
     rebuilt: !!state.custom && !state.lighter,
     lighter: state.lighter
   };
@@ -134,21 +220,25 @@ function missAmount(total, type) {
 function removeReps(reps, amount) {
   const result = reps.slice();
   let i = result.length - 1;
-  while (amount > 0 && repsTotal(result) > 0) {
-    if (result[i] > 0) { result[i] -= 1; amount -= 1; }
+  let left = amount;
+  while (left > 0 && repsTotal(result) > 0) {
+    if (result[i] > 0) { result[i] -= 1; left -= 1; }
     i = (i - 1 + result.length) % result.length;
   }
   return result;
 }
 
-// Reps logged by the quick buttons: 'hit', 'close', 'big' or 'easy'
+// Reps filled in by the test athletes: 'hit', 'close', 'big', 'easy' or 'first'
 function fillActual(exercise, target, week, type) {
   if (type === 'close' || type === 'big') return removeReps(target.reps, missAmount(repsTotal(target.reps), type));
+  if (exercise.kind === 'band') return target.reps.map(() => 2);
   // Range exercises reach the top number just before the plan moves them up
   if (exercise.kind === 'range' && (type === 'easy' || exercise.weeks.includes(week + 1))) {
     return target.reps.map(() => target.high);
   }
-  return target.reps.slice();
+  const reps = target.reps.slice();
+  if (type === 'first' && exercise.kind === 'straight') reps[0] += 2;
+  return reps;
 }
 
 function defaultDay() {
@@ -165,13 +255,18 @@ function hitLog(plan, targets, week) {
 }
 
 function familyTotals(plan, targets) {
-  const totals = { pull: 0, dip: 0, push: 0 };
+  const totals = { pull: 0, chin: 0, dip: 0, push: 0 };
   plan.exercises.forEach((exercise) => {
     if (!exercise.family) return;
     const reps = targets[exercise.id].reps;
-    totals[exercise.family] += exercise.kind === 'superset'
-      ? repsTotal(reps.filter((_, i) => i % 2 === 0))
-      : repsTotal(reps);
+    if (exercise.kind === 'superset') {
+      reps.forEach((n, i) => {
+        if (i % 2 === exercise.pushIndex) totals.push += n;
+        else if (exercise.sideFamily) totals[exercise.sideFamily] += n;
+      });
+    } else {
+      totals[exercise.family] += repsTotal(reps);
+    }
   });
   return totals;
 }
@@ -196,24 +291,44 @@ function closestStep(exercise, state, limit) {
   return best;
 }
 
-function advanceExercise(exercise, state, target, entry, week, day) {
-  const next = week + 1;
-  const last = exercise.seq.length - 1;
-  const actual = entry.actual.map((n) => n || 0);
+function checkResult(exercise, target, actual) {
   const goal = repsTotal(target.reps);
   const done = repsTotal(actual);
-  const lowRecovery = day.energy <= 2 || day.sleep <= 2;
-  const hit = exercise.kind === 'range' ? actual.every((n) => n >= target.reps[0]) : done >= goal;
+  const hit = ['range', 'band'].includes(exercise.kind)
+    ? actual.every((n) => n >= target.reps[0])
+    : done >= goal;
+  let status = 'hit';
+  if (!hit) status = goal - done <= Math.max(goal * TEST_RULES.closePercent, TEST_RULES.closeReps) ? 'close' : 'big';
+  return { status, done, goal, notable: false, text: '' };
+}
+
+function advanceExercise(exercise, state, target, entry, week, day) {
+  const next = week + 1;
+  const actual = entry.actual.map((n) => n || 0);
+  const result = checkResult(exercise, target, actual);
+  const { done, goal } = result;
   const detail = `Did ${done} of ${goal} reps.`;
-  const result = { status: 'hit', done, goal, notable: false, text: '' };
 
-  if (!hit) {
-    const closeLimit = Math.max(goal * TEST_RULES.closePercent, TEST_RULES.closeReps);
-    result.status = goal - done <= closeLimit ? 'close' : 'big';
-    result.notable = true;
+  if (exercise.kind === 'band') {
+    state.idx += 1;
+    const reachedThree = actual.length >= 3 && actual.every((n) => n >= 3);
+    if ((reachedThree || entry.tooEasy) && state.band < BAND_NAMES.length - 1) {
+      state.band += 1;
+      result.notable = true;
+      result.text = entry.tooEasy && !reachedThree
+        ? `Marked too easy. Next week moves to: ${BAND_NAMES[state.band]}.`
+        : `3 sets of 3 reps done. Next week moves to: ${BAND_NAMES[state.band]}.`;
+    }
+    return result;
+  }
+
+  const last = exercise.seq.length - 1;
+  if (result.status !== 'hit') {
     const label = result.status === 'close' ? 'Close miss' : 'Big miss';
+    result.notable = true;
+    state.firstFloor = 0;
 
-    if (lowRecovery) {
+    if (day.energy <= 2 || day.sleep <= 2) {
       result.status = 'low';
       result.text = `${detail} Low energy or sleep, so this does not count as a real miss. Same target next week.`;
       return result;
@@ -236,7 +351,7 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     const spare = Math.max(1, Math.round(done * 0.04));
     if (exercise.kind === 'straight') {
       state.custom = rebuildFromActual(target, actual);
-      result.text = `${label}. ${detail} Next target is rebuilt from what was actually done, with sets more even.`;
+      result.text = `${label}. ${detail} Next target is rebuilt from what was actually done.`;
     } else if (['emom', 'ladder', 'superset'].includes(exercise.kind)) {
       const before = state.idx;
       state.idx = closestStep(exercise, state, done + spare);
@@ -294,9 +409,15 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     state.idx = Math.min(state.idx + 1, last);
   }
   state.beforeExtra = state.idx;
-  if (done > goal && exercise.kind !== 'pyramid') {
+  state.floorBefore = state.firstFloor;
+
+  // Extra reps on the first set lift the next first set; extra reps elsewhere move the plan up
+  const counted = exercise.kind === 'straight'
+    ? target.reps[0] + repsTotal(actual.slice(1).map((n, i) => Math.max(n, target.reps[i + 1])))
+    : done;
+  if (counted > goal) {
     let reached = state.idx;
-    exercise.seq.forEach((step, i) => { if (i > reached && repsTotal(step.reps) <= done) reached = i; });
+    exercise.seq.forEach((step, i) => { if (i > reached && repsTotal(step.reps) <= counted) reached = i; });
     if (reached > state.idx) {
       state.idx = reached;
       result.extra = true;
@@ -310,41 +431,96 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     result.notable = true;
     result.text = 'Marked too easy, so this gets an extra step next week.';
   }
+  if (exercise.kind === 'straight' && actual[0] > exercise.seq[state.idx].reps[0]) {
+    state.firstFloor = actual[0];
+    result.extra = true;
+    result.notable = true;
+    result.text = `First set reached ${actual[0]}, past the target, so next week's first set starts there.`;
+  }
   return result;
+}
+
+// Day 4 moves as one: every rep hit means the next rest time or rep step
+function advanceCircuit(plan, circuit, targets, log) {
+  const members = plan.exercises.filter((exercise) => exercise.kind === 'circuit');
+  const day = log.days[members[0].day];
+  const results = {};
+  let missed = false;
+  let easy = false;
+  members.forEach((exercise) => {
+    const entry = log.ex[exercise.id];
+    const actual = entry.actual.map((n) => n || 0);
+    results[exercise.id] = checkResult(exercise, targets[exercise.id], actual);
+    if (results[exercise.id].status !== 'hit') missed = true;
+    if (entry.tooEasy) easy = true;
+  });
+  const lead = results[members[0].id];
+  if (!missed) {
+    circuit.stall = 0;
+    if (day.effort >= 10 && !easy) {
+      lead.notable = true;
+      lead.text = 'Circuit done at maximum effort, so it repeats next week.';
+      return results;
+    }
+    circuit.stage += easy ? 2 : 1;
+    if (easy) {
+      lead.notable = true;
+      lead.text = 'Circuit marked too easy, so it skips ahead one step.';
+    }
+    return results;
+  }
+  const low = day.energy <= 2 || day.sleep <= 2;
+  const first = members.find((exercise) => results[exercise.id].status !== 'hit');
+  const missResult = results[first.id];
+  missResult.notable = true;
+  if (low) {
+    members.forEach((exercise) => { if (results[exercise.id].status !== 'hit') results[exercise.id].status = 'low'; });
+    missResult.text = 'Circuit reps missed on a low energy or sleep day, so this does not count as a real miss. Same circuit next week.';
+    return results;
+  }
+  circuit.stall += 1;
+  if (circuit.stall >= TEST_RULES.stallSessions && circuit.stage > 1) {
+    circuit.stage -= 1;
+    circuit.stall = 0;
+    missResult.text = 'Circuit reps missed for a second session in a row, so it steps back one step next week.';
+  } else {
+    missResult.text = 'Not every circuit rep was hit, so the same rest and reps repeat next week.';
+  }
+  return results;
 }
 
 // Replays the logged weeks, then assumes every target is hit for the weeks still to come
 function runPlan(plan, logs) {
   const states = {};
-  plan.exercises.forEach((exercise) => {
-    if (exercise.kind !== 'fixed') states[exercise.id] = { idx: 0, custom: null, lighter: false, stall: 0 };
-  });
-  const weeks = [];
+  const circuit = { stage: 0, stall: 0 };
   const adaptive = plan.exercises.filter((exercise) => exercise.kind !== 'fixed');
+  adaptive.forEach((exercise) => {
+    states[exercise.id] = { idx: 0, custom: null, lighter: false, stall: 0, band: 0, firstFloor: 0 };
+  });
+  const allTargets = () => {
+    const targets = {};
+    adaptive.forEach((exercise) => { targets[exercise.id] = currentTarget(exercise, states[exercise.id], circuit); });
+    return targets;
+  };
+  const weeks = [];
 
   for (let week = 1; week <= 12; week += 1) {
-    const targets = {};
-    adaptive.forEach((exercise) => { targets[exercise.id] = currentTarget(exercise, states[exercise.id]); });
+    const targets = allTargets();
     const logged = logs[week];
     const log = logged || hitLog(plan, targets, week);
-    const results = {};
-    adaptive.forEach((exercise) => {
+    const results = advanceCircuit(plan, circuit, targets, log);
+    adaptive.filter((exercise) => exercise.kind !== 'circuit').forEach((exercise) => {
       results[exercise.id] = advanceExercise(exercise, states[exercise.id], targets[exercise.id], log.ex[exercise.id], week, log.days[exercise.day]);
     });
     const totals = familyTotals(plan, targets);
 
     // Weekly limit on each movement. The jump out of the adaptation week is exempt.
     if (week >= 2) {
-      ['pull', 'dip', 'push'].forEach((family) => {
-        const members = adaptive.filter((exercise) => exercise.family === family);
-        const nextTotal = () => {
-          const nextTargets = {};
-          adaptive.forEach((exercise) => { nextTargets[exercise.id] = currentTarget(exercise, states[exercise.id]); });
-          return familyTotals(plan, nextTargets)[family];
-        };
-        members.slice().reverse().forEach((exercise) => {
-          if (results[exercise.id].extra && nextTotal() > totals[family] * (1 + TEST_RULES.weeklyLimit)) {
+      ['pull', 'chin', 'dip', 'push'].forEach((family) => {
+        adaptive.filter((exercise) => exercise.family === family && results[exercise.id].extra).reverse().forEach((exercise) => {
+          if (familyTotals(plan, allTargets())[family] > totals[family] * (1 + TEST_RULES.weeklyLimit)) {
             states[exercise.id].idx = states[exercise.id].beforeExtra;
+            states[exercise.id].firstFloor = states[exercise.id].floorBefore;
             results[exercise.id].extra = false;
             results[exercise.id].text += ' The weekly limit holds this step back for now.';
           }
@@ -357,27 +533,30 @@ function runPlan(plan, logs) {
 }
 
 function shortTarget(exercise, target) {
-  let text;
   const reps = target.reps;
-  if (exercise.kind === 'range') {
-    text = `${reps[0]} to ${target.high}`;
-  } else if (exercise.kind === 'superset') {
-    text = `${reps[0]} + ${reps[1]} x${reps.length / 2}`;
-  } else if (reps.length >= 9 && exercise.kind === 'emom') {
-    const period = [1, 2, 3].find((p) => reps.every((n, i) => n === reps[i % p]));
-    text = period ? `${reps.slice(0, period).join('/')} x${reps.length}` : reps.join(', ');
-  } else {
-    text = reps.join(', ');
+  if (exercise.kind === 'band') return `1 to 3, ${reps.length} sets, ${target.load}`;
+  if (exercise.kind === 'range') return `${reps[0]} to ${target.high}`;
+  if (exercise.kind === 'superset') {
+    const pairs = [];
+    for (let i = 0; i < reps.length; i += 2) pairs.push(`${reps[i]} + ${reps[i + 1]}`);
+    return pairs.join(', ');
   }
-  return text;
+  if (exercise.kind === 'circuit') return `${reps.join(', ')} (${target.rest.replace(' seconds', 's')} rest)`;
+  if (exercise.kind === 'emom') {
+    const period = [1, 2, 3].find((p) => reps.every((n, i) => n === reps[i % p]));
+    return period ? `${reps.slice(0, period).join('/')} x${reps.length}` : reps.join(', ');
+  }
+  return reps.join(', ');
 }
 
-const TEST_MAIN = ['Pull ups', 'Dips', 'Pull ups EMOM', 'Dips EMOM'];
+const TEST_MAIN = ['Pull ups Submax', 'Dips', 'Pull ups EMOM', 'Dips EMOM'];
 
 const TEST_SCENARIOS = [
   { id: 'all', label: 'Hits every target', description: 'The plan exactly as drafted.', pick: () => 'hit' },
-  { id: 'pull', label: 'Pull-ups get hard', description: 'Close misses on pull-ups and pull-up EMOMs in weeks 5 to 8.', pick: (exercise, week) => (['Pull ups', 'Pull ups EMOM'].includes(exercise.name) && week >= 5 && week <= 8 ? 'close' : 'hit') },
-  { id: 'strong', label: 'Finds it too easy', description: 'Ticks "too easy" on pull-ups, dips and both EMOMs from week 2.', pick: (exercise, week) => (TEST_MAIN.includes(exercise.name) && week >= 2 ? 'easy' : 'hit') },
+  { id: 'pull', label: 'Pull-ups get hard', description: 'Close misses on submax pull-ups and the pull-up EMOM in weeks 5 to 8.', pick: (exercise, week) => (['Pull ups Submax', 'Pull ups EMOM'].includes(exercise.name) && week >= 5 && week <= 8 ? 'close' : 'hit') },
+  { id: 'first', label: 'Beats first sets', description: 'Goes 2 reps past every first-set target from week 2.', pick: (exercise, week) => (exercise.kind === 'straight' && week >= 2 ? 'first' : 'hit') },
+  { id: 'strong', label: 'Finds it too easy', description: 'Ticks "too easy" on pull-ups, dips and both EMOMs from week 2.', pick: (exercise, week) => (TEST_MAIN.includes(exercise.name) && exercise.kind !== 'circuit' && week >= 2 ? 'easy' : 'hit') },
+  { id: 'circuit', label: 'Circuit gets hard', description: 'Close misses on the Day 4 circuit in weeks 5 and 6.', pick: (exercise, week) => (exercise.kind === 'circuit' && (week === 5 || week === 6) ? 'close' : 'hit') },
   { id: 'bad', label: 'One bad week', description: 'Week 6: poor sleep, low energy, big misses on everything.', pick: (exercise, week) => (week === 6 ? 'big' : 'hit'), day: (week) => (week === 6 ? { energy: 2, sleep: 2, effort: 9 } : defaultDay()) },
   { id: 'stuck', label: 'Stuck on one exercise', description: 'Big misses on the pull-up EMOM in weeks 5, 6 and 7.', pick: (exercise, week) => (exercise.name === 'Pull ups EMOM' && week >= 5 && week <= 7 ? 'big' : 'hit') }
 ];

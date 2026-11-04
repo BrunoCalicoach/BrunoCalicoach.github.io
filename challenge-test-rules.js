@@ -184,11 +184,11 @@ const TEST_FIELDS = [
 ];
 const MUSCLE_UP_SWITCH = 3;
 
-// 0 is B-Low, 1 is B-Medium, 2 is B-High; results outside the range stay at the nearest plan
+// 0 is B-Low, 1 is B-Medium, 2 is B-High. Below B-Low stays at B-Low; above B-High keeps scaling up at the same rate.
 function planPosition(value, anchors) {
   const [low, medium, high] = anchors;
   const position = value <= medium ? (value - low) / (medium - low) : 1 + (value - medium) / (high - medium);
-  return Math.min(2, Math.max(0, position));
+  return Math.max(0, position);
 }
 
 function blend(values, position) {
@@ -302,7 +302,7 @@ function buildPersonalPlan(results) {
   const [low, medium, high] = ['low', 'medium', 'high'].map(preparePlan);
   const p = testPositions(results);
   const realMuscleUps = results.mu >= MUSCLE_UP_SWITCH;
-  const muPosition = Math.min(1, Math.max(0, (results.mu - MUSCLE_UP_SWITCH) / (6 - MUSCLE_UP_SWITCH)));
+  const muPosition = Math.max(0, (results.mu - MUSCLE_UP_SWITCH) / (6 - MUSCLE_UP_SWITCH));
   const exercises = medium.exercises.map((exercise, i) => {
     const anchors = [low.exercises[i], exercise, high.exercises[i]];
     // Muscle up work depends only on the muscle up result

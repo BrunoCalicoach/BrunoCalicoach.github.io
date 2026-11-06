@@ -880,6 +880,49 @@ html[data-theme="dark"] .go-zone{
 .player > .player-name{
   text-align:center;
 }
+/* Clock-driven rounds (EMOM): the timer is always on screen */
+.player-media-small{
+  flex:1 1 0;
+  min-height:48px;
+}
+
+.interval-clock-block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  text-align:center;
+}
+
+.interval-bar{
+  position:relative;
+  width:100%;
+  max-width:420px;
+  height:12px;
+  border-radius:999px;
+  background:#d1d5db;
+  overflow:hidden;
+}
+
+.interval-bar span{
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:0;
+  width:0;
+  background:#059669;
+  transition:width .25s linear;
+}
+
+html[data-theme="dark"] .interval-bar{
+  background:#374151;
+}
+
+.resume-row{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:10px;
+}
 .player-next{
   font-size:14px;
   font-weight:600;
@@ -1207,8 +1250,8 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-workout.js?v=34"></script>
-<script src="challenge-test.js?v=28"></script>
+<script src="challenge-workout.js?v=35"></script>
+<script src="challenge-test.js?v=35"></script>
 
 </body>
 </html>

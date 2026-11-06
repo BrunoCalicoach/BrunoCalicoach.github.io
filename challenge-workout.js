@@ -123,12 +123,12 @@ function topBar(step) {
   </div>`;
 }
 
-function adjustBlock(step) {
+function adjustBlock(step, title = 'Reps you did') {
   const slots = stepSlots(step);
   if (!slots.length) return '';
   const entry = draft.ex[step.exercise.id];
   return `<div class="player-adjust">
-    <div class="adjust-title">Reps you did</div>
+    <div class="adjust-title">${esc(title)}</div>
     <div class="adjust-row">${slots.map((slot) => `<div class="adjust-slot">
       ${slots.length > 1 ? `<div class="adjust-label">${esc(slot.label)}</div>` : ''}
       <div class="stepper">
@@ -139,6 +139,55 @@ function adjustBlock(step) {
     </div>`).join('')}</div>
     <div class="adjust-hint">Leave it if you hit the target.</div>
   </div>`;
+}
+
+// Any exercise whose rest is written as "every N sec" or "every N minutes" runs on a clock: an EMOM, or
+// muscle ups every 2 minutes. Rounds then change by themselves, so the plan decides this, not the exercise name.
+function intervalSeconds(step) {
+  return step.circuit ? 0 : restWindow(step.exercise.rest).every || 0;
+}
+
+// The first and last step of the clock-driven block the current step belongs to
+function intervalBlock(steps, index) {
+  let first = index;
+  let last = index;
+  while (first > 0 && steps[first - 1].exercise === steps[index].exercise) first -= 1;
+  while (last < steps.length - 1 && steps[last + 1].exercise === steps[index].exercise) last += 1;
+  return { first, last, every: intervalSeconds(steps[index]) };
+}
+
+function intervalScreen(context, step) {
+  const target = context.targets[step.exercise.id];
+  const block = intervalBlock(context.steps, player.index);
+  const rounds = block.last - block.first + 1;
+  const goal = stepTarget(step, target);
+  if (!player.interval) {
+    return `${topBar(step)}
+      <div class="player-name">${esc(step.exercise.name)}</div>
+      <div class="player-media">${playerMedia(step.exercise)}</div>
+      <div class="player-main">
+        <div class="player-count">${rounds} rounds, a new round every ${esc(clock(block.every))}</div>
+        <div class="player-target">${esc(goal.main)}</div>
+        <div class="player-meta">The clock runs by itself. Do your reps, rest for what is left of the round.</div>
+      </div>
+      <button type="button" class="btn-primary player-button" data-workout="interval-start">Start ${step.exercise.kind === 'emom' ? 'EMOM' : 'the clock'}</button>`;
+  }
+  const round = player.index - block.first;
+  const next = round < rounds - 1 ? stepTarget(context.steps[player.index + 1], target).main : '';
+  return `${topBar(step)}
+    <div class="player-name">${esc(step.exercise.name)}</div>
+    <div class="player-media player-media-small">${playerMedia(step.exercise)}</div>
+    <div class="player-main">
+      <div class="player-count">Round ${round + 1} of ${rounds}</div>
+      <div class="player-target">${esc(goal.main)}</div>
+      <div class="player-meta">${next ? `Next round: ${esc(next)}` : 'Last round'}</div>
+    </div>
+    <div class="interval-clock-block">
+      <div class="rest-label">${next ? 'Next round in' : 'Finished in'}</div>
+      <div class="rest-clock" id="interval-clock">${clock(block.every)}</div>
+      <div class="interval-bar" aria-hidden="true"><span id="interval-fill"></span></div>
+    </div>
+    ${round > 0 ? adjustBlock(context.steps[player.index - 1], 'Reps you did last round') : ''}`;
 }
 
 function workScreen(step, target) {
@@ -243,6 +292,7 @@ function playerScreen() {
   if (player.phase === 'review') body = reviewScreen(context);
   else if (player.phase === 'last') body = lastSetScreen(step);
   else if (player.phase === 'rest') body = restScreen(step, context.steps[player.index + 1], context.targets);
+  else if (intervalSeconds(step)) body = intervalScreen(context, step);
   else body = workScreen(step, context.targets[step.exercise.id]);
   return `<div class="player${player.phase === 'review' ? ' player-scroll' : ''}">${body}${player.confirmExit ? exitPrompt() : ''}</div>`;
 }
@@ -279,6 +329,10 @@ function updatePlayerClock() {
   const now = Date.now();
   const total = document.getElementById('total-clock');
   if (total) total.textContent = clock(((player.finishedAt || now) - player.startedAt) / 1000);
+  if (player.phase === 'work' && player.interval) {
+    updateIntervalClock(now);
+    return;
+  }
   if (player.phase !== 'rest') return;
   const rest = player.rest;
   const label = document.getElementById('rest-label');
@@ -333,6 +387,46 @@ function updatePlayerClock() {
   panel.dataset.state = 'ready';
 }
 
+// Moves through clock-driven rounds without any taps, then on to the rest before the next exercise
+function updateIntervalClock(now) {
+  const block = player.interval;
+  const rounds = block.last - block.first + 1;
+  const seconds = (now - block.startedAt) / 1000;
+  const round = Math.floor(seconds / block.every);
+  if (round >= rounds) {
+    const steps = workoutContext().steps;
+    const last = steps[block.last];
+    player.index = block.last;
+    player.lastPosition = last.position;
+    player.interval = null;
+    player.beeped = false;
+    player.earlyWarned = false;
+    if (last.after) {
+      player.phase = 'rest';
+      player.rest = last.after;
+      player.phaseAt = block.startedAt + rounds * block.every * 1000;
+    } else {
+      player.phase = 'last';
+    }
+    beep();
+    saveTestState();
+    renderPlayer();
+    return;
+  }
+  if (block.first + round !== player.index) {
+    player.index = block.first + round;
+    beep();
+    saveTestState();
+    renderPlayer();
+    return;
+  }
+  const left = block.every - (seconds % block.every);
+  const big = document.getElementById('interval-clock');
+  const fill = document.getElementById('interval-fill');
+  if (big) big.textContent = clock(left);
+  if (fill) fill.style.width = `${(1 - left / block.every) * 100}%`;
+}
+
 function renderPlayer() {
   document.documentElement.classList.add('workout-open');
   testApp.innerHTML = playerScreen();
@@ -382,8 +476,27 @@ function handleWorkoutClick(button) {
   }
   if (action === 'resume') {
     player.paused = false;
+    // A paused EMOM continues from the same point in its round
+    if (player.interval && player.interval.pausedAt) {
+      player.interval.startedAt += Date.now() - player.interval.pausedAt;
+      player.interval.pausedAt = null;
+    }
     keepScreenOn();
+    saveTestState();
     renderPlayer();
+    return true;
+  }
+  if (action === 'restart') {
+    // Starts the day again with every set back on its target
+    const day = Number(button.dataset.day);
+    const plan = activePlan();
+    const week = currentWeek();
+    const targets = runPlan(plan, testState.logs)[week - 1].targets;
+    plan.exercises.forEach((exercise) => {
+      if (exercise.day !== day || exercise.kind === 'fixed') return;
+      draft.ex[exercise.id] = { actual: fillActual(exercise, targets[exercise.id], week, 'hit'), tooEasy: false };
+    });
+    startWorkout(day);
     return true;
   }
   if (!player) return true;
@@ -400,6 +513,13 @@ function handleWorkoutClick(button) {
       player.roundAt = player.phaseAt;
       player.phaseAt = Date.now();
     }
+    saveTestState();
+    renderPlayer();
+  } else if (action === 'interval-start') {
+    const block = intervalBlock(context.steps, player.index);
+    player.index = block.first;
+    player.interval = { first: block.first, last: block.last, every: block.every, startedAt: Date.now() };
+    beep();
     saveTestState();
     renderPlayer();
   } else if (action === 'next') {
@@ -453,6 +573,7 @@ function handleWorkoutClick(button) {
   } else if (action === 'leave') {
     player.confirmExit = false;
     player.paused = true;
+    if (player.interval) player.interval.pausedAt = Date.now();
     closePlayer();
     saveTestState();
     render();

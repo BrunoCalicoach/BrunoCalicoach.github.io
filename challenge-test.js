@@ -210,7 +210,12 @@ function weekPanel(plan, weeks) {
     ? `<p class="plan-row-meta">Circuit: 1 set of each exercise in order, then 90 sec rest. Rest between exercises: ${esc(restText(restWindow(targets[list[0].id].rest)))}.</p>`
     : '';
   let action = `<button type="button" class="btn-primary player-button" data-workout="start" data-day="${day}">Start workout</button>`;
-  if (paused) action = `<button type="button" class="btn-primary player-button" data-workout="resume">Resume workout</button>`;
+  if (paused) {
+    action = `<div class="resume-row">
+      <button type="button" class="btn-primary player-button" data-workout="resume">Resume workout</button>
+      <button type="button" class="btn-outline player-button" data-workout="restart" data-day="${day}">Restart</button>
+    </div>`;
+  }
   else if (done[day]) action = `<p class="done-note">Day ${day} is done.</p>`;
   const someDone = [1, 2, 3, 4].some((n) => done[n]);
   return `<div class="grid gap-3">

@@ -448,12 +448,37 @@ function rebuildFromActual(target, actual) {
   return [first].concat(Array.from({ length: sets - 1 }, (_, i) => each + (i < extra ? 1 : 0)));
 }
 
-function closestStep(exercise, state, limit) {
-  let best = 0;
-  for (let i = 0; i <= state.idx; i += 1) {
-    if (repsTotal(exercise.seq[i].reps) <= limit) best = i;
+// Average of energy and sleep: 2 or below is low, 4.5 or above is high, anything between is middle
+function readiness(day) {
+  const average = (day.energy + day.sleep) / 2;
+  return average <= 2 ? 'low' : average >= 4.5 ? 'high' : 'middle';
+}
+
+// A lower target with the same shape, adding up to the given total
+function reducedTarget(exercise, target, actual, total) {
+  const reps = target.reps;
+  const sets = reps.length;
+  if (exercise.kind === 'straight') {
+    // The first set keeps what the athlete managed, so it stays close to failure
+    const first = Math.min(reps[0], Math.max(actual[0] || 0, Math.ceil(total / sets)));
+    const rest = Math.max(total - first, sets - 1);
+    const each = Math.floor(rest / (sets - 1));
+    const extra = rest - each * (sets - 1);
+    return [first].concat(Array.from({ length: sets - 1 }, (_, i) => each + (i < extra ? 1 : 0)));
   }
-  return best;
+  if (exercise.kind === 'emom') {
+    const n = Math.max(1, Math.floor(total / sets));
+    const alternate = total - n * sets >= Math.ceil(sets / 2);
+    return Array.from({ length: sets }, (_, i) => (alternate && i % 2 === 0 ? n + 1 : n));
+  }
+  // Ladders and supersets shrink every set in proportion, then hand leftover reps back from the top
+  const scaled = reps.map((n) => Math.max(1, Math.floor((n * total) / repsTotal(reps))));
+  let left = total - repsTotal(scaled);
+  for (let i = 0; left > 0; i = (i + 1) % sets) {
+    scaled[i] += 1;
+    left -= 1;
+  }
+  return scaled;
 }
 
 function checkResult(exercise, target, actual) {
@@ -493,9 +518,11 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     result.notable = true;
     state.firstFloor = 0;
 
-    if (day.energy <= 2 || day.sleep <= 2) {
+    // How the athlete felt decides what a miss means
+    const feeling = readiness(day);
+    if (feeling === 'low') {
       result.status = 'low';
-      result.text = `${detail} Low energy or sleep, so this does not count as a real miss. Same target next week.`;
+      result.text = `${detail} Low energy and sleep, so the same target repeats next week. Rested, it should go better.`;
       return result;
     }
     state.stall += 1;
@@ -509,20 +536,18 @@ function advanceExercise(exercise, state, target, entry, week, day) {
       result.text = `${label}. ${detail} Second session in a row without progress, so next week is lighter: one set fewer and about 1 rep less per set.`;
       return result;
     }
-    if (result.status === 'big') {
-      result.text = `${label}. ${detail} Repeats the same target once.`;
-      return result;
-    }
-    const spare = Math.max(1, Math.round(done * 0.04));
-    if (exercise.kind === 'straight') {
-      state.custom = rebuildFromActual(target, actual);
-      result.text = `${label}. ${detail} Next target is rebuilt from what was actually done.`;
-    } else if (['emom', 'ladder', 'superset'].includes(exercise.kind)) {
-      const before = state.idx;
-      state.idx = closestStep(exercise, state, done + spare);
-      result.text = state.idx < before
-        ? `${label}. ${detail} Steps back to the closest target to what was actually done.`
-        : `${label}. ${detail} Repeats the same target.`;
+    const reason = feeling === 'high'
+      ? 'Energy and sleep were high, so the target was too hard. Next week matches what was done.'
+      : 'Energy and sleep were average, so next week sits halfway between the target and what was done.';
+    if (['straight', 'emom', 'ladder', 'superset'].includes(exercise.kind)) {
+      const total = feeling === 'high' ? done : Math.round((done + goal) / 2);
+      const lower = reducedTarget(exercise, target, actual, total);
+      // Targets do not go below the adaptation week
+      state.custom = repsTotal(lower) < repsTotal(exercise.seq[0].reps) ? exercise.seq[0].reps.slice() : lower;
+      result.text = `${label}. ${detail} ${reason}`;
+    } else if (exercise.kind === 'range' && feeling === 'high' && state.idx > 0) {
+      state.idx -= 1;
+      result.text = `${label}. ${detail} Energy and sleep were high, so the rep range steps back down.`;
     } else {
       result.text = `${label}. ${detail} Repeats the same target.`;
     }
@@ -634,23 +659,21 @@ function advanceCircuit(plan, circuit, targets, log) {
     }
     return results;
   }
-  const low = day.energy <= 2 || day.sleep <= 2;
+  const feeling = readiness(day);
   const first = members.find((exercise) => results[exercise.id].status !== 'hit');
   const missResult = results[first.id];
   missResult.notable = true;
-  if (low) {
+  if (feeling === 'low') {
     members.forEach((exercise) => { if (results[exercise.id].status !== 'hit') results[exercise.id].status = 'low'; });
-    missResult.text = 'Circuit reps missed on a low energy or sleep day, so this does not count as a real miss. Same circuit next week.';
+    missResult.text = 'Circuit reps missed with low energy and sleep, so the same circuit repeats next week.';
     return results;
   }
-  circuit.stall += 1;
-  if (circuit.stall >= TEST_RULES.stallSessions && circuit.stage > 1) {
-    circuit.stage -= 1;
-    circuit.stall = 0;
-    missResult.text = 'Circuit reps missed for a second session in a row, so it steps back one step next week.';
-  } else {
-    missResult.text = 'Not every circuit rep was hit, so the same rest and reps repeat next week.';
-  }
+  // One step back means 5 seconds more rest, or the reps before the last rep increase
+  const back = feeling === 'high' ? 2 : 1;
+  circuit.stage = circuit.stage > 1 ? Math.max(1, circuit.stage - back) : circuit.stage;
+  missResult.text = feeling === 'high'
+    ? 'Circuit reps missed although energy and sleep were high, so the circuit steps back two steps next week.'
+    : 'Circuit reps missed with average energy and sleep, so the circuit steps back one step next week.';
   return results;
 }
 
@@ -722,6 +745,7 @@ const TEST_SCENARIOS = [
   { id: 'first', label: 'Beats first sets', description: 'Goes 2 reps past the first-set targets in weeks 3, 6 and 9.', pick: (exercise, week) => (exercise.kind === 'straight' && [3, 6, 9].includes(week) ? 'first' : 'hit') },
   { id: 'strong', label: 'Finds it too easy', description: 'Ticks "too easy" on pull-ups, dips and both EMOMs from week 2.', pick: (exercise, week) => (TEST_MAIN.includes(exercise.name) && exercise.kind !== 'circuit' && week >= 2 ? 'easy' : 'hit') },
   { id: 'circuit', label: 'Circuit gets hard', description: 'Close misses on the Day 4 circuit in weeks 5 and 6.', pick: (exercise, week) => (exercise.kind === 'circuit' && (week === 5 || week === 6) ? 'close' : 'hit') },
+  { id: 'fresh', label: 'Misses while feeling fresh', description: 'Week 5: energy and sleep 5, but big misses on submax pull-ups and dips.', pick: (exercise, week) => (['Pull ups Submax', 'Dips'].includes(exercise.name) && exercise.kind === 'straight' && week === 5 ? 'big' : 'hit'), day: (week) => (week === 5 ? { energy: 5, sleep: 5, effort: 9 } : defaultDay()) },
   { id: 'bad', label: 'One bad week', description: 'Week 6: poor sleep, low energy, big misses on everything.', pick: (exercise, week) => (week === 6 ? 'big' : 'hit'), day: (week) => (week === 6 ? { energy: 2, sleep: 2, effort: 9 } : defaultDay()) },
   { id: 'stuck', label: 'Stuck on one exercise', description: 'Big misses on the pull-up EMOM in weeks 5, 6 and 7.', pick: (exercise, week) => (exercise.name === 'Pull ups EMOM' && week >= 5 && week <= 7 ? 'big' : 'hit') }
 ];

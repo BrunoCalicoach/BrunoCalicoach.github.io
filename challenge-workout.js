@@ -127,9 +127,8 @@ function adjustBlock(step) {
   const slots = stepSlots(step);
   if (!slots.length) return '';
   const entry = draft.ex[step.exercise.id];
-  const title = step.circuit ? `${step.exercise.name}, round ${step.set + 1}` : `${step.exercise.name}, ${stepCounter(step).split(' of ')[0].toLowerCase()}`;
   return `<div class="player-adjust">
-    <div class="adjust-title">Reps you did: ${esc(title)}</div>
+    <div class="adjust-title">Reps you did</div>
     <div class="adjust-row">${slots.map((slot) => `<div class="adjust-slot">
       ${slots.length > 1 ? `<div class="adjust-label">${esc(slot.label)}</div>` : ''}
       <div class="stepper">
@@ -147,9 +146,9 @@ function workScreen(step, target) {
   const meta = [step.exercise.tempo && 'Tempo ' + step.exercise.tempo, step.exercise.kind !== 'band' && target.load].filter(Boolean).join(' · ');
   const label = step.after ? (step.circuit || step.exercise.kind === 'emom' || step.exercise.roundLabel ? 'Round done' : 'Set done') : 'Last set done';
   return `${topBar(step)}
+    <div class="player-name">${esc(step.exercise.name)}</div>
     <div class="player-media">${playerMedia(step.exercise)}</div>
     <div class="player-main">
-      <div class="player-name">${esc(step.exercise.name)}</div>
       <div class="player-count">${esc(stepCounter(step))}</div>
       <div class="player-target">${esc(goal.main)}</div>
       ${goal.sub ? `<div class="player-sub">${esc(goal.sub)}</div>` : ''}
@@ -174,16 +173,16 @@ function restScreen(step, next, targets) {
       <div class="rest-label" id="rest-label">${esc(rest.label || 'Rest')}</div>
       <div class="rest-clock" id="rest-clock">0:00</div>
       <div class="rest-status" id="rest-status"></div>
-      <div class="rest-bar" aria-hidden="true">
-        <div class="rest-fill" id="rest-fill"></div>
-        ${!rest.every && rest.min && rest.max > rest.min ? `<div class="rest-mark" style="left:${(rest.min / rest.max) * 100}%"></div>` : ''}
-      </div>
       <div class="rest-window">${esc(restRule)}</div>
     </div>
     ${adjustBlock(step)}
     <div class="player-next">${esc(nextLine(next, targets))}</div>
     <div class="rest-warning" id="rest-warning" role="status"></div>
-    <button type="button" class="btn-primary player-button" id="rest-go" data-workout="next">Start</button>`;
+    <button type="button" class="player-button go-button" id="rest-go" data-workout="next">
+      <span class="go-fill" id="go-fill"></span>
+      ${!rest.every && rest.min && rest.max > rest.min ? `<span class="go-mark" style="left:${(rest.min / rest.max) * 100}%" aria-hidden="true"></span>` : ''}
+      <span class="go-label" id="go-label">Start</span>
+    </button>`;
 }
 
 function lastSetScreen(step) {
@@ -284,8 +283,8 @@ function updatePlayerClock() {
   const label = document.getElementById('rest-label');
   const big = document.getElementById('rest-clock');
   const status = document.getElementById('rest-status');
-  const fill = document.getElementById('rest-fill');
-  const go = document.getElementById('rest-go');
+  const fill = document.getElementById('go-fill');
+  const goLabel = document.getElementById('go-label');
   if (!big) return;
   const panel = big.closest('.player-rest');
 
@@ -300,37 +299,37 @@ function updatePlayerClock() {
     big.textContent = clock(remaining);
     status.textContent = 'It starts by itself, or start now';
     fill.style.width = `${Math.min(100, (1 - remaining / rest.every) * 100)}%`;
-    go.textContent = 'Start now';
+    fill.classList.add('is-ready');
+    goLabel.textContent = 'Start now';
     return;
   }
 
+  // The Start button fills up: red until the minimum rest, green until the maximum, then the next set starts by itself
   const elapsed = (now - player.phaseAt) / 1000;
+  if (elapsed >= rest.max) {
+    beep();
+    advance();
+    return;
+  }
   const warning = document.getElementById('rest-warning');
-  fill.style.width = `${rest.max ? Math.min(100, (elapsed / rest.max) * 100) : 100}%`;
+  fill.style.width = `${Math.min(100, (elapsed / rest.max) * 100)}%`;
   // Starting early is always allowed; before the minimum the first tap only warns
   if (elapsed < rest.min) {
     big.textContent = clock(rest.min - elapsed);
     status.textContent = 'Keep resting until the minimum';
     panel.dataset.state = 'resting';
-    go.classList.add('is-early');
-    go.textContent = player.earlyWarned ? 'Start anyway' : 'Start';
+    fill.classList.remove('is-ready');
+    goLabel.textContent = player.earlyWarned ? 'Start anyway' : 'Start';
     warning.textContent = player.earlyWarned ? `Too soon: ${clock(rest.min - elapsed)} until the minimum rest` : '';
     return;
   }
-  go.classList.remove('is-early');
-  go.textContent = 'Start';
+  if (!player.beeped && rest.min > 0) { player.beeped = true; beep(); }
+  fill.classList.add('is-ready');
+  goLabel.textContent = 'Start';
   warning.textContent = '';
-  if (elapsed < rest.max) {
-    if (!player.beeped && rest.min > 0) { player.beeped = true; beep(); }
-    big.textContent = clock(rest.max - elapsed);
-    status.textContent = rest.min ? 'Ready. Start before this reaches 0:00' : 'Start when ready, before this reaches 0:00';
-    panel.dataset.state = 'ready';
-  } else {
-    if (!player.lateBeep) { player.lateBeep = true; beep(); }
-    big.textContent = `+${clock(elapsed - rest.max)}`;
-    status.textContent = rest.max ? 'Rest is over. Start now' : 'Start now';
-    panel.dataset.state = 'late';
-  }
+  big.textContent = clock(rest.max - elapsed);
+  status.textContent = 'Ready. Starts by itself when the bar is full';
+  panel.dataset.state = 'ready';
 }
 
 function renderPlayer() {
@@ -367,7 +366,6 @@ function advance() {
   player.phaseAt = now;
   player.roundAt = now;
   player.beeped = false;
-  player.lateBeep = false;
   player.earlyWarned = false;
   saveTestState();
   renderPlayer();

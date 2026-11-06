@@ -341,8 +341,9 @@ function lighterReps(exercise, reps) {
   const lowered = exercise.kind === 'superset'
     ? reps.slice(0, -2).map((n) => Math.max(n - 1, 1))
     : reps.slice(0, -1).map((n) => Math.max(n - 1, 1));
-  // Targets do not go below the adaptation week
-  return repsTotal(lowered) < repsTotal(exercise.seq[0].reps) ? exercise.seq[0].reps.slice() : lowered;
+  // A lighter week does not go below the adaptation week, unless the target is already lower than it
+  const floor = exercise.seq[0].reps;
+  return repsTotal(lowered) < repsTotal(floor) && repsTotal(reps) > repsTotal(floor) ? floor.slice() : lowered;
 }
 
 function circuitTarget(exercise, circuit) {
@@ -454,31 +455,23 @@ function readiness(day) {
   return average <= 2 ? 'low' : average >= 4.5 ? 'high' : 'middle';
 }
 
-// A lower target with the same shape, adding up to the given total
-function reducedTarget(exercise, target, actual, total) {
-  const reps = target.reps;
-  const sets = reps.length;
-  if (exercise.kind === 'straight') {
-    // The first set keeps what the athlete managed, so it stays close to failure
-    const first = Math.min(reps[0], Math.max(actual[0] || 0, Math.ceil(total / sets)));
-    const rest = Math.max(total - first, sets - 1);
-    const each = Math.floor(rest / (sets - 1));
-    const extra = rest - each * (sets - 1);
-    return [first].concat(Array.from({ length: sets - 1 }, (_, i) => each + (i < extra ? 1 : 0)));
-  }
+// An EMOM keeps Bruno's round patterns, so a missed EMOM is rebuilt from its total
+function emomAtTotal(total, rounds) {
+  const n = Math.max(1, Math.floor(total / rounds));
+  const alternate = total - n * rounds >= Math.ceil(rounds / 2);
+  return Array.from({ length: rounds }, (_, i) => (alternate && i % 2 === 0 ? n + 1 : n));
+}
+
+// Next week's target after a miss, set by set: what was done (high), or halfway between it and the target (middle)
+function missedTarget(exercise, target, actual, feeling) {
   if (exercise.kind === 'emom') {
-    const n = Math.max(1, Math.floor(total / sets));
-    const alternate = total - n * sets >= Math.ceil(sets / 2);
-    return Array.from({ length: sets }, (_, i) => (alternate && i % 2 === 0 ? n + 1 : n));
+    const done = repsTotal(actual);
+    return emomAtTotal(feeling === 'high' ? done : Math.round((done + repsTotal(target.reps)) / 2), target.reps.length);
   }
-  // Ladders and supersets shrink every set in proportion, then hand leftover reps back from the top
-  const scaled = reps.map((n) => Math.max(1, Math.floor((n * total) / repsTotal(reps))));
-  let left = total - repsTotal(scaled);
-  for (let i = 0; left > 0; i = (i + 1) % sets) {
-    scaled[i] += 1;
-    left -= 1;
-  }
-  return scaled;
+  return target.reps.map((planned, i) => {
+    const did = actual[i] || 0;
+    return Math.max(1, feeling === 'high' ? did : Math.round((did + planned) / 2));
+  });
 }
 
 function checkResult(exercise, target, actual) {
@@ -538,12 +531,10 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     }
     const reason = feeling === 'high'
       ? 'Energy and sleep were high, so the target was too hard. Next week matches what was done.'
-      : 'Energy and sleep were average, so next week sits halfway between the target and what was done.';
+      : 'Energy and sleep were average, so each set next week sits halfway between its target and what was done.';
     if (['straight', 'emom', 'ladder', 'superset'].includes(exercise.kind)) {
-      const total = feeling === 'high' ? done : Math.round((done + goal) / 2);
-      const lower = reducedTarget(exercise, target, actual, total);
-      // Targets do not go below the adaptation week
-      state.custom = repsTotal(lower) < repsTotal(exercise.seq[0].reps) ? exercise.seq[0].reps.slice() : lower;
+      // This can go below the adaptation week: the athlete has shown that week was too hard
+      state.custom = missedTarget(exercise, target, actual, feeling);
       result.text = `${label}. ${detail} ${reason}`;
     } else if (exercise.kind === 'range' && feeling === 'high' && state.idx > 0) {
       state.idx -= 1;

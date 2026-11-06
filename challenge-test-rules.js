@@ -63,7 +63,7 @@ function level1Plan(p) {
       { day: 2, name: 'Pull ups EMOM', kind: 'emom', family: 'pull', rest: 'every 60 sec', weeks: PULL_WEEKS, list: p.pullEmom },
       { day: 2, name: 'Bodyweight rows + Push ups superset', kind: 'superset', family: 'push', pushIndex: 1, sides: ['Rows', 'Push-ups'], rest: 'under 60 sec', weeks: SUPERSET_WEEKS, list: p.supersetTwo },
       { day: 2, name: 'Chair dips', kind: 'range', sets: 4, rest: '60 - 90 sec', weeks: RANGE_WEEKS, list: p.chair },
-      { day: 2, name: 'Split squat + jump squat superset', kind: 'fixed', text: '10 + 10, 4 sets (3 in week 1). Split squat is per leg.', rest: '90 sec' },
+      { day: 2, name: 'Split squat + jump squat superset', kind: 'fixed', text: '10 + 10, 4 sets (3 in week 1). Split squat is per leg.', stepText: '10 split squats per leg, then 10 jump squats', sets: 4, firstWeekSets: 3, rest: '90 sec' },
       p.skillDayThree,
       { day: 3, name: 'Push ups', kind: 'straight', family: 'push', rest: '60 - 90 sec', weeks: EVERY_WEEK, list: p.push },
       { day: 3, name: 'Pull up ladder', kind: 'ladder', family: 'pull', rest: 'under 60 sec', weeks: EVERY_WEEK, list: p.ladder },

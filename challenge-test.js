@@ -2,7 +2,8 @@ const testApp = document.getElementById('test-app');
 const TEST_STORAGE_KEY = 'challengeTestLevel1';
 
 let testState = loadTestState();
-let draft = null;
+// The week being logged is saved too, so a reload in the middle of a week keeps finished workouts
+let draft = testState.draft || null;
 let lastMessage = '';
 
 function loadTestState() {
@@ -18,6 +19,8 @@ function needsResults() {
 }
 
 function saveTestState() {
+  testState.draft = draft;
+  testState.player = player;
   try {
     localStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(testState));
   } catch (error) { /* See loadTestState */ }
@@ -76,6 +79,7 @@ function createPlanFromForm() {
   testState.logs = {};
   testState.tab = 'week';
   draft = null;
+  player = null;
   lastMessage = 'Your plan is ready. Start with week 1, Day 1.';
   saveTestState();
   window.scrollTo({ top: 0 });
@@ -102,7 +106,7 @@ function makeDraft(plan, weeks) {
   const week = currentWeek();
   if (week > 12) return null;
   const targets = weeks[week - 1].targets;
-  const next = { week, activeDay: 1, days: {}, ex: {} };
+  const next = { week, activeDay: 1, days: {}, daysDone: {}, ex: {} };
   [1, 2, 3, 4].forEach((day) => { next.days[day] = defaultDay(); });
   plan.exercises.forEach((exercise) => {
     if (exercise.kind === 'fixed') return;
@@ -173,7 +177,60 @@ function exerciseCard(exercise, target) {
   </div>`;
 }
 
+// The day's whole workout at a glance, before starting the guided workout
 function weekPanel(plan, weeks) {
+  const week = currentWeek();
+  if (week > 12 || testState.manual) return manualPanel(plan, weeks);
+  const targets = weeks[week - 1].targets;
+  const day = draft.activeDay;
+  const done = draft.daysDone || {};
+  const list = plan.exercises.filter((exercise) => exercise.day === day);
+  const circuit = list.every((exercise) => exercise.kind === 'circuit');
+  const paused = player && player.paused && player.day === day && player.week === week;
+  const rows = list.map((exercise) => {
+    const target = targets[exercise.id];
+    let goal = exercise.kind === 'fixed' ? exercise.stepText : shortTarget(exercise, target);
+    if (exercise.kind === 'superset') {
+      const reps = target.reps;
+      goal = `${reps[0]} + ${reps[1]} down to ${reps[reps.length - 2]} + ${reps[reps.length - 1]}`;
+    }
+    if (exercise.kind === 'circuit') goal = target.reps.join(', ');
+    const sets = workoutSetCount(exercise, target, week);
+    const word = circuit || exercise.kind === 'emom' || exercise.roundLabel ? 'rounds' : 'sets';
+    const meta = circuit ? `${sets} rounds` : `${sets} ${word} · rest ${restText(restWindow(exercise.rest))}`;
+    return `<li class="plan-row">
+      <span class="plan-row-name">${esc(exercise.name)}</span>
+      <span class="plan-row-target">${esc(goal)}</span>
+      <span class="plan-row-meta">${esc(meta)}${exercise.tempo ? ' · tempo 0-1-3' : ''}</span>
+    </li>`;
+  }).join('');
+  const circuitNote = circuit
+    ? `<p class="plan-row-meta">Circuit: 1 set of each exercise in order, then 90 sec rest. Rest between exercises: ${esc(restText(restWindow(targets[list[0].id].rest)))}.</p>`
+    : '';
+  let action = `<button type="button" class="btn-primary player-button" data-workout="start" data-day="${day}">Start workout</button>`;
+  if (paused) action = `<button type="button" class="btn-primary player-button" data-workout="resume">Resume workout</button>`;
+  else if (done[day]) action = `<p class="done-note">Day ${day} is done.</p>`;
+  const someDone = [1, 2, 3, 4].some((n) => done[n]);
+  return `<div class="grid gap-3">
+    <div class="day-tabs" role="group" aria-label="Choose a workout">
+      ${[1, 2, 3, 4].map((n) => `<button type="button" class="day-tab${n === day ? ' active' : ''}" aria-pressed="${n === day}" data-day-tab="${n}">Day ${n}${done[n] ? ' ✓' : ''}</button>`).join('')}
+    </div>
+    <section class="card grid gap-3">
+      <h3 class="text-xl font-bold">Week ${week}, Day ${day}${week === 1 ? ' · adaptation week' : ''}</h3>
+      ${circuitNote}
+      <ol class="plan-list">${rows}</ol>
+      ${action}
+    </section>
+    <div class="small-actions">
+      <button type="button" class="link-button" data-action="manual">Change reps without the timer</button>
+      ${someDone ? `<button type="button" class="link-button" data-action="finish">Finish week ${week} now</button>` : ''}
+      ${week > 1 ? '<button type="button" class="link-button" data-action="undo">Undo last week</button>' : ''}
+    </div>
+  </div>`;
+}
+
+// The full form with every set on one page, for corrections or logging after training
+function manualPanel(plan, weeks) {
   const week = currentWeek();
   if (week > 12) {
     return `<div class="card text-center">
@@ -185,6 +242,7 @@ function weekPanel(plan, weeks) {
   const targets = weeks[week - 1].targets;
   const day = draft.activeDay;
   return `<div class="grid gap-4">
+    <button type="button" class="btn-outline" data-action="overview">Back to the workout view</button>
     <p class="text-sm text-gray-600">${week > 1 ? '' : 'Week 1 is the adaptation week. '}Reps start filled in with the target. Change any set where you did something different.</p>
     <div class="day-tabs" role="group" aria-label="Choose a workout">
       ${[1, 2, 3, 4].map((n) => `<button type="button" class="day-tab${n === day ? ' active' : ''}" aria-pressed="${n === day}" data-day-tab="${n}">Day ${n}</button>`).join('')}
@@ -288,8 +346,16 @@ function whyPanel(plan, weeks) {
 }
 
 function render() {
+  if (player && !player.paused) {
+    if (player.week === currentWeek() && draft && draft.week === player.week) {
+      renderPlayer();
+      return;
+    }
+    player = null;
+  }
   const plan = activePlan();
   const showForm = needsResults();
+  document.documentElement.classList.toggle('has-plan', !showForm);
   const weeks = runPlan(plan, testState.logs);
   const baseline = runPlan(plan, {});
   const week = currentWeek();
@@ -324,7 +390,7 @@ function render() {
       </div>
     </details>
     ${lastMessage ? `<div class="message" role="status">${esc(lastMessage)}</div>` : ''}
-    ${showForm ? '' : resultsSummary()}
+    ${showForm || testState.tab !== 'plan' ? '' : resultsSummary()}
     ${showForm ? '' : `<div class="tab-row" role="tablist">
       ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${key === testState.tab}" class="tab${key === testState.tab ? ' active' : ''}" data-tab="${key}">${esc(label)}</button>`).join('')}
     </div>`}
@@ -340,6 +406,8 @@ function finishWeek() {
     log.ex[id] = { actual: draft.ex[id].actual.map((n) => Number(n) || 0), tooEasy: draft.ex[id].tooEasy };
   });
   testState.logs[week] = log;
+  testState.manual = false;
+  player = null;
   saveTestState();
   const item = runPlan(plan, testState.logs)[week - 1];
   const count = weekChanges(plan, item).length;
@@ -353,9 +421,16 @@ function finishWeek() {
 testApp.addEventListener('click', (event) => {
   const target = event.target.closest('button');
   if (!target) return;
+  if (handleWorkoutClick(target)) return;
   const plan = activePlan();
 
-  if (target.dataset.result) {
+  if (target.dataset.action === 'manual' || target.dataset.action === 'overview') {
+    testState.manual = target.dataset.action === 'manual';
+    lastMessage = '';
+    saveTestState();
+    render();
+    window.scrollTo({ top: 0 });
+  } else if (target.dataset.result) {
     const field = document.getElementById('result-' + target.dataset.result);
     field.value = Math.max(0, (Number(field.value) || 0) + Number(target.dataset.change));
   } else if (target.dataset.action === 'create') {
@@ -376,6 +451,7 @@ testApp.addEventListener('click', (event) => {
   } else if (target.dataset.dayTab) {
     draft.activeDay = Number(target.dataset.dayTab);
     lastMessage = '';
+    saveTestState();
     render();
     document.querySelector('.day-tabs').scrollIntoView({ block: 'start' });
   } else if (target.dataset.step) {
@@ -396,6 +472,7 @@ testApp.addEventListener('click', (event) => {
     testState.logs = {};
     testState.tab = 'week';
     draft = null;
+    player = null;
     lastMessage = '';
     saveTestState();
     render();
@@ -420,6 +497,7 @@ testApp.addEventListener('click', (event) => {
     testState.tab = 'week';
     lastMessage = '';
     draft = null;
+    player = null;
     saveTestState();
     render();
   }
@@ -460,4 +538,5 @@ testApp.addEventListener('toggle', (event) => {
   saveTestState();
 }, true);
 
+player = testState.player || null;
 render();

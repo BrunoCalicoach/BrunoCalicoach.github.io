@@ -24,7 +24,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<script src="challenge-test-rules.js?v=23"></script>
+<script src="challenge-test-rules.js?v=24"></script>
 
 <style>
 
@@ -504,6 +504,366 @@ body{
   white-space:nowrap;
 }
 
+/* Workout overview */
+.plan-list{
+  display:grid;
+  gap:8px;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.plan-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:2px 12px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#e5e7eb;
+}
+
+.plan-row-name{
+  font-weight:700;
+  font-size:16px;
+}
+
+.plan-row-target{
+  font-weight:700;
+  color:#b91c1c;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+.plan-row-meta{
+  grid-column:1 / -1;
+  font-size:13px;
+  color:#374151;
+}
+
+.done-note{
+  text-align:center;
+  font-weight:600;
+  color:#047857;
+  padding:12px;
+}
+
+.small-actions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:4px 16px;
+}
+
+.link-button{
+  min-height:44px;
+  padding:0 4px;
+  color:#b91c1c;
+  font-weight:500;
+  text-decoration:underline;
+}
+
+html.has-plan .hero-intro{
+  display:none;
+}
+
+/* Guided workout: always one screen tall, nothing to scroll */
+html.workout-open,
+html.workout-open body{
+  overflow:hidden;
+}
+
+.player{
+  position:fixed;
+  inset:0;
+  z-index:60;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  height:100dvh;
+  background:#f5f5f5;
+  padding:max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+
+.player-scroll{
+  overflow-y:auto;
+}
+
+.player-top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-size:14px;
+  font-weight:600;
+}
+
+.player-where{
+  flex:1;
+  min-width:0;
+  color:#374151;
+}
+
+.total-clock{
+  font-variant-numeric:tabular-nums;
+  background:#e5e7eb;
+  border-radius:999px;
+  padding:4px 10px;
+}
+
+.player-exit{
+  min-height:44px;
+  padding:0 14px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  background:#ffffff;
+}
+
+.player-media{
+  flex:1 1 auto;
+  min-height:80px;
+  border-radius:18px;
+  background:#e5e7eb;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.player-media img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.media-empty{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  color:#4b5563;
+  font-size:14px;
+}
+
+.media-icon{
+  font-size:28px;
+}
+
+.player-main{
+  text-align:center;
+}
+
+.player-name{
+  font-size:20px;
+  font-weight:700;
+}
+
+.player-count{
+  font-size:15px;
+  font-weight:600;
+  color:#4b5563;
+  margin-top:2px;
+}
+
+.player-target{
+  font-size:clamp(36px, 11vw, 60px);
+  font-weight:800;
+  line-height:1.05;
+  color:#b91c1c;
+  margin-top:6px;
+  font-variant-numeric:tabular-nums;
+}
+
+.player-sub{
+  font-size:22px;
+  font-weight:700;
+  color:#b91c1c;
+}
+
+.player-meta{
+  font-size:14px;
+  color:#374151;
+  margin-top:4px;
+}
+
+.player-button{
+  width:100%;
+  min-height:64px;
+  font-size:20px;
+}
+
+.player-button:disabled{
+  background:#9ca3af;
+  cursor:not-allowed;
+}
+
+.player-rest{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  text-align:center;
+}
+
+.rest-label{
+  font-size:16px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#4b5563;
+}
+
+.rest-clock{
+  font-size:clamp(56px, 20vw, 104px);
+  font-weight:800;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+
+.rest-status{
+  font-size:16px;
+  font-weight:600;
+}
+
+.player-rest[data-state="resting"] .rest-clock{ color:#111827; }
+.player-rest[data-state="ready"] .rest-clock,
+.player-rest[data-state="ready"] .rest-status{ color:#047857; }
+.player-rest[data-state="late"] .rest-clock,
+.player-rest[data-state="late"] .rest-status{ color:#b91c1c; }
+
+.rest-bar{
+  position:relative;
+  width:100%;
+  max-width:420px;
+  height:10px;
+  border-radius:999px;
+  background:#e5e7eb;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.rest-fill{
+  height:100%;
+  width:0;
+  background:#111827;
+}
+
+.rest-mark{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:#047857;
+}
+
+.rest-window{
+  font-size:13px;
+  color:#4b5563;
+}
+
+.player-adjust{
+  background:#e5e7eb;
+  border-radius:16px;
+  padding:10px 12px;
+  text-align:center;
+}
+
+.adjust-title{
+  font-size:14px;
+  font-weight:600;
+}
+
+.adjust-row{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  margin-top:6px;
+}
+
+.adjust-slot{
+  width:150px;
+}
+
+.adjust-label{
+  font-size:12px;
+  color:#374151;
+  margin-bottom:2px;
+}
+
+.adjust-value{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#ffffff;
+}
+
+.adjust-hint{
+  font-size:12px;
+  color:#4b5563;
+  margin-top:4px;
+}
+
+.player-next{
+  font-size:14px;
+  font-weight:600;
+  text-align:center;
+  color:#374151;
+}
+
+.player-review{
+  display:grid;
+  gap:18px;
+  max-width:560px;
+  width:100%;
+  margin:0 auto;
+  padding:12px 0;
+}
+
+.easy-chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.easy-chip{
+  min-height:44px;
+  padding:6px 12px;
+  border:1px solid #d1d5db;
+  border-radius:999px;
+  background:#ffffff;
+  font-size:14px;
+}
+
+.easy-chip.active{
+  background:#fef2f2;
+  border-color:#ef4444;
+  color:#b91c1c;
+  font-weight:600;
+}
+
+.player-confirm{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(17,24,39,.55);
+}
+
+.player-confirm .card{
+  width:100%;
+  max-width:360px;
+}
+
+@media (max-height:640px){
+  .player{ gap:8px; }
+  .player-media{ min-height:56px; }
+  .rest-clock{ font-size:56px; }
+  .player-button{ min-height:56px; }
+}
+
 /* Dark mode */
 html[data-theme="dark"]{
   color-scheme:dark;
@@ -599,6 +959,74 @@ html[data-theme="dark"] .tag-rebuilt{
   color:#dbeafe;
 }
 
+html[data-theme="dark"] .plan-row,
+html[data-theme="dark"] .player-adjust,
+html[data-theme="dark"] .player-media,
+html[data-theme="dark"] .rest-bar,
+html[data-theme="dark"] .total-clock{
+  background:#2b2f38;
+}
+
+html[data-theme="dark"] .player{
+  background:#111318;
+  color:#f3f4f6;
+}
+
+html[data-theme="dark"] .plan-row-target,
+html[data-theme="dark"] .player-target,
+html[data-theme="dark"] .player-sub,
+html[data-theme="dark"] .link-button{
+  color:#fca5a5;
+}
+
+html[data-theme="dark"] .plan-row-meta,
+html[data-theme="dark"] .player-where,
+html[data-theme="dark"] .player-count,
+html[data-theme="dark"] .player-meta,
+html[data-theme="dark"] .player-next,
+html[data-theme="dark"] .rest-label,
+html[data-theme="dark"] .rest-window,
+html[data-theme="dark"] .adjust-label,
+html[data-theme="dark"] .adjust-hint,
+html[data-theme="dark"] .media-empty{
+  color:#d1d5db;
+}
+
+html[data-theme="dark"] .rest-fill,
+html[data-theme="dark"] .player-rest[data-state="resting"] .rest-clock{
+  background:#f3f4f6;
+}
+
+html[data-theme="dark"] .player-rest[data-state="resting"] .rest-clock{
+  background:none;
+  color:#f3f4f6;
+}
+
+html[data-theme="dark"] .player-rest[data-state="ready"] .rest-clock,
+html[data-theme="dark"] .player-rest[data-state="ready"] .rest-status,
+html[data-theme="dark"] .done-note{
+  color:#6ee7b7;
+}
+
+html[data-theme="dark"] .player-rest[data-state="late"] .rest-clock,
+html[data-theme="dark"] .player-rest[data-state="late"] .rest-status{
+  color:#fca5a5;
+}
+
+html[data-theme="dark"] .player-exit,
+html[data-theme="dark"] .easy-chip,
+html[data-theme="dark"] .adjust-value{
+  background:#1c1f26;
+  border-color:#4b5563;
+  color:#f3f4f6;
+}
+
+html[data-theme="dark"] .easy-chip.active{
+  background:#3b1518;
+  border-color:#ef4444;
+  color:#fca5a5;
+}
+
 html[data-theme="dark"] .plan-table th,
 html[data-theme="dark"] .plan-table td{
   border-color:#2d323c;
@@ -690,7 +1118,7 @@ html[data-theme="dark"] .status-border-hit{
 
     <h1 class="text-3xl sm:text-5xl font-extrabold mt-2 sm:mt-3">Adaptive progression test</h1>
 
-    <p class="text-gray-300 mt-3 sm:mt-4 max-w-2xl">
+    <p class="hero-intro text-gray-300 mt-3 sm:mt-4 max-w-2xl">
       Enter your test results and log your training. Your 12-week plan adapts to what you actually do.
       Your training is saved only in this browser on this device.
     </p>
@@ -703,7 +1131,8 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-test.js?v=19"></script>
+<script src="challenge-workout.js?v=24"></script>
+<script src="challenge-test.js?v=24"></script>
 
 </body>
 </html>

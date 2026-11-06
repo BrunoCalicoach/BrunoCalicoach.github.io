@@ -553,12 +553,19 @@ function advanceExercise(exercise, state, target, entry, week, day) {
     return result;
   }
   if (state.custom) {
-    const customTotal = repsTotal(state.custom);
-    const found = exercise.seq.findIndex((step) => repsTotal(step.reps) > customTotal);
-    state.custom = null;
-    state.idx = found === -1 ? last : found;
+    // Climb back to the plan by 1 rep per set each week instead of jumping straight back
+    const planned = exercise.seq[state.idx].reps;
+    const climbed = exercise.kind === 'emom'
+      ? emomAtTotal(Math.min(repsTotal(planned), repsTotal(state.custom) + Math.ceil(state.custom.length / 2)), state.custom.length)
+      : state.custom.map((n, i) => Math.min(planned[i] === undefined ? n + 1 : planned[i], n + 1));
     result.notable = true;
-    result.text = 'Rebuilt target hit. Rejoins the plan at the next step up.';
+    if (climbed.length === planned.length && climbed.every((n, i) => n >= planned[i])) {
+      state.custom = null;
+      result.text = 'Lower target hit, and the next step reaches the plan again.';
+    } else {
+      state.custom = climbed;
+      result.text = 'Lower target hit, so next week climbs back toward the plan by 1 rep per set.';
+    }
     return result;
   }
   if (exercise.kind === 'range') {

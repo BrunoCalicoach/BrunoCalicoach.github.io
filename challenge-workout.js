@@ -182,8 +182,8 @@ function restScreen(step, next, targets) {
     </div>
     ${adjustBlock(step)}
     <div class="player-next">${esc(nextLine(next, targets))}</div>
-    <button type="button" class="btn-primary player-button" id="rest-go" data-workout="next">Start</button>
-    ${location.hash === '#tools' ? '<button type="button" class="link-button skip-rest" data-workout="next">Skip rest (testing only)</button>' : ''}`;
+    <div class="rest-warning" id="rest-warning" role="status"></div>
+    <button type="button" class="btn-primary player-button" id="rest-go" data-workout="next">Start</button>`;
 }
 
 function lastSetScreen(step) {
@@ -305,27 +305,31 @@ function updatePlayerClock() {
   }
 
   const elapsed = (now - player.phaseAt) / 1000;
+  const warning = document.getElementById('rest-warning');
   fill.style.width = `${rest.max ? Math.min(100, (elapsed / rest.max) * 100) : 100}%`;
+  // Starting early is always allowed; before the minimum the first tap only warns
   if (elapsed < rest.min) {
     big.textContent = clock(rest.min - elapsed);
-    status.textContent = 'Keep resting';
+    status.textContent = 'Keep resting until the minimum';
     panel.dataset.state = 'resting';
-    go.disabled = true;
-    go.textContent = `Start in ${clock(rest.min - elapsed)}`;
-  } else if (elapsed < rest.max) {
+    go.classList.add('is-early');
+    go.textContent = player.earlyWarned ? 'Start anyway' : 'Start';
+    warning.textContent = player.earlyWarned ? `Too soon: ${clock(rest.min - elapsed)} until the minimum rest` : '';
+    return;
+  }
+  go.classList.remove('is-early');
+  go.textContent = 'Start';
+  warning.textContent = '';
+  if (elapsed < rest.max) {
     if (!player.beeped && rest.min > 0) { player.beeped = true; beep(); }
     big.textContent = clock(rest.max - elapsed);
     status.textContent = rest.min ? 'Ready. Start before this reaches 0:00' : 'Start when ready, before this reaches 0:00';
     panel.dataset.state = 'ready';
-    go.disabled = false;
-    go.textContent = 'Start';
   } else {
     if (!player.lateBeep) { player.lateBeep = true; beep(); }
     big.textContent = `+${clock(elapsed - rest.max)}`;
     status.textContent = rest.max ? 'Rest is over. Start now' : 'Start now';
     panel.dataset.state = 'late';
-    go.disabled = false;
-    go.textContent = 'Start';
   }
 }
 
@@ -364,6 +368,7 @@ function advance() {
   player.roundAt = now;
   player.beeped = false;
   player.lateBeep = false;
+  player.earlyWarned = false;
   saveTestState();
   renderPlayer();
 }
@@ -399,7 +404,14 @@ function handleWorkoutClick(button) {
     saveTestState();
     renderPlayer();
   } else if (action === 'next') {
-    advance();
+    const rest = player.rest || {};
+    const early = player.phase === 'rest' && !rest.every && (Date.now() - player.phaseAt) / 1000 < rest.min;
+    if (early && !player.earlyWarned) {
+      player.earlyWarned = true;
+      updatePlayerClock();
+    } else {
+      advance();
+    }
   } else if (action === 'adjust') {
     const entry = draft.ex[button.dataset.ex];
     const set = Number(button.dataset.set);

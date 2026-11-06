@@ -806,9 +806,21 @@ html.workout-open body{
   margin-top:4px;
 }
 
-.skip-rest{
-  min-height:36px;
-  margin-top:-6px;
+.rest-warning{
+  min-height:20px;
+  margin-bottom:-6px;
+  text-align:center;
+  font-size:15px;
+  font-weight:700;
+  color:#b45309;
+}
+
+.player-button.is-early{
+  background:#6b7280;
+}
+
+html[data-theme="dark"] .rest-warning{
+  color:#fcd34d;
 }
 
 .player-next{
@@ -1138,7 +1150,7 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-workout.js?v=29"></script>
+<script src="challenge-workout.js?v=30"></script>
 <script src="challenge-test.js?v=28"></script>
 
 </body>

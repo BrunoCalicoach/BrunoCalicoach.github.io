@@ -202,9 +202,8 @@ function weekPanel(plan, weeks) {
     const restPart = rest.every ? `one round ${restText(rest)}` : `rest ${restText(rest)}`;
     const meta = circuit ? `${sets} rounds` : `${sets} ${word} · ${restPart}`;
     return `<li class="plan-row">
-      <span class="plan-row-name">${esc(exercise.name)}</span>
-      <span class="plan-row-target">${esc(goal)}</span>
-      <span class="plan-row-meta">${esc(meta)}${exercise.tempo ? ' · tempo 0-1-3' : ''}</span>
+      <div class="plan-row-name">${esc(exercise.name)}</div>
+      <div><span class="plan-row-target">${esc(goal)}</span> <span class="plan-row-meta">· ${esc(meta)}${exercise.tempo ? ' · tempo 0-1-3' : ''}</span></div>
     </li>`;
   }).join('');
   const circuitNote = circuit

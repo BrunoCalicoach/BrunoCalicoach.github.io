@@ -86,7 +86,7 @@ function stepTarget(step, target) {
   }
   if (exercise.kind === 'range') return { main: `${reps[set]} to ${target.high} reps`, sub: '' };
   if (exercise.kind === 'band') return { main: '1 to 3 reps', sub: target.load };
-  return { main: `${reps[set]} reps`, sub: '' };
+  return { main: `${reps[set]} ${reps[set] === 1 ? 'rep' : 'reps'}`, sub: '' };
 }
 
 function stepCounter(step) {
@@ -329,7 +329,10 @@ function updatePlayerClock() {
   const now = Date.now();
   const total = document.getElementById('total-clock');
   if (total) total.textContent = clock(((player.finishedAt || now) - player.startedAt) / 1000);
-  if (player.phase === 'work' && player.interval) {
+  // The round clock only drives the steps of its own block; anywhere else it is switched off
+  const block = player.interval;
+  if (block && (player.phase !== 'work' || player.index < block.first || player.index > block.last)) player.interval = null;
+  if (player.interval) {
     updateIntervalClock(now);
     return;
   }
@@ -391,7 +394,7 @@ function updatePlayerClock() {
 function updateIntervalClock(now) {
   const block = player.interval;
   const rounds = block.last - block.first + 1;
-  const seconds = (now - block.startedAt) / 1000;
+  const seconds = Math.max(0, (now - block.startedAt) / 1000);
   const round = Math.floor(seconds / block.every);
   if (round >= rounds) {
     const steps = workoutContext().steps;
@@ -457,6 +460,7 @@ function startWorkout(day) {
 function advance() {
   const now = Date.now();
   player.index += 1;
+  player.interval = null;
   player.phase = 'work';
   player.phaseAt = now;
   player.roundAt = now;

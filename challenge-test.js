@@ -190,7 +190,7 @@ function weekPanel(plan, weeks) {
   const rows = list.map((exercise) => {
     const target = targets[exercise.id];
     let goal = exercise.kind === 'fixed' ? exercise.stepText : shortTarget(exercise, target);
-    if (exercise.kind === 'band') goal = `1 to 3 reps, `${target.load}`;
+    if (exercise.kind === 'band') goal = `1 to 3 reps, ${target.load}`;
     if (exercise.kind === 'superset') {
       const reps = target.reps;
       goal = `${reps[0]} + ${reps[1]} down to ${reps[reps.length - 2]} + ${reps[reps.length - 1]}`;
@@ -199,8 +199,8 @@ function weekPanel(plan, weeks) {
     const sets = workoutSetCount(exercise, target, week);
     const word = circuit || exercise.kind === 'emom' || exercise.roundLabel ? 'rounds' : 'sets';
     const rest = restWindow(exercise.rest);
-    const restPart = rest.every ? `one round `${restText(rest)}` : `rest `${restText(rest)}`;
-    const meta = circuit ? `${sets} rounds` : `${sets} `${word} · `${restPart}`;
+    const restPart = rest.every ? `one round ${restText(rest)}` : `rest ${restText(rest)}`;
+    const meta = circuit ? `${sets} rounds` : `${sets} ${word} · ${restPart}`;
     return `<li class="plan-row">
       <span class="plan-row-name">${esc(exercise.name)}</span>
       <span class="plan-row-target">${esc(goal)}</span>

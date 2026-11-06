@@ -427,6 +427,8 @@ testApp.addEventListener('click', (event) => {
 
 testApp.addEventListener('change', (event) => {
   const field = event.target;
+  // The test results form has no draft yet; its numbers are read when the plan is created
+  if (!field.dataset.ex || !draft) return;
   if (field.classList.contains('set-input')) {
     draft.ex[field.dataset.ex].actual[Number(field.dataset.set)] = Number(field.value) || 0;
   } else if (field.classList.contains('easy-box')) {

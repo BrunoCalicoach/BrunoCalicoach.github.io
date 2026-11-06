@@ -179,6 +179,7 @@ function restScreen(step, next, targets) {
     <div class="player-next">${esc(nextLine(next, targets))}</div>
     <div class="rest-warning" id="rest-warning" role="status"></div>
     <button type="button" class="player-button go-button" id="rest-go" data-workout="next">
+      ${!rest.every && rest.max > rest.min ? `<span class="go-zone" style="left:${(rest.min / rest.max) * 100}%" aria-hidden="true"></span>` : ''}
       <span class="go-fill" id="go-fill"></span>
       ${!rest.every && rest.min && rest.max > rest.min ? `<span class="go-mark" style="left:${(rest.min / rest.max) * 100}%" aria-hidden="true"></span>` : ''}
       <span class="go-label" id="go-label">Start</span>

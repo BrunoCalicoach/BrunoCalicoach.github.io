@@ -833,6 +833,20 @@ html[data-theme="dark"] .rest-warning{
   font-weight:700;
 }
 
+/* The window between minimum and maximum rest, visible before the bar reaches it */
+.go-zone{
+  position:absolute;
+  top:0;
+  bottom:0;
+  right:0;
+  background:#6ee7b7;
+  opacity:.55;
+}
+
+html[data-theme="dark"] .go-zone{
+  background:#34d399;
+  opacity:.35;
+}
 .go-fill{
   position:absolute;
   top:0;
@@ -1193,7 +1207,7 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-workout.js?v=33"></script>
+<script src="challenge-workout.js?v=34"></script>
 <script src="challenge-test.js?v=28"></script>
 
 </body>

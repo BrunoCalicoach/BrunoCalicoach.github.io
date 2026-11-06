@@ -362,7 +362,7 @@ function render() {
   const baseline = runPlan(plan, {});
   const week = currentWeek();
   if (!showForm && (!draft || draft.week !== week)) draft = makeDraft(plan, weeks);
-  const tabs = [['week', week > 12 ? 'Finished' : `Log week ${week}`], ['plan', 'Whole plan'], ['why', 'Why it changed']];
+  const tabs = [['week', week > 12 ? 'Finished' : `Week ${week}`], ['plan', 'Whole plan'], ['why', 'Changes']];
   const panel = showForm ? resultsForm()
     : testState.tab === 'plan' ? planPanel(plan, weeks, baseline)
     : testState.tab === 'why' ? whyPanel(plan, weeks)

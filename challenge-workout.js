@@ -167,7 +167,7 @@ function restScreen(step, next, targets) {
   const rest = player.rest;
   const restRule = rest.every
     ? `Rounds start every ${restText(rest).replace('every ', '')}`
-    : rest.min === rest.max ? `Rest ${restText(rest)}` : `Rest ${restText(rest)}: start after the minimum, before the maximum`;
+    : `Rest ${restText(rest)}`;
   return `${topBar(step)}
     <div class="player-rest">
       <div class="rest-label" id="rest-label">${esc(rest.label || 'Rest')}</div>

@@ -182,7 +182,8 @@ function restScreen(step, next, targets) {
     </div>
     ${adjustBlock(step)}
     <div class="player-next">${esc(nextLine(next, targets))}</div>
-    <button type="button" class="btn-primary player-button" id="rest-go" data-workout="next">Start</button>`;
+    <button type="button" class="btn-primary player-button" id="rest-go" data-workout="next">Start</button>
+    ${location.hash === '#tools' ? '<button type="button" class="link-button skip-rest" data-workout="next">Skip rest (testing only)</button>' : ''}`;
 }
 
 function lastSetScreen(step) {

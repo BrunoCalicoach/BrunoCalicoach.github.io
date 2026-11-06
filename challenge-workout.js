@@ -110,9 +110,14 @@ function workoutContext() {
   return { plan, week, targets, steps: workoutSteps(plan, player.day, targets, week) };
 }
 
+// One looping repetition, shown for every exercise until each has its own: add `video` and `poster` to it in the plan
+const DEFAULT_EXERCISE_VIDEO = { video: 'media/pull-up.mp4', poster: 'media/pull-up.jpg' };
+
 function playerMedia(exercise) {
-  if (exercise.image) return `<img src="${esc(exercise.image)}" alt="${esc(exercise.name)}">`;
-  return `<div class="media-empty"><span class="media-icon" aria-hidden="true">▶</span><span>Exercise video coming soon</span></div>`;
+  const video = exercise.video || DEFAULT_EXERCISE_VIDEO.video;
+  const poster = exercise.video ? exercise.poster || '' : DEFAULT_EXERCISE_VIDEO.poster;
+  // Muted and playsinline let phones start it by themselves and keep it inside the page
+  return `<video src="${esc(video)}"${poster ? ` poster="${esc(poster)}"` : ''} autoplay muted loop playsinline preload="auto" aria-label="${esc(exercise.name)} demonstration"></video>`;
 }
 
 function topBar(step) {

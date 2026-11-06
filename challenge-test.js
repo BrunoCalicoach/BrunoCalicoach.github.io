@@ -14,6 +14,16 @@ function loadTestState() {
   return { athlete: 'custom', results: null, logs: {}, tab: 'week' };
 }
 
+// The coach's test tools show after opening the page once with #tools; this device then keeps showing them
+function coachDevice() {
+  try {
+    if (location.hash === '#tools') localStorage.setItem('challengeCoach', 'yes');
+    return localStorage.getItem('challengeCoach') === 'yes' || location.hash === '#tools';
+  } catch (error) {
+    return location.hash === '#tools';
+  }
+}
+
 function needsResults() {
   return testState.athlete === 'custom' && (!testState.results || testState.editing);
 }
@@ -376,7 +386,7 @@ function render() {
     .concat(Object.keys(TEST_PLANS).map((key) => [key, TEST_PLANS[key].label, TEST_PLANS[key].description]));
 
   testApp.innerHTML = `<div class="grid gap-5">
-    <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}${location.hash === '#tools' ? '' : ' hidden'}>
+    <details id="test-tools" class="card"${testState.toolsOpen ? ' open' : ''}${coachDevice() ? '' : ' hidden'}>
       <summary class="tools-summary">Test tools${showForm ? '' : ': ' + esc(plan.label)}</summary>
       <div class="grid gap-3 mt-3">
         <h2 class="font-semibold">Test athlete</h2>

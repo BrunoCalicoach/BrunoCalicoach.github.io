@@ -647,22 +647,28 @@ html.workout-open body{
   background:#ffffff;
 }
 
+/* The slot takes whatever height is left; the video inside is always a square, as large as the slot allows */
 .player-media{
   flex:1 1 auto;
   min-height:80px;
-  border-radius:18px;
-  background:#e5e7eb;
-  overflow:hidden;
   display:flex;
   align-items:center;
   justify-content:center;
+  container-type:size;
 }
 
 .player-media video,
 .player-media img{
   width:100%;
   height:100%;
-  object-fit:contain;
+  max-width:100%;
+  max-height:100%;
+  width:min(100cqw, 100cqh);
+  height:min(100cqw, 100cqh);
+  aspect-ratio:1 / 1;
+  object-fit:cover;
+  border-radius:18px;
+  background:#e5e7eb;
 }
 
 .media-empty{
@@ -1109,7 +1115,8 @@ html[data-theme="dark"] .tag-rebuilt{
 
 html[data-theme="dark"] .plan-row,
 html[data-theme="dark"] .player-adjust,
-html[data-theme="dark"] .player-media,
+html[data-theme="dark"] .player-media video,
+html[data-theme="dark"] .player-media img,
 html[data-theme="dark"] .rest-bar,
 html[data-theme="dark"] .total-clock{
   background:#2b2f38;

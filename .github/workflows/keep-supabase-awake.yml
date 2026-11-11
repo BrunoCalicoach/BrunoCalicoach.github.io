@@ -1,0 +1,25 @@
+# Free Supabase projects pause after 7 days without activity, which stops logins on the site.
+# This asks the database one small question every 3 days so that never happens.
+# If the project does not answer (paused or down), the run fails and GitHub emails the repository owner.
+# Not needed once the project is on Supabase Pro, which never pauses.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the database a question
+        env:
+          # The public key already used by the website, not a secret
+          SUPABASE_URL: https://nhohgqpvxuibtrtnqewn.supabase.co
+          SUPABASE_KEY: sb_publishable_eDXtsUYHrXDELNfE_0LrTA_KPesC0dp
+        run: |
+          # Without a login the database refuses to show data (code 42501), which still counts as activity
+          body=$(curl -s -m 60 "$SUPABASE_URL/rest/v1/session_logs?select=id&limit=1" -H "apikey: $SUPABASE_KEY")
+          echo "Database answered: $body"
+          echo "$body" | grep -q -E '42501|^\[' || { echo "No answer from the database. The project may be paused: restore it in the Supabase dashboard."; exit 1; }

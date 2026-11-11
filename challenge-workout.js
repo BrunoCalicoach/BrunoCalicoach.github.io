@@ -158,6 +158,9 @@ function adjustBlock(step, title = 'Reps you did') {
 
 // Any exercise whose rest is written as "every N sec" or "every N minutes" runs on a clock: an EMOM, or
 // muscle ups every 2 minutes. Rounds then change by themselves, so the plan decides this, not the exercise name.
+// "Skip manually" leaves this many seconds before the next round, so there is time to get ready
+const SKIP_LEAVES = 3;
+
 function intervalSeconds(step) {
   return step.circuit ? 0 : restWindow(step.exercise.rest).every || 0;
 }
@@ -204,6 +207,7 @@ function intervalScreen(context, step) {
       <div class="rest-label">${next ? 'Next round in' : 'Finished in'}</div>
       <div class="rest-clock" id="interval-clock">${clock(block.every)}</div>
       <div class="interval-bar" aria-hidden="true"><span id="interval-fill"></span></div>
+      <button type="button" class="btn-outline skip-button" id="interval-skip" data-workout="skip">Skip manually</button>
     </div>
     ${round > 0 ? adjustBlock(context.steps[player.index - 1], 'Reps you did last round') : ''}`;
 }
@@ -471,6 +475,8 @@ function updateIntervalClock(now) {
       beep();
     }
   }
+  const skip = document.getElementById('interval-skip');
+  if (skip) skip.disabled = left <= SKIP_LEAVES + 0.5;
   const big = document.getElementById('interval-clock');
   const fill = document.getElementById('interval-fill');
   if (big) big.textContent = clock(left);
@@ -585,6 +591,14 @@ function handleWorkoutClick(button) {
     beep();
     saveTestState();
     renderPlayer();
+  } else if (action === 'skip' && player.interval) {
+    // Moves the round clock forward so only the last 3 seconds of this round's rest are left
+    const block = player.interval;
+    const seconds = Math.max(0, (Date.now() - block.startedAt) / 1000);
+    const left = block.every - (seconds % block.every);
+    if (left > SKIP_LEAVES) block.startedAt -= (left - SKIP_LEAVES) * 1000;
+    saveTestState();
+    updatePlayerClock();
   } else if (action === 'next') {
     const rest = player.rest || {};
     const early = player.phase === 'rest' && !rest.every && (Date.now() - player.phaseAt) / 1000 < rest.min;

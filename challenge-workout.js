@@ -160,6 +160,8 @@ function adjustBlock(step, title = 'Reps you did') {
 // muscle ups every 2 minutes. Rounds then change by themselves, so the plan decides this, not the exercise name.
 // "Skip manually" leaves this many seconds before the next round, so there is time to get ready
 const SKIP_LEAVES = 3;
+// Seconds between pressing Start and round 1, to get into position
+const GET_READY = 3;
 
 function intervalSeconds(step) {
   return step.circuit ? 0 : restWindow(step.exercise.rest).every || 0;
@@ -204,7 +206,7 @@ function intervalScreen(context, step) {
       <div class="player-meta">${next ? `Next round: ${esc(next)}` : 'Last round'}</div>
     </div>
     <div class="interval-clock-block">
-      <div class="rest-label">${next ? 'Next round in' : 'Finished in'}</div>
+      <div class="rest-label" id="interval-label">${next ? 'Next round in' : 'Finished in'}</div>
       <div class="rest-clock" id="interval-clock">${clock(block.every)}</div>
       <div class="interval-bar" aria-hidden="true"><span id="interval-fill"></span></div>
       <button type="button" class="btn-outline skip-button" id="interval-skip" data-workout="skip">Skip manually</button>
@@ -444,6 +446,28 @@ function updatePlayerClock() {
 function updateIntervalClock(now) {
   const block = player.interval;
   const rounds = block.last - block.first + 1;
+  const label = document.getElementById('interval-label');
+  const big = document.getElementById('interval-clock');
+  const fill = document.getElementById('interval-fill');
+  const skip = document.getElementById('interval-skip');
+  // Get ready: the clock starts 3 seconds after the tap, with a tick each second
+  if (now < block.startedAt) {
+    const wait = Math.ceil((block.startedAt - now) / 1000);
+    if (block.lastTick !== `ready-${wait}`) {
+      block.lastTick = `ready-${wait}`;
+      countdownBeep();
+    }
+    if (label) label.textContent = 'Get into position. Starts in';
+    if (big) big.textContent = String(wait);
+    if (fill) fill.style.width = '0%';
+    if (skip) skip.disabled = true;
+    return;
+  }
+  if (!block.started) {
+    block.started = true;
+    roundStartBeep();
+    if (label) label.textContent = rounds > 1 ? 'Next round in' : 'Finished in';
+  }
   const seconds = Math.max(0, (now - block.startedAt) / 1000);
   const round = Math.floor(seconds / block.every);
   if (round >= rounds) {
@@ -490,10 +514,7 @@ function updateIntervalClock(now) {
     block.lastTick = `${round}-${tick}`;
     countdownBeep();
   }
-  const skip = document.getElementById('interval-skip');
   if (skip) skip.disabled = left <= SKIP_LEAVES + 0.5;
-  const big = document.getElementById('interval-clock');
-  const fill = document.getElementById('interval-fill');
   if (big) big.textContent = clock(left);
   if (fill) fill.style.width = `${(1 - left / block.every) * 100}%`;
 }
@@ -617,8 +638,7 @@ function handleWorkoutClick(button) {
   } else if (action === 'interval-start') {
     const block = intervalBlock(context.steps, player.index);
     player.index = block.first;
-    player.interval = { first: block.first, last: block.last, every: block.every, hold: step.exercise.hold || 0, startedAt: Date.now() };
-    roundStartBeep();
+    player.interval = { first: block.first, last: block.last, every: block.every, hold: step.exercise.hold || 0, startedAt: Date.now() + GET_READY * 1000 };
     saveTestState();
     renderPlayer();
   } else if (action === 'skip' && player.interval) {

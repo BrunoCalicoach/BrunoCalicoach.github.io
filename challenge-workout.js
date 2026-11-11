@@ -327,14 +327,19 @@ function playerScreen() {
 function beep(frequency = 880, seconds = 0.3, vibrate = 250) {
   try {
     if (playerAudio) {
+      if (playerAudio.state !== 'running') playerAudio.resume();
       const tone = playerAudio.createOscillator();
       const volume = playerAudio.createGain();
+      const now = playerAudio.currentTime;
+      // Louder than before, with a quick fade out so it does not click
+      tone.type = 'square';
       tone.frequency.value = frequency;
-      volume.gain.value = 0.2;
+      volume.gain.setValueAtTime(0.35, now);
+      volume.gain.exponentialRampToValueAtTime(0.001, now + seconds);
       tone.connect(volume);
       volume.connect(playerAudio.destination);
-      tone.start();
-      tone.stop(playerAudio.currentTime + seconds);
+      tone.start(now);
+      tone.stop(now + seconds);
     }
     if (navigator.vibrate) navigator.vibrate(vibrate);
   } catch (error) { /* Sound and vibration are extras */ }
@@ -507,12 +512,26 @@ function closePlayer() {
   letScreenSleep();
 }
 
-function startWorkout(day) {
+// Phones only allow sound after a tap, and pause it again when the screen locks or the app changes.
+// So every tap in the workout switches sound on, including Resume after a reload.
+function unlockAudio() {
   try {
     const Audio = window.AudioContext || window.webkitAudioContext;
-    if (Audio && !playerAudio) playerAudio = new Audio();
-    if (playerAudio && playerAudio.state === 'suspended') playerAudio.resume();
+    if (Audio && !playerAudio) {
+      playerAudio = new Audio();
+      // A silent blip inside the tap is what lets iPhones play the later beeps
+      const blip = playerAudio.createBuffer(1, 1, 22050);
+      const source = playerAudio.createBufferSource();
+      source.buffer = blip;
+      source.connect(playerAudio.destination);
+      source.start(0);
+    }
+    if (playerAudio && playerAudio.state !== 'running') playerAudio.resume();
   } catch (error) { /* No sound */ }
+}
+
+function startWorkout(day) {
+  unlockAudio();
   const now = Date.now();
   player = { day, week: currentWeek(), index: 0, phase: 'work', startedAt: now, phaseAt: now, roundAt: now, check: {} };
   keepScreenOn();
@@ -553,6 +572,7 @@ function stepDone(step) {
 function handleWorkoutClick(button) {
   const action = button.dataset.workout;
   if (!action) return false;
+  unlockAudio();
   if (action === 'start') {
     startWorkout(Number(button.dataset.day));
     return true;
@@ -673,6 +693,8 @@ function handleWorkoutClick(button) {
 document.addEventListener('visibilitychange', () => {
   if (player && !player.paused && document.visibilityState === 'visible') {
     keepScreenOn();
+    // Back from a locked screen or another app: switch sound on again where the phone allows it
+    try { if (playerAudio && playerAudio.state !== 'running') playerAudio.resume(); } catch (error) { /* No sound */ }
     updatePlayerClock();
   }
 });

@@ -324,21 +324,25 @@ function playerScreen() {
   return `<div class="player${player.phase === 'review' ? ' player-scroll' : ''}">${body}${player.confirmExit ? exitPrompt() : ''}</div>`;
 }
 
-function beep() {
+function beep(frequency = 880, seconds = 0.3, vibrate = 250) {
   try {
     if (playerAudio) {
       const tone = playerAudio.createOscillator();
       const volume = playerAudio.createGain();
-      tone.frequency.value = 880;
+      tone.frequency.value = frequency;
       volume.gain.value = 0.2;
       tone.connect(volume);
       volume.connect(playerAudio.destination);
       tone.start();
-      tone.stop(playerAudio.currentTime + 0.3);
+      tone.stop(playerAudio.currentTime + seconds);
     }
-    if (navigator.vibrate) navigator.vibrate(250);
+    if (navigator.vibrate) navigator.vibrate(vibrate);
   } catch (error) { /* Sound and vibration are extras */ }
 }
+
+// Round clocks: a short low tick for each of the last 3 seconds, then a longer, higher tone when the round starts
+function countdownBeep() { beep(660, 0.12, 80); }
+function roundStartBeep() { beep(1320, 0.5, 400); }
 
 async function keepScreenOn() {
   try {
@@ -459,7 +463,7 @@ function updateIntervalClock(now) {
   }
   if (block.first + round !== player.index) {
     player.index = block.first + round;
-    beep();
+    roundStartBeep();
     saveTestState();
     renderPlayer();
     return;
@@ -474,6 +478,12 @@ function updateIntervalClock(now) {
       block.holdBeep = round;
       beep();
     }
+  }
+  // Ticks at 3, 2 and 1 seconds left, once each, before every new round and before the end of the last one
+  const tick = Math.ceil(left);
+  if (tick <= 3 && block.lastTick !== `${round}-${tick}`) {
+    block.lastTick = `${round}-${tick}`;
+    countdownBeep();
   }
   const skip = document.getElementById('interval-skip');
   if (skip) skip.disabled = left <= SKIP_LEAVES + 0.5;
@@ -588,7 +598,7 @@ function handleWorkoutClick(button) {
     const block = intervalBlock(context.steps, player.index);
     player.index = block.first;
     player.interval = { first: block.first, last: block.last, every: block.every, hold: step.exercise.hold || 0, startedAt: Date.now() };
-    beep();
+    roundStartBeep();
     saveTestState();
     renderPlayer();
   } else if (action === 'skip' && player.interval) {

@@ -9,9 +9,13 @@ let lastMessage = '';
 function loadTestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(TEST_STORAGE_KEY));
+    // Weeks logged on an older plan cannot be replayed on this one, and old results miss the new tests
+    if (saved && saved.planVersion !== PLAN_VERSION) {
+      return { athlete: TEST_PLANS[saved.athlete] ? saved.athlete : 'custom', results: null, logs: {}, tab: 'week', planVersion: PLAN_VERSION, planChanged: true };
+    }
     if (saved && (TEST_PLANS[saved.athlete] || saved.athlete === 'custom')) return Object.assign({ tab: 'week', logs: {} }, saved);
   } catch (error) { /* Storage can be blocked. The page still works until it is closed. */ }
-  return { athlete: 'custom', results: null, logs: {}, tab: 'week' };
+  return { athlete: 'custom', results: null, logs: {}, tab: 'week', planVersion: PLAN_VERSION };
 }
 
 // The coach's test tools show after opening the page once with #tools; this device then keeps showing them
@@ -62,7 +66,8 @@ function resultsForm() {
   return `<section class="card grid gap-5">
     <div>
       <h2 class="text-2xl font-bold">Enter test results</h2>
-      <p class="text-gray-600 mt-2">Your 12-week plan is built from these 7 results. Enter 0 for muscle-ups if you can't do one yet.</p>
+      <p class="text-gray-600 mt-2">Your ${PLAN_WEEKS}-week plan is built from these ${TEST_FIELDS.length} results.</p>
+      ${testState.planChanged ? '<p class="target mt-2">The plan has changed, with new exercises and tests, so earlier results and logged weeks were cleared.</p>' : ''}
     </div>
     <div class="result-grid">${fields}</div>
     <p id="results-error" class="target" role="alert" hidden></p>
@@ -80,12 +85,13 @@ function createPlanFromForm() {
   });
   if (missing) {
     const error = document.getElementById('results-error');
-    error.textContent = 'Enter a number for all 7 results.';
+    error.textContent = `Enter a number for all ${TEST_FIELDS.length} results.`;
     error.hidden = false;
     return;
   }
   testState.results = results;
   testState.editing = false;
+  testState.planChanged = false;
   testState.logs = {};
   testState.tab = 'week';
   draft = null;
@@ -114,7 +120,7 @@ function currentWeek() {
 
 function makeDraft(plan, weeks) {
   const week = currentWeek();
-  if (week > 12) return null;
+  if (week > PLAN_WEEKS) return null;
   const targets = weeks[week - 1].targets;
   const next = { week, activeDay: 1, days: {}, daysDone: {}, ex: {} };
   [1, 2, 3, 4].forEach((day) => { next.days[day] = defaultDay(); });
@@ -190,15 +196,19 @@ function exerciseCard(exercise, target) {
 // The day's whole workout at a glance, before starting the guided workout
 function weekPanel(plan, weeks) {
   const week = currentWeek();
-  if (week > 12 || testState.manual) return manualPanel(plan, weeks);
+  if (week > PLAN_WEEKS || testState.manual) return manualPanel(plan, weeks);
   const targets = weeks[week - 1].targets;
   const day = draft.activeDay;
   const done = draft.daysDone || {};
   const list = plan.exercises.filter((exercise) => exercise.day === day);
   const circuit = list.every((exercise) => exercise.kind === 'circuit');
   const paused = player && player.paused && player.day === day && player.week === week;
-  const rows = list.map((exercise) => {
+  const rows = list.map((exercise, i) => {
     const target = targets[exercise.id];
+    // Abs and legs get their own heading, apart from the main workout
+    const heading = exercise.block && exercise.block !== (list[i - 1] || {}).block
+      ? `<li class="plan-block">${esc(exercise.block)} · stays the same each week</li>`
+      : '';
     let goal = exercise.kind === 'fixed' ? exercise.stepText : shortTarget(exercise, target);
     if (exercise.kind === 'band') goal = `1 to 3 reps, ${target.load}`;
     if (exercise.kind === 'superset') {
@@ -207,11 +217,11 @@ function weekPanel(plan, weeks) {
     }
     if (exercise.kind === 'circuit') goal = target.reps.join(', ');
     const sets = workoutSetCount(exercise, target, week);
-    const word = circuit || exercise.kind === 'emom' || exercise.roundLabel ? 'rounds' : 'sets';
     const rest = restWindow(exercise.rest);
+    const word = circuit || rest.every || exercise.kind === 'emom' || exercise.roundLabel ? 'rounds' : 'sets';
     const restPart = rest.every ? `one round ${restText(rest)}` : `rest ${restText(rest)}`;
     const meta = circuit ? `${sets} rounds` : `${sets} ${word} · ${restPart}`;
-    return `<li class="plan-row">
+    return `${heading}<li class="plan-row">
       <div class="plan-row-name">${esc(exercise.name)}</div>
       <div><span class="plan-row-target">${esc(goal)}</span> <span class="plan-row-meta">· ${esc(meta)}${exercise.tempo ? ' · tempo 0-1-3' : ''}</span></div>
     </li>`;
@@ -249,10 +259,10 @@ function weekPanel(plan, weeks) {
 // The full form with every set on one page, for corrections or logging after training
 function manualPanel(plan, weeks) {
   const week = currentWeek();
-  if (week > 12) {
+  if (week > PLAN_WEEKS) {
     return `<div class="card text-center">
-      <h2 class="text-2xl font-bold">All 12 weeks are logged</h2>
-      <p class="text-gray-600 mt-2">In week 13, athletes get a reminder to retest after 2 to 3 days off. Open Whole plan to see how the program changed.</p>
+      <h2 class="text-2xl font-bold">All ${PLAN_WEEKS} weeks are logged</h2>
+      <p class="text-gray-600 mt-2">After week ${PLAN_WEEKS}, athletes get a reminder to retest after 2 to 3 days off. Open Whole plan to see how the program changed.</p>
       <button type="button" class="btn-outline mt-4" data-action="undo">Undo last week</button>
     </div>`;
   }
@@ -289,7 +299,7 @@ function planPanel(plan, weeks, baseline) {
     let dayRow = '';
     if (exercise.day !== lastDay) {
       lastDay = exercise.day;
-      dayRow = `<tr class="day-row"><th colspan="13"><span class="day-label">Day ${exercise.day}</span></th></tr>`;
+      dayRow = `<tr class="day-row"><th colspan="${PLAN_WEEKS + 1}"><span class="day-label">Day ${exercise.day}</span></th></tr>`;
     }
     const cells = weeks.map((item, i) => {
       const adapted = shortTarget(exercise, item.targets[exercise.id]);
@@ -323,13 +333,13 @@ function planPanel(plan, weeks, baseline) {
     <div class="card card-flush">
       <h3 class="text-xl font-bold px-5 pt-5">Weekly reps</h3>
       <div class="table-wrap"><table class="plan-table"><thead><tr><th class="exercise-name">Total</th>${header}</tr></thead>
-        <tbody>${totalRow('Pull-ups', 'pull')}${totalRow('Chin-ups', 'chin')}${totalRow('Dips', 'dip')}${totalRow('Push-ups', 'push')}</tbody></table></div>
+        <tbody>${totalRow('Pull-ups', 'pull')}${totalRow('Chin-ups', 'chin')}${totalRow('Dips', 'dip')}${totalRow('Push-ups', 'push')}${totalRow('Rows', 'rows')}</tbody></table></div>
     </div>
     <div class="card card-flush">
       <h3 class="text-xl font-bold px-5 pt-5">Targets by week</h3>
       <div class="table-wrap"><table class="plan-table"><thead><tr><th class="exercise-name">Exercise</th>${header}</tr></thead><tbody>${rows}</tbody></table></div>
     </div>
-    <p class="text-sm text-gray-600">Swipe the tables sideways to see all 12 weeks. Weeks not logged yet assume every target is hit. The split squat superset stays the same, so it is left out.</p>
+    <p class="text-sm text-gray-600">Swipe the tables sideways to see all ${PLAN_WEEKS} weeks. Weeks not logged yet assume every target is hit. Abs and legs stay the same, so they are left out.</p>
   </div>`;
 }
 
@@ -377,12 +387,12 @@ function render() {
   const baseline = runPlan(plan, {});
   const week = currentWeek();
   if (!showForm && (!draft || draft.week !== week)) draft = makeDraft(plan, weeks);
-  const tabs = [['week', week > 12 ? 'Finished' : `Week ${week}`], ['plan', 'Whole plan'], ['why', 'Changes']];
+  const tabs = [['week', week > PLAN_WEEKS ? 'Finished' : `Week ${week}`], ['plan', 'Whole plan'], ['why', 'Changes']];
   const panel = showForm ? resultsForm()
     : testState.tab === 'plan' ? planPanel(plan, weeks, baseline)
     : testState.tab === 'why' ? whyPanel(plan, weeks)
     : weekPanel(plan, weeks);
-  const athletes = [['custom', 'Enter test results', 'Build a plan from 7 test results']]
+  const athletes = [['custom', 'Enter test results', `Build a plan from ${TEST_FIELDS.length} test results`]]
     .concat(Object.keys(TEST_PLANS).map((key) => [key, TEST_PLANS[key].label, TEST_PLANS[key].description]));
 
   testApp.innerHTML = `<div class="grid gap-5">
@@ -396,7 +406,7 @@ function render() {
             <span class="text-sm text-gray-600 block mt-1">${esc(description)}</span>
           </button>`).join('')}
         </div>
-        ${showForm ? '' : `<h2 class="font-semibold mt-2">Run all 12 weeks as</h2>
+        ${showForm ? '' : `<h2 class="font-semibold mt-2">Run all ${PLAN_WEEKS} weeks as</h2>
         <div class="scenario-grid">
           ${TEST_SCENARIOS.map((scenario) => `<button type="button" class="scenario" data-scenario="${scenario.id}">
             <span class="font-semibold block">${esc(scenario.label)}</span>
@@ -498,7 +508,7 @@ testApp.addEventListener('click', (event) => {
     testState.logs = scenarioLogs(plan, scenario);
     testState.tab = 'plan';
     testState.toolsOpen = false;
-    lastMessage = `${scenario.label}: all 12 weeks are filled in. ${scenario.description}`;
+    lastMessage = `${scenario.label}: all ${PLAN_WEEKS} weeks are filled in. ${scenario.description}`;
     saveTestState();
     render();
   } else if (target.dataset.action === 'finish') {

@@ -79,8 +79,13 @@ function workoutSteps(plan, day, targets, week) {
 
 function stepTarget(step, target) {
   const { exercise, set } = step;
-  const reps = target.reps;
-  if (exercise.kind === 'fixed') return { main: exercise.stepText, sub: '' };
+  // Abs and legs have no adaptive target
+  const reps = target ? target.reps : [];
+  if (exercise.kind === 'fixed') {
+    // Abs sets change from set to set; legs keep the same two parts every set
+    const parts = (exercise.setParts && exercise.setParts[set]) || exercise.parts || [exercise.stepText, ''];
+    return { main: parts[0], sub: parts[1] };
+  }
   if (exercise.kind === 'superset') {
     return { main: `${reps[set * 2]} ${exercise.sides[0].toLowerCase()}`, sub: `then ${reps[set * 2 + 1]} ${exercise.sides[1].toLowerCase()}` };
   }
@@ -118,6 +123,11 @@ function playerMedia(exercise) {
   const poster = exercise.video ? exercise.poster || '' : DEFAULT_EXERCISE_VIDEO.poster;
   // Muted and playsinline let phones start it by themselves and keep it inside the page
   return `<video src="${esc(video)}"${poster ? ` poster="${esc(poster)}"` : ''} autoplay muted loop playsinline preload="auto" aria-label="${esc(exercise.name)} demonstration"></video>`;
+}
+
+// The exercise name, with Abs or Legs above it so those blocks read apart from the main workout
+function playerName(exercise) {
+  return `${exercise.block ? `<div class="player-block">${esc(exercise.block)}</div>` : ''}<div class="player-name">${esc(exercise.name)}</div>`;
 }
 
 function topBar(step) {
@@ -168,23 +178,26 @@ function intervalScreen(context, step) {
   const goal = stepTarget(step, target);
   if (!player.interval) {
     return `${topBar(step)}
-      <div class="player-name">${esc(step.exercise.name)}</div>
+      ${playerName(step.exercise)}
       <div class="player-media">${playerMedia(step.exercise)}</div>
       <div class="player-main">
         <div class="player-count">${rounds} rounds, a new round every ${esc(clock(block.every))}</div>
         <div class="player-target">${esc(goal.main)}</div>
-        <div class="player-meta">The clock runs by itself. Do your reps, rest for what is left of the round.</div>
+        ${goal.sub ? `<div class="player-sub">${esc(goal.sub)}</div>` : ''}
+        <div class="player-meta">The clock runs by itself. ${step.exercise.hold ? 'Hold until the hold timer ends, rest' : 'Do your reps, rest'} for what is left of the round.</div>
       </div>
       <button type="button" class="btn-primary player-button" data-workout="interval-start">Start ${step.exercise.kind === 'emom' ? 'EMOM' : 'the clock'}</button>`;
   }
   const round = player.index - block.first;
   const next = round < rounds - 1 ? stepTarget(context.steps[player.index + 1], target).main : '';
   return `${topBar(step)}
-    <div class="player-name">${esc(step.exercise.name)}</div>
+    ${playerName(step.exercise)}
     <div class="player-media player-media-small">${playerMedia(step.exercise)}</div>
     <div class="player-main">
       <div class="player-count">Round ${round + 1} of ${rounds}</div>
       <div class="player-target">${esc(goal.main)}</div>
+      ${goal.sub ? `<div class="player-sub">${esc(goal.sub)}</div>` : ''}
+      ${step.exercise.hold ? '<div class="hold-clock" id="interval-hold" role="timer"></div>' : ''}
       <div class="player-meta">${next ? `Next round: ${esc(next)}` : 'Last round'}</div>
     </div>
     <div class="interval-clock-block">
@@ -197,18 +210,23 @@ function intervalScreen(context, step) {
 
 function workScreen(step, target) {
   const goal = stepTarget(step, target);
-  const meta = [step.exercise.tempo && 'Tempo ' + step.exercise.tempo, step.exercise.kind !== 'band' && target.load].filter(Boolean).join(' · ');
+  const meta = [step.exercise.tempo && 'Tempo ' + step.exercise.tempo, step.exercise.kind !== 'band' && target && target.load].filter(Boolean).join(' · ');
   const label = step.after ? (step.circuit || step.exercise.kind === 'emom' || step.exercise.roundLabel ? 'Round done' : 'Set done') : 'Last set done';
+  // A hold gets a timer instead of reps: it counts down and moves on by itself
+  const hold = step.exercise.hold;
+  let action = `<button type="button" class="btn-primary player-button" data-workout="done">${label}</button>`;
+  if (hold && !player.holdAt) action = `<button type="button" class="btn-primary player-button" data-workout="hold">Start ${hold} sec hold</button>`;
   return `${topBar(step)}
-    <div class="player-name">${esc(step.exercise.name)}</div>
+    ${playerName(step.exercise)}
     <div class="player-media">${playerMedia(step.exercise)}</div>
     <div class="player-main">
       <div class="player-count">${esc(stepCounter(step))}</div>
       <div class="player-target">${esc(goal.main)}</div>
       ${goal.sub ? `<div class="player-sub">${esc(goal.sub)}</div>` : ''}
+      ${hold && player.holdAt ? `<div class="hold-clock" id="hold-clock" role="timer">${clock(hold)}</div>` : ''}
       ${meta ? `<div class="player-meta">${esc(meta)}</div>` : ''}
     </div>
-    <button type="button" class="btn-primary player-button" data-workout="done">${label}</button>`;
+    ${action}`;
 }
 
 function nextLine(next, targets) {
@@ -341,6 +359,20 @@ function updatePlayerClock() {
     updateIntervalClock(now);
     return;
   }
+  if (player.phase === 'work' && player.holdAt) {
+    const steps = workoutContext().steps;
+    const hold = steps[player.index].exercise.hold || 0;
+    const left = hold - (now - player.holdAt) / 1000;
+    if (left <= 0) {
+      player.holdAt = null;
+      beep();
+      stepDone(steps[player.index]);
+      return;
+    }
+    const holdClock = document.getElementById('hold-clock');
+    if (holdClock) holdClock.textContent = clock(left);
+    return;
+  }
   if (player.phase !== 'rest') return;
   const rest = player.rest;
   const label = document.getElementById('rest-label');
@@ -429,6 +461,16 @@ function updateIntervalClock(now) {
     return;
   }
   const left = block.every - (seconds % block.every);
+  // A hold counts down at the start of each round, then the rest of the round is rest
+  if (block.hold) {
+    const into = seconds % block.every;
+    const holdClock = document.getElementById('interval-hold');
+    if (holdClock) holdClock.textContent = into < block.hold ? `Hold ${clock(block.hold - into)}` : 'Hold done, rest';
+    if (into >= block.hold && block.holdBeep !== round) {
+      block.holdBeep = round;
+      beep();
+    }
+  }
   const big = document.getElementById('interval-clock');
   const fill = document.getElementById('interval-fill');
   if (big) big.textContent = clock(left);
@@ -466,11 +508,27 @@ function advance() {
   const now = Date.now();
   player.index += 1;
   player.interval = null;
+  player.holdAt = null;
   player.phase = 'work';
   player.phaseAt = now;
   player.roundAt = now;
   player.beeped = false;
   player.earlyWarned = false;
+  saveTestState();
+  renderPlayer();
+}
+
+// A set is finished: rest next, or the end of the workout
+function stepDone(step) {
+  player.lastPosition = step.position;
+  if (!step.after) {
+    player.phase = 'last';
+  } else {
+    player.phase = 'rest';
+    player.rest = step.after;
+    player.roundAt = player.phaseAt;
+    player.phaseAt = Date.now();
+  }
   saveTestState();
   renderPlayer();
 }
@@ -513,21 +571,17 @@ function handleWorkoutClick(button) {
   const step = context.steps[player.index];
 
   if (action === 'done') {
-    player.lastPosition = step.position;
-    if (!step.after) {
-      player.phase = 'last';
-    } else {
-      player.phase = 'rest';
-      player.rest = step.after;
-      player.roundAt = player.phaseAt;
-      player.phaseAt = Date.now();
-    }
+    player.holdAt = null;
+    stepDone(step);
+  } else if (action === 'hold') {
+    player.holdAt = Date.now();
+    beep();
     saveTestState();
     renderPlayer();
   } else if (action === 'interval-start') {
     const block = intervalBlock(context.steps, player.index);
     player.index = block.first;
-    player.interval = { first: block.first, last: block.last, every: block.every, startedAt: Date.now() };
+    player.interval = { first: block.first, last: block.last, every: block.every, hold: step.exercise.hold || 0, startedAt: Date.now() };
     beep();
     saveTestState();
     renderPlayer();
@@ -582,6 +636,8 @@ function handleWorkoutClick(button) {
   } else if (action === 'leave') {
     player.confirmExit = false;
     player.paused = true;
+    // A hold left halfway starts again from its button
+    player.holdAt = null;
     if (player.interval) player.interval.pausedAt = Date.now();
     closePlayer();
     saveTestState();

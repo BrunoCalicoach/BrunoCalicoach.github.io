@@ -1,5 +1,16 @@
 // Member area for the 12-week challenge: login, starting test, program, logging and history.
 // The publishable key is safe in public code. Database rules limit members to their own rows.
+
+// Read the email link before Supabase clears it from the address bar: a reset link carries type=recovery,
+// and a link that expired or was already used carries an error instead of a login
+const linkParams = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+let recovering = linkParams.get('type') === 'recovery';
+const linkError = linkParams.get('error_code') || linkParams.get('error')
+  ? (linkParams.get('error_code') === 'otp_expired'
+    ? 'This link has expired or was already used. Links work once, for 1 hour. Please ask for a new one.'
+    : (linkParams.get('error_description') || 'This link did not work.').replace(/\+/g, ' ') + ' Please ask for a new one.')
+  : '';
+
 const db = window.supabase.createClient(
   'https://nhohgqpvxuibtrtnqewn.supabase.co',
   'sb_publishable_eDXtsUYHrXDELNfE_0LrTA_KPesC0dp'
@@ -63,7 +74,7 @@ function submitHandler(form, button, action) {
 
 /* ---------- Login, sign up and password reset ---------- */
 
-function showAuth(mode) {
+function showAuth(mode, notice = '') {
   signOutButton.classList.add('hidden');
   backLink.classList.remove('hidden');
 
@@ -81,6 +92,7 @@ function showAuth(mode) {
   const form = el('form', { class: 'card' }, email.node);
   if (mode !== 'reset') form.append(password.node);
   form.append(button);
+  if (notice) form.prepend(el('p', { class: 'text-sm text-red-600 mb-5', textContent: notice }));
 
   submitHandler(form, button, async () => {
     if (mode === 'reset') {
@@ -121,6 +133,7 @@ function showNewPassword() {
   submitHandler(form, button, async () => {
     const { error } = await db.auth.updateUser({ password: password.input.value });
     if (error) return { error: error.message };
+    recovering = false;
     await loadMember();
     return null;
   });
@@ -368,12 +381,16 @@ db.auth.onAuthStateChange((event, session) => {
     const previousId = state.user?.id;
     state.user = session?.user || null;
 
-    if (event === 'PASSWORD_RECOVERY') {
+    if (event === 'PASSWORD_RECOVERY' || (recovering && state.user)) {
+      // A reset link logs the member in, but the new password comes first, whatever order the events arrive in
+      recovering = true;
       showNewPassword();
     } else if (event === 'SIGNED_OUT' || !state.user) {
       state.profile = null;
       state.logs = [];
-      showAuth('login');
+      recovering = false;
+      // Say why an email link landed here instead of opening the account
+      showAuth(linkError && event === 'INITIAL_SESSION' ? 'reset' : 'login', event === 'INITIAL_SESSION' ? linkError : '');
     } else if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && previousId !== state.user.id)) {
       loadMember();
     }

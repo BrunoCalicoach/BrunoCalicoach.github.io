@@ -5,17 +5,19 @@ let testState = loadTestState();
 // The week being logged is saved too, so a reload in the middle of a week keeps finished workouts
 let draft = testState.draft || null;
 let lastMessage = '';
+// On a rest day, Let's Workout shows a notice first; this is true once the athlete chooses to train anyway
+let trainAnyway = false;
 
 function loadTestState() {
   try {
     const saved = JSON.parse(localStorage.getItem(TEST_STORAGE_KEY));
     // Weeks logged on an older plan cannot be replayed on this one, and old results miss the new tests
     if (saved && saved.planVersion !== PLAN_VERSION) {
-      return { athlete: TEST_PLANS[saved.athlete] ? saved.athlete : 'custom', results: null, logs: {}, tab: 'week', planVersion: PLAN_VERSION, planChanged: true };
+      return { athlete: TEST_PLANS[saved.athlete] ? saved.athlete : 'custom', results: null, logs: {}, tab: 'home', planVersion: PLAN_VERSION, planChanged: true };
     }
-    if (saved && (TEST_PLANS[saved.athlete] || saved.athlete === 'custom')) return Object.assign({ tab: 'week', logs: {} }, saved);
+    if (saved && (TEST_PLANS[saved.athlete] || saved.athlete === 'custom')) return Object.assign({ tab: 'home', logs: {} }, saved);
   } catch (error) { /* Storage can be blocked. The page still works until it is closed. */ }
-  return { athlete: 'custom', results: null, logs: {}, tab: 'week', planVersion: PLAN_VERSION };
+  return { athlete: 'custom', results: null, logs: {}, tab: 'home', planVersion: PLAN_VERSION };
 }
 
 // The coach's test tools show after opening the page once with #tools; this device then keeps showing them
@@ -93,7 +95,7 @@ function createPlanFromForm() {
   testState.editing = false;
   testState.planChanged = false;
   testState.logs = {};
-  testState.tab = 'week';
+  testState.tab = 'home';
   draft = null;
   player = null;
   lastMessage = 'Your plan is ready. Start with week 1, Day 1.';
@@ -387,11 +389,21 @@ function render() {
   const baseline = runPlan(plan, {});
   const week = currentWeek();
   if (!showForm && (!draft || draft.week !== week)) draft = makeDraft(plan, weeks);
-  const tabs = [['week', week > PLAN_WEEKS ? 'Finished' : `Week ${week}`], ['plan', 'Whole plan'], ['why', 'Changes']];
-  const panel = showForm ? resultsForm()
-    : testState.tab === 'plan' ? planPanel(plan, weeks, baseline)
-    : testState.tab === 'why' ? whyPanel(plan, weeks)
-    : weekPanel(plan, weeks);
+  // Screens: the start menu, then each option. Before testing, only the menu and the test form open.
+  let tab = testState.tab || 'home';
+  if (showForm && !testState.editing && tab !== 'test') tab = 'home';
+  if (testState.editing) tab = 'test';
+  const titles = { week: 'Let\'s Workout', plan: 'Workout Calendar', progress: 'Your Progress', why: 'What changed and why', test: 'Your test' };
+  let panel;
+  if (tab === 'home') panel = homePanel(plan, weeks);
+  else if (tab === 'test') panel = resultsForm();
+  else if (tab === 'plan') panel = `<button type="button" class="link-button text-left" data-tab="why">See what changed in your plan and why</button>${planPanel(plan, weeks, baseline)}`;
+  else if (tab === 'progress') panel = progressPanel(plan);
+  else if (tab === 'why') panel = whyPanel(plan, weeks);
+  else {
+    const status = week > PLAN_WEEKS || testState.manual ? null : todayStatus();
+    panel = status && status.rest && !trainAnyway ? restNotice(status) : weekPanel(plan, weeks);
+  }
   const athletes = [['custom', 'Enter test results', `Build a plan from ${TEST_FIELDS.length} test results`]]
     .concat(Object.keys(TEST_PLANS).map((key) => [key, TEST_PLANS[key].label, TEST_PLANS[key].description]));
 
@@ -417,10 +429,11 @@ function render() {
       </div>
     </details>
     ${lastMessage ? `<div class="message" role="status">${esc(lastMessage)}</div>` : ''}
-    ${showForm || testState.tab !== 'plan' ? '' : resultsSummary()}
-    ${showForm ? '' : `<div class="tab-row" role="tablist">
-      ${tabs.map(([key, label]) => `<button type="button" role="tab" aria-selected="${key === testState.tab}" class="tab${key === testState.tab ? ' active' : ''}" data-tab="${key}">${esc(label)}</button>`).join('')}
+    ${tab === 'home' ? '' : `<div class="screen-bar">
+      <button type="button" class="back-button" data-tab="${tab === 'why' ? 'plan' : 'home'}" ${testState.editing ? 'data-action="cancel-edit"' : ''}>&lsaquo; ${tab === 'why' ? 'Calendar' : 'Menu'}</button>
+      <h2 class="screen-title">${esc(titles[tab])}</h2>
     </div>`}
+    ${tab === 'plan' ? resultsSummary() : ''}
     ${panel}
   </div>`;
 }
@@ -428,7 +441,8 @@ function render() {
 function finishWeek() {
   const plan = activePlan();
   const week = currentWeek();
-  const log = { days: draft.days, ex: {} };
+  // daysDone tells the progress screen which days were really trained, not just prefilled with targets
+  const log = { days: draft.days, daysDone: draft.daysDone || {}, ex: {} };
   Object.keys(draft.ex).forEach((id) => {
     log.ex[id] = { actual: draft.ex[id].actual.map((n) => Number(n) || 0), tooEasy: draft.ex[id].tooEasy };
   });
@@ -439,7 +453,7 @@ function finishWeek() {
   const item = runPlan(plan, testState.logs)[week - 1];
   const count = weekChanges(plan, item).length;
   lastMessage = count
-    ? `Week ${week} logged. ${count} ${count === 1 ? 'exercise changes' : 'exercises change'} because of it. Open Why it changed to see the reasons.`
+    ? `Week ${week} logged. ${count} ${count === 1 ? 'exercise changes' : 'exercises change'} because of it. Open Workout Calendar to see what changed and why.`
     : `Week ${week} logged. Everything stays on plan.`;
   window.scrollTo({ top: 0 });
   render();
@@ -469,12 +483,23 @@ testApp.addEventListener('click', (event) => {
     window.scrollTo({ top: 0 });
   } else if (target.dataset.action === 'cancel-edit') {
     testState.editing = false;
+    testState.tab = 'home';
+    render();
+  } else if (target.dataset.action === 'train-anyway') {
+    trainAnyway = true;
     render();
   } else if (target.dataset.tab) {
     testState.tab = target.dataset.tab;
+    // Let's Workout always opens on the next workout not done yet
+    if (testState.tab === 'week' && draft) {
+      draft.activeDay = nextWorkoutDay();
+      testState.manual = false;
+      trainAnyway = false;
+    }
     lastMessage = '';
     saveTestState();
     render();
+    window.scrollTo({ top: 0 });
   } else if (target.dataset.dayTab) {
     draft.activeDay = Number(target.dataset.dayTab);
     lastMessage = '';
@@ -497,7 +522,7 @@ testApp.addEventListener('click', (event) => {
     testState.results = null;
     testState.editing = false;
     testState.logs = {};
-    testState.tab = 'week';
+    testState.tab = 'home';
     draft = null;
     player = null;
     lastMessage = '';
@@ -521,7 +546,7 @@ testApp.addEventListener('click', (event) => {
     render();
   } else if (target.dataset.action === 'reset') {
     testState.logs = {};
-    testState.tab = 'week';
+    testState.tab = 'home';
     lastMessage = '';
     draft = null;
     player = null;

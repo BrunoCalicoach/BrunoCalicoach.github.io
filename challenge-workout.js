@@ -678,14 +678,23 @@ function handleWorkoutClick(button) {
     renderPlayer();
   } else if (action === 'save') {
     const day = player.day;
-    draft.days[day] = { energy: player.check.energy, sleep: player.check.sleep, effort: player.check.effort };
+    // Date and length are kept for the progress screen and to know when today's workout is done
+    draft.days[day] = {
+      energy: player.check.energy,
+      sleep: player.check.sleep,
+      effort: player.check.effort,
+      date: todayText(),
+      minutes: Math.max(1, Math.round((player.finishedAt - player.startedAt) / 60000))
+    };
     draft.daysDone = Object.assign({}, draft.daysDone, { [day]: true });
     player = null;
     closePlayer();
+    // Back to the start menu after every saved workout
+    testState.tab = 'home';
     if ([1, 2, 3, 4].every((n) => draft.daysDone[n])) {
       finishWeek();
     } else {
-      lastMessage = `Day ${day} saved.`;
+      lastMessage = `Day ${day} saved. Great work!`;
       draft.activeDay = [1, 2, 3, 4].find((n) => !draft.daysDone[n]);
       saveTestState();
       render();

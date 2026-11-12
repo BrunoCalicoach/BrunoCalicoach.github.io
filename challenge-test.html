@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -86,6 +86,55 @@ body{
   padding:20px;
   min-width:0;
 }
+
+/* Start menu */
+.menu-week{ font-size:1.5rem; font-weight:800; }
+.menu-grid{ display:grid; gap:12px; }
+.menu-option{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  width:100%; text-align:left; padding:20px; min-height:84px;
+  border-radius:18px; border:1px solid #ececec; background:#ffffff;
+}
+.menu-option:not(:disabled):hover{ border-color:#ef4444; }
+.menu-option-main, .menu-grid .menu-option:first-child:not(:disabled){
+  background:#ef4444; border-color:#ef4444; color:#ffffff;
+}
+.menu-option-main .menu-text, .menu-grid .menu-option:first-child:not(:disabled) .menu-text{ color:rgba(255,255,255,0.85); }
+.menu-option:disabled{ opacity:0.45; cursor:not-allowed; }
+.menu-title{ font-size:1.25rem; font-weight:800; }
+.menu-text{ font-size:0.9rem; color:#6b7280; }
+
+/* Screen header with the way back to the menu */
+.screen-bar{ display:flex; align-items:center; gap:12px; }
+.back-button{
+  min-height:44px; padding:8px 14px; border-radius:12px;
+  border:1px solid #d1d5db; background:#ffffff; font-weight:600; white-space:nowrap;
+}
+.screen-title{ font-size:1.35rem; font-weight:800; }
+
+/* Progress */
+.stat-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+@media (min-width:640px){ .stat-grid{ grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+.stat{ background:#ffffff; border:1px solid #ececec; border-radius:18px; padding:16px; text-align:center; }
+.stat-value{ font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; }
+.stat-label{ font-size:0.8rem; color:#6b7280; }
+.bar-row{ display:grid; grid-template-columns:64px 1fr 48px; align-items:center; gap:8px; font-size:0.9rem; }
+.bar-track{ height:12px; border-radius:999px; background:#e5e7eb; overflow:hidden; }
+.bar-fill{ display:block; height:100%; border-radius:999px; background:#ef4444; }
+.bar-value{ text-align:right; font-variant-numeric:tabular-nums; }
+.record-list{ list-style:none; padding:0; margin:0; }
+.record-row{ display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+.record-row:last-child{ border-bottom:none; }
+.fact-list{ display:grid; gap:8px; padding-left:18px; list-style:disc; }
+
+html[data-theme="dark"] .menu-option:not(.menu-option-main),
+html[data-theme="dark"] .back-button,
+html[data-theme="dark"] .stat{ background:#1c1f26; border-color:#2d323c; color:#f3f4f6; }
+html[data-theme="dark"] .menu-grid .menu-option:first-child:not(:disabled){ background:#ef4444; border-color:#ef4444; color:#ffffff; }
+html[data-theme="dark"] .menu-text,
+html[data-theme="dark"] .stat-label{ color:#9ca3af; }
+html[data-theme="dark"] .bar-track{ background:#2b2f38; }
+html[data-theme="dark"] .record-row{ border-color:#2d323c; }
 
 .card-flush{
   padding:0;
@@ -1298,8 +1347,9 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-workout.js?v=42"></script>
-<script src="challenge-test.js?v=39"></script>
+<script src="challenge-menu.js?v=2"></script>
+<script src="challenge-workout.js?v=43"></script>
+<script src="challenge-test.js?v=40"></script>
 
 </body>
 </html>

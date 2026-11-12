@@ -45,6 +45,12 @@ function todayStatus() {
 
 /* ---------- Start menu ---------- */
 
+function testingProgressText() {
+  if (testingComplete()) return 'All tests done: create your plan';
+  const next = TESTING_DAYS.find((item) => !testingDayDone(item.day)).day;
+  return next === 1 ? `3 testing days create your ${PLAN_WEEKS}-week plan` : `Continue with testing Day ${next}`;
+}
+
 // First visit: testing is the only way in, everything else waits for the plan it creates
 function firstTimeMenu() {
   const locked = (title, text) => `<button type="button" class="menu-option" disabled aria-disabled="true">
@@ -59,7 +65,7 @@ function firstTimeMenu() {
     <div class="menu-grid">
       <button type="button" class="menu-option menu-option-main" data-tab="test">
         <span class="menu-title">Start testing</span>
-        <span class="menu-text">${TEST_FIELDS.length} short tests create your ${PLAN_WEEKS}-week plan</span>
+        <span class="menu-text">${testingProgressText()}</span>
       </button>
       ${locked('Let\'s Workout', 'Unlocks after testing')}
       ${locked('Workout Calendar', 'Unlocks after testing')}

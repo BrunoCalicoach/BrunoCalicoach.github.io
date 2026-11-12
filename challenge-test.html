@@ -87,6 +87,20 @@ body{
   min-width:0;
 }
 
+/* Testing */
+.day-tabs.day-tabs-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+.test-done{ font-size:0.85rem; font-weight:700; color:#047857; margin-left:6px; }
+.test-how{ list-style:disc; padding-left:18px; margin-top:4px; font-size:0.9rem; display:grid; gap:2px; }
+.test-how-player{ text-align:left; max-width:520px; margin:0 auto; }
+.test-minimum{ font-size:0.85rem; color:#6b7280; margin-top:8px; }
+.test-warning{
+  border-radius:14px; padding:10px 12px; font-size:0.9rem; font-weight:600;
+  background:#fef3c7; color:#92400e; text-align:center;
+}
+html[data-theme="dark"] .test-minimum{ color:#9ca3af; }
+html[data-theme="dark"] .test-done{ color:#34d399; }
+html[data-theme="dark"] .test-warning{ background:#3b2f12; color:#fcd34d; }
+
 /* Start menu */
 .menu-week{ font-size:1.5rem; font-weight:800; }
 .menu-grid{ display:grid; gap:12px; }
@@ -1347,9 +1361,10 @@ html[data-theme="dark"] .status-border-hit{
   <p class="text-gray-500 text-center">Loading...</p>
 </main>
 
-<script src="challenge-menu.js?v=2"></script>
+<script src="challenge-menu.js?v=3"></script>
 <script src="challenge-workout.js?v=43"></script>
-<script src="challenge-test.js?v=40"></script>
+<script src="challenge-testing.js?v=1"></script>
+<script src="challenge-test.js?v=41"></script>
 
 </body>
 </html>

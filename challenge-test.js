@@ -375,6 +375,10 @@ function whyPanel(plan, weeks) {
 }
 
 function render() {
+  if (tester) {
+    renderTester();
+    return;
+  }
   if (player && !player.paused) {
     if (player.week === currentWeek() && draft && draft.week === player.week) {
       renderPlayer();
@@ -393,10 +397,10 @@ function render() {
   let tab = testState.tab || 'home';
   if (showForm && !testState.editing && tab !== 'test') tab = 'home';
   if (testState.editing) tab = 'test';
-  const titles = { week: 'Let\'s Workout', plan: 'Workout Calendar', progress: 'Your Progress', why: 'What changed and why', test: 'Your test' };
+  const titles = { week: 'Let\'s Workout', plan: 'Workout Calendar', progress: 'Your Progress', why: 'What changed and why', test: testState.editing ? 'Your test results' : 'Testing' };
   let panel;
   if (tab === 'home') panel = homePanel(plan, weeks);
-  else if (tab === 'test') panel = resultsForm();
+  else if (tab === 'test') panel = testState.editing ? resultsForm() : testingPanel();
   else if (tab === 'plan') panel = `<button type="button" class="link-button text-left" data-tab="why">See what changed in your plan and why</button>${planPanel(plan, weeks, baseline)}`;
   else if (tab === 'progress') panel = progressPanel(plan);
   else if (tab === 'why') panel = whyPanel(plan, weeks);
@@ -462,8 +466,16 @@ function finishWeek() {
 testApp.addEventListener('click', (event) => {
   const target = event.target.closest('button');
   if (!target) return;
+  if (handleTestingClick(target)) return;
   if (handleWorkoutClick(target)) return;
   const plan = activePlan();
+  if (target.dataset.action === 'enter-all') {
+    // The one-page form, for entering results tested elsewhere
+    testState.editing = true;
+    render();
+    window.scrollTo({ top: 0 });
+    return;
+  }
 
   if (target.dataset.action === 'manual' || target.dataset.action === 'overview') {
     testState.manual = target.dataset.action === 'manual';
@@ -519,6 +531,7 @@ testApp.addEventListener('click', (event) => {
     });
   } else if (target.dataset.athlete) {
     testState.athlete = target.dataset.athlete;
+    testState.testing = null;
     testState.results = null;
     testState.editing = false;
     testState.logs = {};

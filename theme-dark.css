@@ -1,0 +1,126 @@
+/*
+  Dark theme (draft).
+  Loaded after each page's own styles, so it recolours the existing light design
+  without changing the page markup. Remove the <link> to this file to go back.
+  The accent colour (#008080) is unchanged.
+*/
+
+:root {
+  --page: #141414;        /* main background */
+  --page-alt: #191919;    /* every other section, and the hero grey's neighbour */
+  --surface: #1e1e1e;     /* cards and panels */
+  --surface-hover: #232323;
+  --line: rgba(255,255,255,0.08);
+  --line-strong: rgba(255,255,255,0.14);
+  --text: #f2f2f2;
+  --text-soft: #b4b4b4;   /* paragraphs */
+  --text-muted: #8c8c8c;  /* captions, small print */
+  --accent: #008080;
+  --accent-dark: #006666;
+}
+
+html { color-scheme: dark; }
+
+body {
+  background: var(--page) !important;
+  color: var(--text) !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings: tighter and a little more refined */
+h1, h2 { letter-spacing: -0.02em; }
+h3 { letter-spacing: -0.01em; }
+
+/* Section backgrounds: no more white blocks, just two close shades of dark */
+.bg-white { background-color: var(--page) !important; }
+.bg-\[\#f5f5f5\],
+.bg-\[\#f7f7f7\] { background-color: var(--page-alt) !important; }
+
+section.section-spacing { border-top: 1px solid var(--line); }
+
+/* A short accent line under centred section headings */
+.section-spacing .text-center > h2::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin: 18px auto 0;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* Text colours */
+.text-black,
+.text-gray-900,
+.text-gray-800,
+.text-gray-700 { color: var(--text) !important; }
+.text-gray-600,
+.text-gray-500 { color: var(--text-soft) !important; }
+.text-gray-400 { color: var(--text-muted) !important; }
+
+/* Borders */
+.border-gray-200,
+.border-gray-100 { border-color: var(--line) !important; }
+.faq-item { border-bottom-color: var(--line) !important; }
+
+/* Cards */
+.card {
+  background: linear-gradient(180deg, #1f1f1f, #1a1a1a) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.card:hover {
+  border-color: rgba(0,128,128,0.55) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,128,128,0.15) !important;
+}
+
+/* Plan cards keep their photos; just a softer frame */
+.plan-card { box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+
+/* Light "Check details" buttons become dark glass buttons */
+.bg-\[\#ebebeb\] {
+  background-color: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--line-strong);
+}
+.hover\:bg-\[\#dedede\]:hover { background-color: rgba(255,255,255,0.15) !important; }
+
+/* Panels that were white boxes (FAQ list and similar) */
+.rounded-3xl.bg-white,
+div.bg-white { background-color: var(--surface) !important; }
+
+/* Form fields */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--line-strong) !important;
+}
+input::placeholder,
+textarea::placeholder { color: var(--text-muted) !important; }
+
+/* Primary buttons get a soft accent glow */
+.btn-primary { box-shadow: 0 8px 24px rgba(0,128,128,0.28); }
+.btn-primary:hover { box-shadow: 0 10px 30px rgba(0,128,128,0.4); }
+
+/* ---------- About page timeline ---------- */
+.tl-track { background: #2a2a2a !important; }
+.tl-dot { background: var(--page) !important; border-color: #3a3a3a !important; }
+.tl-item.reached .tl-dot,
+.tl-end.reached .tl-dot {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 6px rgba(0,128,128,0.22), 0 0 18px rgba(0,128,128,0.45) !important;
+}
+.tl-text p { color: var(--text-soft) !important; }
+.photo { background: var(--surface) !important; box-shadow: 0 24px 50px rgba(0,0,0,0.55) !important; }
+.photo-caption { color: var(--text-muted) !important; }
+.record,
+.title-row {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+}
+.record-detail,
+.title-place,
+.stat-name { color: var(--text-muted) !important; }

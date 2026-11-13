@@ -6,10 +6,10 @@
 */
 
 :root {
-  --page: #141414;        /* main background */
-  --page-alt: #191919;    /* every other section, and the hero grey's neighbour */
-  --surface: #1e1e1e;     /* cards and panels */
-  --surface-hover: #232323;
+  --page: #0b0b0b;        /* near-black sections */
+  --page-alt: #1d1d1d;    /* lighter grey sections, alternating with the near-black ones */
+  --surface: #181818;     /* cards and panels on near-black sections */
+  --surface-alt: #272727; /* cards and panels on grey sections */
   --line: rgba(255,255,255,0.08);
   --line-strong: rgba(255,255,255,0.14);
   --text: #f2f2f2;
@@ -65,8 +65,14 @@ section.section-spacing { border-top: 1px solid var(--line); }
 
 /* Cards */
 .card {
-  background: linear-gradient(180deg, #1f1f1f, #1a1a1a) !important;
+  background: linear-gradient(180deg, #1b1b1b, var(--surface)) !important;
   border: 1px solid var(--line) !important;
+}
+
+/* On the grey sections, cards are a step lighter so they still stand out */
+.bg-\[\#f5f5f5\] .card,
+.bg-\[\#f7f7f7\] .card {
+  background: linear-gradient(180deg, #2b2b2b, var(--surface-alt)) !important;
 }
 
 .card:hover {
@@ -88,6 +94,8 @@ section.section-spacing { border-top: 1px solid var(--line); }
 /* Panels that were white boxes (FAQ list and similar) */
 .rounded-3xl.bg-white,
 div.bg-white { background-color: var(--surface) !important; }
+.bg-\[\#f5f5f5\] div.bg-white,
+.bg-\[\#f7f7f7\] div.bg-white { background-color: var(--surface-alt) !important; }
 
 /* Form fields */
 input:not([type="checkbox"]):not([type="radio"]),
@@ -105,8 +113,8 @@ textarea::placeholder { color: var(--text-muted) !important; }
 .btn-primary:hover { box-shadow: 0 10px 30px rgba(0,128,128,0.4); }
 
 /* ---------- About page timeline ---------- */
-.tl-track { background: #2a2a2a !important; }
-.tl-dot { background: var(--page) !important; border-color: #3a3a3a !important; }
+.tl-track { background: #353535 !important; }
+.tl-dot { background: var(--page-alt) !important; border-color: #4a4a4a !important; }
 .tl-item.reached .tl-dot,
 .tl-end.reached .tl-dot {
   background: var(--accent) !important;
@@ -118,7 +126,7 @@ textarea::placeholder { color: var(--text-muted) !important; }
 .photo-caption { color: var(--text-muted) !important; }
 .record,
 .title-row {
-  background: var(--surface) !important;
+  background: var(--surface-alt) !important;
   border-color: var(--line) !important;
 }
 .record-detail,

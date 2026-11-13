@@ -287,3 +287,61 @@ footer {
   position: absolute;
   inset: -1px;
 }
+
+/* ---------- Language switch (see lang.js) ---------- */
+.lang-group { display: flex; align-items: center; gap: 14px; }
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255,255,255,0.04);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.lang-option {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  transition: color .2s ease, background-color .2s ease;
+}
+a.lang-option:hover { color: #ffffff; }
+.lang-option.active { background: var(--accent); color: #ffffff; }
+.lang-dot { display: none; }
+
+/* "Prikaži stranicu na hrvatskom?" for visitors whose device is set to Croatian */
+.lang-suggest {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #1d1d1d;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+  color: var(--text);
+  font-size: .9rem;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.lang-suggest.show { opacity: 1; transform: none; }
+.lang-suggest-yes {
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+.lang-suggest-yes:hover { background: var(--accent-dark); }
+.lang-suggest-no { color: var(--text-muted); font-weight: 600; }
+.lang-suggest-no:hover { color: #ffffff; }

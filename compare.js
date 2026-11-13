@@ -53,7 +53,70 @@
 
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
+  // Croatian wording, used on the /hr/ pages (the page's <html lang="hr">).
+  const LANG = (document.documentElement.lang || 'en').slice(0, 2);
+  const HR = {
+    'Calisthenics Plan': 'Calisthenics plan',
+    'Calisthenics + Nutrition': 'Calisthenics + prehrana',
+    'Personal training plan': 'Osobni plan treninga',
+    'With video tutorials and explanations': 'Uz video upute i objašnjenja',
+    'Coach availability': 'Dostupnost trenera',
+    '12pm – 4pm CEST': '12–16 h',
+    '3 days a week': '3 dana tjedno',
+    '5 days a week': '5 dana tjedno',
+    'Training feedback': 'Povratna informacija o treningu',
+    'Form, technique and performance': 'Forma, tehnika i izvedba',
+    'Once a week': 'Jednom tjedno',
+    'Check in': 'Tjedni check-in',
+    'Plan updates based on your progress': 'Ažuriranje plana prema tvom napretku',
+    'Basic nutritional guidance': 'Osnovni savjeti o prehrani',
+    'Nutrition, hydration, sleep, supplements': 'Prehrana, hidratacija, san, suplementi',
+    'Nutrition plan': 'Plan prehrane',
+    'Fully personalised to your goals': 'Potpuno prilagođen tvojim ciljevima',
+    'Customisable sample menus': 'Prilagodljivi primjeri jelovnika',
+    'For your meal plan': 'Za tvoj plan prehrane',
+    '4 menus': '4 jelovnika',
+    'Equipment': 'Oprema',
+    'Pull up bar & dip bars': 'Šipka za zgibove i razboj',
+    'Duration': 'Trajanje',
+    'Subscription based': 'Na bazi pretplate',
+    'Difficulty': 'Težina',
+    'Personalised': 'Personalizirano',
+    'Workout time': 'Trajanje treninga',
+    'You are viewing': 'Trenutno gledaš',
+    'Comparing with': 'Uspoređuješ s',
+    'Compare programs': 'Usporedi programe',
+    'Compare with:': 'Usporedi s:',
+    'Close comparison': 'Zatvori usporedbu',
+    'Program to compare with': 'Program za usporedbu',
+    'Price': 'Cijena',
+    '1 month': '1 mjesec',
+    '3 months': '3 mjeseca',
+    '/month': '/mj.',
+    'total': 'ukupno',
+    'Save {n}€ with 3 months': 'Uštedi {n}€ uz 3 mjeseca',
+    'of 5 weekdays': 'od 5 radnih dana',
+    "What's included": 'Što je uključeno',
+    'Only differences': 'Samo razlike',
+    'Difference': 'Razlika',
+    'Included': 'Uključeno',
+    'Not included': 'Nije uključeno',
+    'The same in both': 'Isto u oba',
+    'Apply for {name}': 'Prijavi se za {name}',
+    'See all {name} details': 'Pogledaj sve detalje plana {name}',
+    'vs': 'vs',
+    Mon: 'Ponedjeljak', Tue: 'Utorak', Wed: 'Srijeda', Thu: 'Četvrtak', Fri: 'Petak'
+  };
+  const t = (text, values) => {
+    let result = LANG === 'hr' && HR[text] ? HR[text] : text;
+    Object.keys(values || {}).forEach((key) => { result = result.replace('{' + key + '}', values[key]); });
+    return result;
+  };
+  // First letter shown on the weekday chips.
+  const dayLetter = (day) => t(day).charAt(0);
+
   const script = document.currentScript;
+  const base = script ? script.src.replace(/[^/]*$/, '') : '';
   const current = script && script.dataset.current;
   if (!PROGRAMS[current]) return;
 
@@ -79,11 +142,11 @@
     const program = PROGRAMS[key];
     return `
       <div class="cmp-head">
-        <div class="cmp-photo"><img src="${program.photo}" alt=""></div>
+        <div class="cmp-photo"><img src="${base}${program.photo}" alt=""></div>
         <div>
-          ${key === current ? '<span class="cmp-badge">You are viewing</span>' : '<span class="cmp-badge cmp-badge-other">Comparing with</span>'}
+          ${key === current ? `<span class="cmp-badge">${t('You are viewing')}</span>` : `<span class="cmp-badge cmp-badge-other">${t('Comparing with')}</span>`}
           <div class="cmp-name">${escape(program.name)}</div>
-          <div class="cmp-tagline">${escape(program.tagline)}</div>
+          <div class="cmp-tagline">${escape(t(program.tagline))}</div>
         </div>
       </div>`;
   }
@@ -94,7 +157,7 @@
       <div class="cmp-bar-row">
         <div class="cmp-bar-label">${label}</div>
         <div class="cmp-bar-track"><div class="cmp-bar ${key === current ? 'is-current' : ''}" style="--w:${(perMonth / highest * 100).toFixed(1)}%"></div></div>
-        <div class="cmp-bar-value"><strong>${Math.round(perMonth)}€</strong><span>/month</span>${total ? `<em>${total}€ total</em>` : ''}</div>
+        <div class="cmp-bar-value"><strong>${Math.round(perMonth)}€</strong><span>${t('/month')}</span>${total ? `<em>${total}€ ${t('total')}</em>` : ''}</div>
       </div>`;
     return keys.map((key) => {
       const program = PROGRAMS[key];
@@ -102,9 +165,9 @@
       return `
         <div class="cmp-price">
           <div class="cmp-price-name">${escape(program.name)}</div>
-          ${row(key, '1 month', program.monthly)}
-          ${row(key, '3 months', program.threeMonths / 3, program.threeMonths)}
-          <div class="cmp-saving">Save ${saving}€ with 3 months</div>
+          ${row(key, t('1 month'), program.monthly)}
+          ${row(key, t('3 months'), program.threeMonths / 3, program.threeMonths)}
+          <div class="cmp-saving">${t('Save {n}€ with 3 months', { n: saving })}</div>
         </div>`;
     }).join('');
   }
@@ -112,20 +175,20 @@
   function daysBlock(keys) {
     return keys.map((key) => {
       const program = PROGRAMS[key];
-      const chips = WEEKDAYS.map((day) => `<span class="cmp-day ${program.coachDays.includes(day) ? 'on' : ''}">${day.charAt(0)}<span class="sr-only">${day}</span></span>`).join('');
+      const chips = WEEKDAYS.map((day) => `<span class="cmp-day ${program.coachDays.includes(day) ? 'on' : ''}">${dayLetter(day)}<span class="sr-only">${t(day)}</span></span>`).join('');
       return `
         <div class="cmp-days">
           <div class="cmp-price-name">${escape(program.name)}</div>
           <div class="cmp-day-row">${chips}</div>
-          <div class="cmp-days-count"><strong>${program.coachDays.length}</strong> of 5 weekdays</div>
+          <div class="cmp-days-count"><strong>${program.coachDays.length}</strong> ${t('of 5 weekdays')}</div>
         </div>`;
     }).join('');
   }
 
   function cell(value) {
-    if (value === false) return `<div class="cmp-cell no">${icon('x', 16)}<span>Not included</span></div>`;
-    if (value === true) return `<div class="cmp-cell yes">${icon('check', 16)}<span>Included</span></div>`;
-    return `<div class="cmp-cell yes">${icon('check', 16)}<span>${escape(value)}</span></div>`;
+    if (value === false) return `<div class="cmp-cell no">${icon('x', 16)}<span>${t('Not included')}</span></div>`;
+    if (value === true) return `<div class="cmp-cell yes">${icon('check', 16)}<span>${t('Included')}</span></div>`;
+    return `<div class="cmp-cell yes">${icon('check', 16)}<span>${escape(t(value))}</span></div>`;
   }
 
   function featuresBlock(keys) {
@@ -135,8 +198,8 @@
       return `
         <div class="cmp-row ${differs ? 'differs' : ''}">
           <div class="cmp-row-label">
-            <div class="cmp-row-name">${escape(feature.name)}${differs ? '<span class="cmp-diff-tag">Difference</span>' : ''}</div>
-            <div class="cmp-row-note">${escape(feature.note)}</div>
+            <div class="cmp-row-name">${escape(t(feature.name))}${differs ? `<span class="cmp-diff-tag">${t('Difference')}</span>` : ''}</div>
+            <div class="cmp-row-note">${escape(t(feature.note))}</div>
           </div>
           ${cell(feature[keys[0]])}
           ${cell(feature[keys[1]])}
@@ -151,14 +214,14 @@
     panel.innerHTML = `
       <div class="cmp-top">
         <div>
-          <div class="cmp-eyebrow">Compare programs</div>
-          <h2 class="cmp-title" id="cmp-title">${escape(PROGRAMS[current].name)} <span>vs</span> ${escape(PROGRAMS[other].name)}</h2>
+          <div class="cmp-eyebrow">${t('Compare programs')}</div>
+          <h2 class="cmp-title" id="cmp-title">${escape(PROGRAMS[current].name)} <span>${t('vs')}</span> ${escape(PROGRAMS[other].name)}</h2>
         </div>
-        <button type="button" class="cmp-close" data-compare-close aria-label="Close comparison">${icon('x', 20)}</button>
+        <button type="button" class="cmp-close" data-compare-close aria-label="${t('Close comparison')}">${icon('x', 20)}</button>
       </div>
 
-      <div class="cmp-picker" role="radiogroup" aria-label="Program to compare with">
-        <span>Compare with:</span>
+      <div class="cmp-picker" role="radiogroup" aria-label="${t('Program to compare with')}">
+        <span>${t('Compare with:')}</span>
         ${others.map((key) => `<button type="button" role="radio" aria-checked="${key === other}" class="cmp-chip ${key === other ? 'active' : ''}" data-compare-pick="${key}">${escape(PROGRAMS[key].name)}</button>`).join('')}
       </div>
 
@@ -166,22 +229,22 @@
         <div class="cmp-heads">${header(keys[0])}${header(keys[1])}</div>
 
         <section class="cmp-section cmp-anim">
-          <h3>Price</h3>
+          <h3>${t('Price')}</h3>
           <div class="cmp-two">${priceBlock(keys)}</div>
         </section>
 
         <section class="cmp-section cmp-anim">
-          <h3>Coach availability</h3>
+          <h3>${t('Coach availability')}</h3>
           <div class="cmp-two">${daysBlock(keys)}</div>
         </section>
 
         <section class="cmp-section cmp-anim">
           <div class="cmp-section-top">
-            <h3>What's included</h3>
+            <h3>${t("What's included")}</h3>
             <label class="cmp-toggle">
               <input type="checkbox" data-compare-diff ${onlyDifferences ? 'checked' : ''}>
               <span class="cmp-switch" aria-hidden="true"></span>
-              Only differences (${differences})
+              ${t('Only differences')} (${differences})
             </label>
           </div>
           <div class="cmp-table">
@@ -195,16 +258,16 @@
         </section>
 
         <section class="cmp-section cmp-anim">
-          <h3>The same in both</h3>
+          <h3>${t('The same in both')}</h3>
           <div class="cmp-shared">
-            ${SHARED.map(([label, value]) => `<div class="cmp-shared-item"><span>${escape(label)}</span><strong>${escape(value)}</strong></div>`).join('')}
+            ${SHARED.map(([label, value]) => `<div class="cmp-shared-item"><span>${escape(t(label))}</span><strong>${escape(t(value))}</strong></div>`).join('')}
           </div>
         </section>
       </div>
 
       <div class="cmp-actions">
-        ${keys.map((key) => `<a class="cmp-apply ${key === current ? 'primary' : ''}" href="${PROGRAMS[key].apply}">Apply for ${escape(PROGRAMS[key].name.replace('Coaching ', ''))} ${icon('arrow', 16)}</a>`).join('')}
-        <a class="cmp-link" href="${PROGRAMS[other].page}">See all ${escape(PROGRAMS[other].name.replace('Coaching ', ''))} details</a>
+        ${keys.map((key) => `<a class="cmp-apply ${key === current ? 'primary' : ''}" href="${PROGRAMS[key].apply}">${t('Apply for {name}', { name: escape(PROGRAMS[key].name.replace('Coaching ', '')) })} ${icon('arrow', 16)}</a>`).join('')}
+        <a class="cmp-link" href="${PROGRAMS[other].page}">${t('See all {name} details', { name: escape(PROGRAMS[other].name.replace('Coaching ', '')) })}</a>
       </div>`;
 
     // Let the bars grow once they are on screen.

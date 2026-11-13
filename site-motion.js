@@ -68,9 +68,18 @@
 
   items.forEach((element) => observer.observe(element));
 
+  // On the home page's first visit, the intro (intro.js) plays first and tells us when to
+  // bring in the top section's text.
+  const introPlaying = document.documentElement.classList.contains('intro');
+  if (introPlaying) {
+    document.addEventListener('intro:done', () => {
+      heroItems.forEach((element) => element.classList.add('shown'));
+    }, { once: true });
+  }
+
   // Show the top section's text, and anything already on screen, right after opening.
   setTimeout(() => {
-    heroItems.forEach((element) => element.classList.add('shown'));
+    if (!introPlaying) heroItems.forEach((element) => element.classList.add('shown'));
     items.forEach((element) => {
       if (element.getBoundingClientRect().top < window.innerHeight) element.classList.add('shown');
     });

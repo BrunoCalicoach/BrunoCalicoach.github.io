@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://unpkg.com/feather-icons"></script>
 
@@ -216,6 +216,19 @@
   
   </style>
   <link rel="stylesheet" href="../theme-dark.css?v=6">
+  <link rel="stylesheet" href="../intro.css?v=3">
+  <!-- Intro: plays on the first home page visit of a session (see intro.js). Decided before the page shows. -->
+  <script>
+    (function () {
+      try {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (location.hash || window.scrollY > 0 || sessionStorage.getItem("intro-seen")) return;
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+        window.scrollTo(0, 0);
+        document.documentElement.classList.add("intro");
+      } catch (e) {}
+    })();
+  </script>
 <link rel="alternate" hreflang="en" href="https://brunozgela.com/">
 <link rel="alternate" hreflang="hr" href="https://brunozgela.com/hr/">
 <link rel="alternate" hreflang="x-default" href="https://brunozgela.com/">
@@ -1093,7 +1106,8 @@
     });
   </script>
 
-<script src="../site-motion.js?v=1"></script>
+<script src="../site-motion.js?v=2"></script>
+<script src="../intro.js?v=1"></script>
 <script src="../lang.js?v=1"></script>
 </body>
 </html>

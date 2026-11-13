@@ -158,3 +158,124 @@ textarea::placeholder { color: var(--text-muted) !important; }
       linear-gradient(to top, rgba(var(--hero-grey),1.000) 0.0%, rgba(var(--hero-grey),0.766) 4.8%, rgba(var(--hero-grey),0.562) 9.5%, rgba(var(--hero-grey),0.391) 14.2%, rgba(var(--hero-grey),0.250) 19.0%, rgba(var(--hero-grey),0.141) 23.8%, rgba(var(--hero-grey),0.062) 28.5%, rgba(var(--hero-grey),0.016) 33.2%, rgba(var(--hero-grey),0.000) 38.0%) !important;
   }
 }
+
+/* ---------- Plan pages and application form ---------- */
+
+/* Their top section gets the same treatment as the home and About pages:
+   near-black, with a black and white photo on the right that fades into it.
+   Each page sets its own photo with --hero-img on the .hero-photo element. */
+.hero {
+  --hero-grey: 11,11,11;
+  --hero-shade: 0.6;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgb(var(--hero-grey)) !important;
+}
+
+.hero .hero-photo {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background:
+    linear-gradient(rgba(var(--hero-grey),var(--hero-shade)), rgba(var(--hero-grey),var(--hero-shade))),
+    var(--hero-img) center 20% / cover no-repeat;
+  filter: grayscale(1);
+}
+
+@media (min-width: 768px) {
+  .hero { --hero-shade: 0.45; }
+  .hero .hero-photo {
+    left: auto;
+    width: auto;
+    height: 100%;
+    right: max(0px, calc((100% - 80rem) / 2));
+  }
+}
+
+/* Content sections: grey, so the page alternates black (top) and grey */
+section.section {
+  background: var(--page-alt);
+  border-top: 1px solid var(--line);
+}
+section.section .card {
+  background: linear-gradient(180deg, #2b2b2b, var(--surface-alt)) !important;
+  border: 1px solid var(--line) !important;
+}
+
+/* Footers on every page: near-black with a thin line on top */
+footer {
+  background: var(--page) !important;
+  border-top: 1px solid var(--line);
+}
+
+/* "Have you seen the other plan?" pop-ups */
+.pro-popup,
+.regular-popup {
+  background: #1d1d1d !important;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important;
+}
+
+/* Application form */
+.question {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+}
+.field {
+  background: var(--page) !important;
+  border-color: var(--line-strong) !important;
+}
+.choice {
+  border-color: var(--line-strong) !important;
+}
+.choice:hover {
+  background: rgba(255,255,255,0.04) !important;
+}
+.choice:has(input:checked) {
+  border-color: var(--accent) !important;
+  background: rgba(0,128,128,0.16) !important;
+}
+
+/* ---------- Subtle motion (see site-motion.js) ---------- */
+
+/* The top photo eases in when the page opens */
+.hero-photo { animation: hero-photo-in 1.6s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes hero-photo-in {
+  from { opacity: 0; transform: scale(1.05); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Items rise and fade in as they scroll into view */
+.js .motion {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity .7s ease var(--motion-delay, 0s),
+    transform .7s cubic-bezier(.2,.7,.2,1) var(--motion-delay, 0s),
+    box-shadow .3s ease, border-color .3s ease, background-color .3s ease !important;
+}
+.js .motion.shown {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hover lifts still work on cards that have faded in */
+.js .card.motion.shown:hover { transform: translateY(-4px); }
+.js .plan-card.motion.shown:hover { transform: translateY(-6px); }
+
+/* Buttons respond smoothly to hover */
+.btn-primary, .btn-secondary {
+  transition: transform .3s ease, box-shadow .3s ease, background-color .3s ease !important;
+}
+.btn-primary:hover, .btn-secondary:hover { transform: translateY(-2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo { animation: none; }
+  .js .motion { opacity: 1; transform: none; transition: none; }
+  .btn-primary:hover, .btn-secondary:hover { transform: none; }
+}

@@ -161,7 +161,8 @@ body{
 }
 
 </style>
-<link rel="stylesheet" href="theme-dark.css?v=5">
+<link rel="stylesheet" href="theme-dark.css?v=6">
+<link rel="stylesheet" href="compare.css?v=2">
 
 
 </head>
@@ -514,6 +515,9 @@ Write answer here.
 
 -->
 
+</div>
+<!-- end of left column (its closing tag used to sit inside the commented-out FAQ above) -->
+
 <!-- SIDEBAR -->
 
 <div>
@@ -569,6 +573,10 @@ class="block text-center mt-10 btn-primary text-white py-4 rounded-xl font-bold"
 Start Today
 
 </a>
+<button type="button" class="compare-button" data-compare-open>
+<i data-feather="columns" class="w-5 h-5"></i>
+Compare programs
+</button>
 
 </div>
 
@@ -644,5 +652,6 @@ closeRegularPopup.addEventListener("click", function(event) {
 </script>
 
 <script src="site-motion.js?v=1"></script>
+<script src="compare.js?v=1" data-current="pro"></script>
 </body>
 </html>

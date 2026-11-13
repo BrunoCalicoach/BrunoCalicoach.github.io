@@ -279,3 +279,11 @@ footer {
   .js .motion { opacity: 1; transform: none; transition: none; }
   .btn-primary:hover, .btn-secondary:hover { transform: none; }
 }
+
+/* Plan pages and application form: the fade layer over the top photo
+   (the home and About pages define this in their own styles). */
+.hero .hero-photo::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+}

@@ -21,19 +21,62 @@
       color: #111827;
     }
 
+    /* Hero: the whole square photo always shows, and its edges fade softly into
+       a dark grey that matches the photo's own background.
+       --hero-grey is that grey (as R,G,B); --hero-shade darkens the photo so the text stays readable. */
     .hero-bg {
+      --hero-grey: 24,24,24;
+      --hero-shade: 0.6;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background: rgb(var(--hero-grey));
+    }
+
+    .hero-photo {
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      width: 100%;
+      aspect-ratio: 1 / 1;
       background:
-        linear-gradient(
-          to bottom,
-          rgba(0,0,0,0.75),
-          rgba(0,0,0,0.88)
-        ),
-        url('folder/img1.jpeg');
-          background-size: 80%;
-            background-repeat: no-repeat;
-	  /* background-size: contain;*/
-      background-size: cover;
-      /*background-position: center;*/
+        linear-gradient(rgba(var(--hero-grey),var(--hero-shade)), rgba(var(--hero-grey),var(--hero-shade))),
+        url('folder/img1.jpeg') center / contain no-repeat;
+    }
+
+    /* Soft fade on every edge (several stops so there is no visible line). */
+    .hero-photo::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background:
+        linear-gradient(to right,
+          rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.55) 6%, rgba(var(--hero-grey),0.2) 13%, rgba(var(--hero-grey),0) 20%,
+          rgba(var(--hero-grey),0) 80%, rgba(var(--hero-grey),0.2) 87%, rgba(var(--hero-grey),0.55) 94%, rgba(var(--hero-grey),1) 100%),
+        linear-gradient(to bottom,
+          rgba(var(--hero-grey),0) 50%, rgba(var(--hero-grey),0.3) 70%, rgba(var(--hero-grey),0.75) 88%, rgba(var(--hero-grey),1) 100%);
+    }
+
+    /* Wider screens: photo fills the hero's height on the right side of the content.
+       The text sits beside it there, so the photo can be a little brighter. */
+    @media (min-width: 768px) {
+      .hero-bg { --hero-shade: 0.5; }
+      .hero-photo {
+        left: auto;
+        width: auto;
+        height: 100%;
+        right: max(0px, calc((100% - 80rem) / 2));
+      }
+      .hero-photo::after {
+        background:
+          linear-gradient(to right,
+            rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.7) 8%, rgba(var(--hero-grey),0.35) 18%, rgba(var(--hero-grey),0.1) 28%, rgba(var(--hero-grey),0) 36%,
+            rgba(var(--hero-grey),0) 64%, rgba(var(--hero-grey),0.1) 72%, rgba(var(--hero-grey),0.35) 82%, rgba(var(--hero-grey),0.7) 92%, rgba(var(--hero-grey),1) 100%),
+          linear-gradient(to bottom,
+            rgba(var(--hero-grey),0.6) 0%, rgba(var(--hero-grey),0) 15%,
+            rgba(var(--hero-grey),0) 75%, rgba(var(--hero-grey),0.6) 92%, rgba(var(--hero-grey),1) 100%);
+      }
     }
 
     .glass {
@@ -80,12 +123,12 @@
     }
 
     .btn-primary {
-      background: #ef4444;
+      background: #008080;
       transition: .25s ease;
     }
 
     .btn-primary:hover {
-      background: #dc2626;
+      background: #006666;
     }
 
     .btn-secondary {
@@ -137,19 +180,20 @@
 
   <!-- HERO -->
   <section class="hero-bg text-white">
+    <div class="hero-photo" aria-hidden="true"></div>
 
     <!-- NAV -->
     <nav class="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
 
       <div class="flex items-center gap-2">
-        <span class="font-extrabold tracking-wide text-sm sm:text-base opacity-60">
+        <span class="font-extrabold tracking-wide text-sm sm:text-base">
           BRUNO ZGELA COACHING
         </span>
       </div>
 
       <div class="flex items-center gap-3">
 
-        <a href="https://www.instagram.com/brunozgela/" class="opacity-80 hover:opacity-100">
+        <a href="https://www.instagram.com/bruno.zgela/" class="opacity-80 hover:opacity-100">
           <i data-feather="instagram" class="w-5 h-5"></i>
         </a>
 
@@ -169,12 +213,12 @@
 
       <div class="max-w-2xl">
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight opacity-60">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
           Build your body through
-          <span class="text-red-500">calisthenics movement</span>
+          <span class="text-[#008080]">calisthenics movement</span>
         </h1>
 
-        <p class="mt-6 text-gray-300 leading-relaxed text-sm sm:text-base max-w-md opacity-60">
+        <p class="mt-6 text-white leading-relaxed text-sm sm:text-base max-w-md">
           Over the course of my 15+ year journey, calisthenics has truly transformed my life.
           Through years of training, learning and competing at a professional level,
           I've gained valuable knowledge and experience that I now want to share with others.
@@ -220,7 +264,7 @@
 
         <div class="card p-7">
 
-          <div class="text-red-500 mb-5">
+          <div class="text-[#008080] mb-5">
             <i data-feather="clipboard" class="w-7 h-7"></i>
           </div>
 
@@ -237,7 +281,7 @@
 
         <div class="card p-7">
 
-          <div class="text-red-500 mb-5">
+          <div class="text-[#008080] mb-5">
             <i data-feather="video" class="w-7 h-7"></i>
           </div>
 
@@ -253,7 +297,7 @@
 
         <div class="card p-7">
 
-          <div class="text-red-500 mb-5">
+          <div class="text-[#008080] mb-5">
             <i data-feather="bar-chart-2" class="w-7 h-7"></i>
           </div>
 
@@ -270,7 +314,7 @@
 
         <div class="card p-7">
 
-          <div class="text-red-500 mb-5">
+          <div class="text-[#008080] mb-5">
             <i data-feather="activity" class="w-7 h-7"></i>
           </div>
 
@@ -345,7 +389,7 @@
             <div class="mt-auto pt-8">
 
               <a href="8week.html"
-                class="block w-full bg-[#ebebeb] text-red-600 hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
+                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
                 Check details
               </a>
 
@@ -376,7 +420,7 @@
             <span class="text-white/80">/month</span>
           </div>
 
-          <p class="mt-2 text-sm text-red-500">
+          <p class="mt-2 text-sm text-white">
             60€ discount for a 3 month purchase
           </p>
 
@@ -422,7 +466,7 @@
             <div class="mt-auto pt-8">
 
             <a href="regular.html"
-              class="block w-full bg-[#ebebeb] text-red-600 hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
+              class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
               Check details
             </a>
 
@@ -448,7 +492,7 @@
             <span>/month</span>
           </div>
 
-          <p class="mt-2 text-sm text-red-500">
+          <p class="mt-2 text-sm text-white">
             60€ discount for a 3 month purchase
           </p>
 
@@ -494,7 +538,7 @@
             <div class="mt-auto pt-8">
 
               <a href="pro.html"
-                class="block w-full bg-[#ebebeb] text-red-600 hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
+                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
                 Check details
               </a>
 
@@ -519,7 +563,7 @@
             <span>weeks</span>
           </div>
 
-          <p class="mt-2 text-sm text-red-500">
+          <p class="mt-2 text-sm text-[#008080]">
             Price coming soon
           </p>
 
@@ -550,7 +594,7 @@
             <div class="mt-auto pt-8">
 
               <a href="challenge.html"
-                class="block w-full bg-[#ebebeb] text-red-600 hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
+                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
                 Check details
               </a>
 
@@ -596,7 +640,7 @@
               How soon will I see results?
             </h3>
 
-            <i data-feather="chevron-down" class="w-5 h-5 text-red-500"></i>
+            <i data-feather="chevron-down" class="w-5 h-5 text-[#008080]"></i>
 
           </div>
 
@@ -619,7 +663,7 @@
               Do I need gym equipment?
             </h3>
 
-            <i data-feather="chevron-down" class="w-5 h-5 text-red-500"></i>
+            <i data-feather="chevron-down" class="w-5 h-5 text-[#008080]"></i>
 
           </div>
 
@@ -646,7 +690,7 @@
               Can I cancel my subscription?
             </h3>
 
-            <i data-feather="chevron-down" class="w-5 h-5 text-red-500"></i>
+            <i data-feather="chevron-down" class="w-5 h-5 text-[#008080]"></i>
 
           </div>
 
@@ -688,7 +732,7 @@
 
           <div class="mt-8 flex items-center gap-3 text-gray-700">
                     <a href="mailto:bruno.calicoach@gmail.com" class="opacity-80 hover:opacity-100">
-            <i data-feather="mail" class="w-5 h-5 text-red-500"></i>
+            <i data-feather="mail" class="w-5 h-5 text-[#008080]"></i>
 
             <span>bruno.calicoach@gmail.com</span></a>
 
@@ -706,7 +750,7 @@
               placeholder="Your name"
               aria-label="Your name"
               required
-              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#008080]"
             >
 
             <input
@@ -715,7 +759,7 @@
               placeholder="Email address"
               aria-label="Email address"
               required
-              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#008080]"
             >
 
             <textarea
@@ -724,7 +768,7 @@
               placeholder="Message"
               aria-label="Message"
               required
-              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+              class="w-full border border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#008080]"
             ></textarea>
 
             <!-- Hidden from visitors: catches spam bots -->
@@ -750,7 +794,7 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="bg-[#0f172a] text-white py-14">
+  <footer class="bg-[#181818] text-white py-14">
 
     <div class="max-w-7xl mx-auto px-5">
 
@@ -792,7 +836,7 @@
 
           <div class="flex items-center gap-4">
 
-        <a href="https://www.instagram.com/brunozgela/" class="opacity-80 hover:opacity-100">
+        <a href="https://www.instagram.com/bruno.zgela/" class="opacity-80 hover:opacity-100">
           <i data-feather="instagram" class="w-5 h-5"></i>
         </a>
 

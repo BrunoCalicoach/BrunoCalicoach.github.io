@@ -319,7 +319,7 @@ function showProgram() {
       el('span', { class: 'text-gray-500 font-normal', textContent: logs.length + ' of ' + total + ' sessions done' })
     ),
     el('div', { class: 'h-2 bg-gray-100 rounded-full overflow-hidden mt-3' },
-      el('div', { class: 'h-full bg-red-500', style: 'width:' + percent + '%' })
+      el('div', { class: 'h-full bg-[#008080]', style: 'width:' + percent + '%' })
     )
   );
 

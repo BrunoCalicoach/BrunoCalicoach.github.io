@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bruno Zgela Coaching</title>
+  <title>About Me | Bruno Zgela Coaching</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
   <script src="https://unpkg.com/feather-icons"></script>
+
+  <!-- Hide animated items only when scripts run, so the page still shows everything without them. -->
+  <script>document.documentElement.classList.add('js');</script>
 
   <style>
     body {
@@ -23,21 +23,64 @@
       color: #111827;
     }
 
+    /* Hero works like the home page: the whole photo shows in the background and
+       its edges fade softly into the same dark grey.
+       --hero-grey is that grey (as R,G,B); --hero-shade darkens the photo so the text stays readable. */
     .hero-bg {
-      background:
-        linear-gradient(
-          to bottom,
-          rgba(0,0,0,0.75),
-          rgba(0,0,0,0.88)
-        ),
-        url('folder/img2.jpg');
-      background-size: cover;
-      background-position: center;
+      --hero-grey: 24,24,24;
+      --hero-shade: 0.6;
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background: rgb(var(--hero-grey));
     }
 
-    .glass {
-      backdrop-filter: blur(10px);
-      background: rgba(255,255,255,0.04);
+    .hero-photo {
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      background:
+        linear-gradient(rgba(var(--hero-grey),var(--hero-shade)), rgba(var(--hero-grey),var(--hero-shade))),
+        url('folder/about/hero.jpg') center / cover no-repeat;
+      filter: grayscale(1);
+    }
+
+    .hero-photo::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background:
+        linear-gradient(to right,
+          rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.55) 6%, rgba(var(--hero-grey),0.2) 13%, rgba(var(--hero-grey),0) 20%,
+          rgba(var(--hero-grey),0) 80%, rgba(var(--hero-grey),0.2) 87%, rgba(var(--hero-grey),0.55) 94%, rgba(var(--hero-grey),1) 100%),
+        linear-gradient(to bottom,
+          rgba(var(--hero-grey),0.5) 0%, rgba(var(--hero-grey),0) 12%,
+          rgba(var(--hero-grey),0) 45%, rgba(var(--hero-grey),0.35) 65%, rgba(var(--hero-grey),0.8) 85%, rgba(var(--hero-grey),1) 100%);
+    }
+
+    /* Wider screens: photo fills the hero's height on the right side of the content. */
+    @media (min-width: 768px) {
+      .hero-bg { --hero-shade: 0.5; }
+      .hero-photo {
+        left: auto;
+        width: auto;
+        height: 100%;
+        right: max(0px, calc((100% - 80rem) / 2));
+      }
+      /* This photo has a bright background, so every edge fades fully into the grey,
+         over a wider area than on the home page. */
+      .hero-photo::after {
+        background:
+          linear-gradient(to right,
+            rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.8) 10%, rgba(var(--hero-grey),0.5) 20%, rgba(var(--hero-grey),0.2) 32%, rgba(var(--hero-grey),0) 42%,
+            rgba(var(--hero-grey),0) 62%, rgba(var(--hero-grey),0.2) 72%, rgba(var(--hero-grey),0.5) 82%, rgba(var(--hero-grey),0.8) 91%, rgba(var(--hero-grey),1) 100%),
+          linear-gradient(to bottom,
+            rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.6) 8%, rgba(var(--hero-grey),0.2) 18%, rgba(var(--hero-grey),0) 28%,
+            rgba(var(--hero-grey),0) 65%, rgba(var(--hero-grey),0.4) 80%, rgba(var(--hero-grey),0.8) 92%, rgba(var(--hero-grey),1) 100%);
+      }
     }
 
     .card {
@@ -52,40 +95,12 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
 
-    .plan-card {
-      border-radius: 22px;
-      overflow: hidden;
-      transition: 0.25s ease;
-    }
-
-    .plan-card:hover {
-      transform: translateY(-6px);
-    }
-
-    .popular-card {
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255,78,78,0.96),
-          rgba(216,21,21,0.96)
-        ),
-        url('http://static.photos/fitness/1200x630/2');
-      background-size: cover;
-      background-position: center;
-    }
-
-    .faq-item {
-      border-bottom: 1px solid #ececec;
-    }
-
     .btn-primary {
-      background: #ef4444;
+      background: #008080;
       transition: .25s ease;
     }
 
-    .btn-primary:hover {
-      background: #dc2626;
-    }
+    .btn-primary:hover { background: #006666; }
 
     .btn-secondary {
       border: 1px solid rgba(255,255,255,0.18);
@@ -93,9 +108,7 @@
       transition: .25s ease;
     }
 
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.12);
-    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); }
 
     .section-spacing {
       padding-top: 80px;
@@ -108,6 +121,268 @@
         padding-bottom: 56px;
       }
     }
+
+    /* ---------- Photos: every photo is the same 4:5 shape, no borders ---------- */
+    .photo {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.18);
+      background: #e5e7eb;
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(var(--zoom, 1));
+      will-change: transform;
+    }
+
+    .photo-caption {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    /* ---------- Timeline ---------- */
+    .timeline {
+      position: relative;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* The grey line, and the teal line that fills it as you scroll. */
+    .tl-track {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 19px;
+      width: 3px;
+      border-radius: 3px;
+      background: #e5e7eb;
+    }
+
+    .tl-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--progress, 0px);
+      border-radius: 3px;
+      background: #008080;
+    }
+
+    .tl-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      column-gap: 16px;
+      row-gap: 24px;
+      padding-bottom: 72px;
+    }
+
+    .tl-dot {
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: center;
+      margin-top: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 3px solid #d1d5db;
+      transition: background .4s ease, border-color .4s ease, box-shadow .4s ease;
+      z-index: 1;
+    }
+
+    .tl-item.reached .tl-dot {
+      background: #008080;
+      border-color: #008080;
+      box-shadow: 0 0 0 6px rgba(0,128,128,0.18);
+    }
+
+    .tl-text  { grid-column: 2; grid-row: 1; }
+    .tl-media { grid-column: 2; grid-row: 2; max-width: 420px; width: 100%; }
+
+    .tl-label {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #008080;
+    }
+
+    .tl-title {
+      margin-top: 8px;
+      font-size: 1.75rem;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .tl-text p {
+      margin-top: 16px;
+      color: #4b5563;
+      line-height: 1.7;
+    }
+
+    /* Wide screens: line in the middle, text and photo swap sides on every stage. */
+    @media (min-width: 900px) {
+      .tl-track { left: 50%; transform: translateX(-50%); }
+
+      .tl-item {
+        grid-template-columns: 1fr 80px 1fr;
+        column-gap: 24px;
+        align-items: center;
+        padding-bottom: 110px;
+      }
+
+      .tl-dot   { grid-column: 2; margin-top: 0; }
+      .tl-text  { grid-column: 1; }
+      .tl-media { grid-column: 3; grid-row: 1; justify-self: start; }
+
+      .tl-item.flip .tl-text  { grid-column: 3; }
+      .tl-item.flip .tl-media { grid-column: 1; justify-self: end; }
+
+      .tl-title { font-size: 2.1rem; }
+    }
+
+    /* Records and titles inside a stage */
+    .record-grid {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 640px) {
+      .record-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .record {
+      background: #ffffff;
+      border: 1px solid #ececec;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .record-number {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #008080;
+      line-height: 1;
+    }
+
+    .record-name {
+      margin-top: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .record-detail {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .title-list {
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .title-row {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: #ffffff;
+      border: 1px solid #ececec;
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .title-medal { font-size: 1.5rem; line-height: 1.2; }
+    .title-name  { font-weight: 700; line-height: 1.35; }
+    .title-place { font-size: 0.85rem; color: #6b7280; margin-top: 2px; }
+
+    .stat-number {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #008080;
+      line-height: 1;
+    }
+
+    .stat-name {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    /* End of the line: "your journey" */
+    .tl-end {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding-left: 56px;
+    }
+
+    .tl-end .tl-dot { position: absolute; left: 10px; top: 4px; margin: 0; }
+
+    @media (min-width: 900px) {
+      .tl-end { align-items: center; text-align: center; padding-left: 0; padding-top: 34px; }
+      .tl-end .tl-dot { left: 50%; top: 0; transform: translateX(-50%); }
+    }
+
+    /* ---------- Call to action ---------- */
+    .cta-bg {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background: #181818;
+    }
+
+    .cta-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(rgba(24,24,24,0.72), rgba(24,24,24,0.9)),
+        url('folder/about/cta.jpg') center 25% / cover no-repeat;
+    }
+
+    /* ---------- Scroll animations ---------- */
+    .js .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1);
+    }
+
+    @media (min-width: 900px) {
+      .js .tl-item .tl-text.reveal         { transform: translateX(-50px); }
+      .js .tl-item .tl-media.reveal        { transform: translateX(50px); }
+      .js .tl-item.flip .tl-text.reveal    { transform: translateX(50px); }
+      .js .tl-item.flip .tl-media.reveal   { transform: translateX(-50px); }
+    }
+
+    .js .reveal.shown,
+    .js .tl-item .reveal.shown {
+      opacity: 1;
+      transform: none;
+    }
+
+    .js .reveal-delay { transition-delay: .15s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js .reveal, .js .tl-item .reveal { opacity: 1; transform: none; transition: none; }
+      .photo img { transform: none; }
+    }
   </style>
 </head>
 
@@ -116,40 +391,34 @@
 <!-- HERO -->
 <section class="hero-bg text-white">
 
+  <div class="hero-photo" aria-hidden="true"></div>
+
   <nav class="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
 
-    <a href="index.html"
-       class="font-extrabold tracking-wide text-sm sm:text-base">
+    <a href="index.html" class="font-extrabold tracking-wide text-sm sm:text-base">
       BRUNO ZGELA COACHING
     </a>
 
-    <a href="index.html"
-       class="btn-secondary px-5 py-3 rounded-xl font-medium">
+    <a href="index.html" class="btn-secondary px-5 py-3 rounded-xl font-medium">
       Back Home
     </a>
 
   </nav>
 
-  <div class="max-w-7xl mx-auto px-5 pt-10 pb-20">
+  <div class="max-w-7xl mx-auto px-5 pt-8 pb-24 md:pt-16 md:pb-32">
 
-    <!-- Desktop: 2 columns | Mobile: 1 column -->
-    <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+      <div class="max-w-2xl reveal">
 
-      <!-- HERO TEXT -->
-      <div class="max-w-3xl">
-
-        <span class="text-red-500 font-semibold uppercase tracking-wider">
+        <span class="text-[#4db8b8] font-semibold uppercase tracking-wider">
           About Me
         </span>
 
         <h1 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
           Calisthenics Has Been
-          <span class="text-red-500">
-            My Life For Over 15 Years
-          </span>
+          <span class="text-[#4db8b8]">My Life For Over 15 Years</span>
         </h1>
 
-        <p class="mt-6 text-gray-300 leading-relaxed max-w-2xl">
+        <p class="mt-6 text-white leading-relaxed max-w-md">
           My name is Bruno Žgela and I have dedicated more than 15 years
           to mastering bodyweight training, movement, strength and athletic
           development. Through competing, coaching and thousands of hours
@@ -157,17 +426,211 @@
           strength, confidence and a body they can be proud of.
         </p>
 
+        <a href="#journey" class="mt-8 inline-flex items-center gap-2 text-white/80 hover:text-white font-medium">
+          Follow my journey
+          <i data-feather="arrow-down" class="w-4 h-4"></i>
+        </a>
+
       </div>
 
-      <!-- HERO IMAGE -->
-      <div class="flex justify-center lg:justify-end mt-8 lg:mt-0">
+  </div>
 
-        <img
-          src="folder/img0.png"
-          alt="Bruno Žgela"
-          class="w-full max-w-md lg:max-w-lg rounded-3xl shadow-2xl object-cover"
-        >
+</section>
 
+<!-- JOURNEY TIMELINE -->
+<section id="journey" class="section-spacing bg-[#f5f5f5]">
+
+  <div class="max-w-7xl mx-auto px-5">
+
+    <div class="text-center max-w-2xl mx-auto mb-16 reveal">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">My Journey</h2>
+      <p class="mt-4 text-gray-600 leading-relaxed">
+        From a 13-year-old kid on the street workout bars to international podiums.
+        Here is how it happened.
+      </p>
+    </div>
+
+    <div class="timeline" id="timeline">
+
+      <div class="tl-track" aria-hidden="true"><div class="tl-fill"></div></div>
+
+      <!-- 1. Start -->
+      <div class="tl-item">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-text reveal">
+          <span class="tl-label">2013 · Age 13</span>
+          <h3 class="tl-title">Where it all started</h3>
+          <p>
+            I started my calisthenics journey in 2013, as a 13-year-old kid inspired
+            by the freedom of street workout and the idea that you can build incredible
+            strength using nothing more than your own body.
+          </p>
+          <p>
+            Coming from a background in sports, including football and wrestling,
+            I developed the discipline, determination and competitive mindset that
+            continue to guide me today.
+          </p>
+        </div>
+        <div class="tl-media reveal">
+          <div class="photo"><img src="folder/about/street-workout.jpg" alt="Young Bruno training on outdoor street workout bars" loading="lazy"></div>
+          <p class="photo-caption">The early days on the street workout bars.</p>
+        </div>
+      </div>
+
+      <!-- 2. The grind -->
+      <div class="tl-item flip">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-text reveal">
+          <span class="tl-label">The years of practice</span>
+          <h3 class="tl-title">No shortcuts</h3>
+          <p>
+            Along the way I learned that real progress doesn't come from shortcuts.
+            It comes from consistency, intelligent programming and patience.
+          </p>
+          <p>
+            Throughout my journey I have always been driven by one goal: to keep
+            pushing the limits of what the human body can achieve through bodyweight
+            training. These are the principles I now teach every client.
+          </p>
+        </div>
+        <div class="tl-media reveal">
+          <div class="photo"><img src="folder/about/hands.jpg" alt="Bruno showing torn palms from training" loading="lazy"></div>
+          <p class="photo-caption">Thousands of hours on the bar leave their marks.</p>
+        </div>
+      </div>
+
+      <!-- 3. Endurance -->
+      <div class="tl-item">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-text reveal">
+          <span class="tl-label">Over a decade in</span>
+          <h3 class="tl-title">Endurance calisthenics</h3>
+          <p>
+            After more than a decade of dedicated practice, I specialized in endurance
+            calisthenics: a discipline that combines strength, stamina, mental toughness
+            and the ability to perform under extreme fatigue.
+          </p>
+          <div class="record-grid">
+            <div class="record">
+              <div class="record-number">420</div>
+              <div class="record-name">Dips</div>
+              <div class="record-detail">reps in one set, resting only in the top position. Plus 117 reps with 20 kg added.</div>
+            </div>
+            <div class="record">
+              <div class="record-number">1000</div>
+              <div class="record-name">Push ups</div>
+              <div class="record-detail">reps without leaving the push up position.</div>
+            </div>
+            <div class="record">
+              <div class="record-number">60</div>
+              <div class="record-name">Pull ups</div>
+              <div class="record-detail">consecutive reps without leaving the bar. Plus 1000 reps in 1 hour.</div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-media reveal">
+          <div class="photo"><img src="folder/about/dips.jpg" alt="Bruno doing dips on parallel bars" loading="lazy"></div>
+          <p class="photo-caption">Some of my best personal records.</p>
+        </div>
+      </div>
+
+      <!-- 4. Competing -->
+      <div class="tl-item flip">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-text reveal">
+          <span class="tl-label">Competing</span>
+          <h3 class="tl-title">Representing Croatia</h3>
+          <p>
+            I have had the opportunity to compete among some of the strongest athletes
+            in the world and represent my country on both national and international stages.
+          </p>
+          <div class="title-list">
+            <div class="title-row">
+              <span class="title-medal" aria-hidden="true">🏆</span>
+              <div>
+                <div class="title-name">Multiple-time Croatian National Champion</div>
+                <div class="title-place">One of the leading endurance calisthenics athletes in Croatia</div>
+              </div>
+            </div>
+            <div class="title-row">
+              <span class="title-medal" aria-hidden="true">🥇</span>
+              <div>
+                <div class="title-name">1st place, Beast of the Barz European Championship</div>
+                <div class="title-place">Sweden</div>
+              </div>
+            </div>
+            <div class="title-row">
+              <span class="title-medal" aria-hidden="true">🥈</span>
+              <div>
+                <div class="title-name">2nd place, SWCF World Championship</div>
+                <div class="title-place">Latvia</div>
+              </div>
+            </div>
+            <div class="title-row">
+              <span class="title-medal" aria-hidden="true">🥇</span>
+              <div>
+                <div class="title-name">1st place, International Championship</div>
+                <div class="title-place">Serbia</div>
+              </div>
+            </div>
+          </div>
+          <p>
+            Beyond medals and rankings, every competition gave me a deeper understanding
+            of training, preparation and performance: knowledge I now use to help my clients.
+          </p>
+        </div>
+        <div class="tl-media reveal">
+          <div class="photo"><img src="folder/about/podium.jpg" alt="Bruno on the podium with a medal" loading="lazy"></div>
+          <p class="photo-caption">On the podium after a competition.</p>
+        </div>
+      </div>
+
+      <!-- 5. Today -->
+      <div class="tl-item">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <div class="tl-text reveal">
+          <span class="tl-label">Today</span>
+          <h3 class="tl-title">Helping others get there</h3>
+          <p>
+            Today, I use everything I have learned throughout my athletic journey to help
+            others reach their goals through personalized calisthenics coaching.
+          </p>
+          <p>
+            My mission is to guide people through the process of becoming stronger, more
+            confident and more capable, regardless of their starting point. I want to
+            give you the knowledge, structure and support I wish I had when I was first
+            starting out.
+          </p>
+          <div class="mt-6 grid grid-cols-3 gap-4">
+            <div>
+              <div class="stat-number" data-count="15">15+</div>
+              <div class="stat-name">Years training</div>
+            </div>
+            <div>
+              <div class="stat-number" data-count="100">100+</div>
+              <div class="stat-name">Clients helped</div>
+            </div>
+            <div>
+              <div class="stat-number" data-count="1000">1000+</div>
+              <div class="stat-name">Workouts designed</div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-media reveal">
+          <div class="photo"><img src="folder/about/today.jpg" alt="Bruno today" loading="lazy"></div>
+          <p class="photo-caption">Still training, now coaching too.</p>
+        </div>
+      </div>
+
+      <!-- End of the line -->
+      <div class="tl-end reveal">
+        <div class="tl-dot" aria-hidden="true"></div>
+        <span class="tl-label">Next</span>
+        <h3 class="tl-title">Your journey</h3>
+        <p class="mt-3 text-gray-600 max-w-md">
+          For me, calisthenics represents discipline, growth and the constant pursuit
+          of becoming better than I was yesterday. Your story can start the same way.
+        </p>
       </div>
 
     </div>
@@ -176,591 +639,174 @@
 
 </section>
 
-  <!-- STORY -->
-  <section class="section-spacing bg-white">
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-
-        <div>
-
-          <h2 class="text-3xl sm:text-4xl font-extrabold">
-            My Journey
-          </h2>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-            I started my calisthenics journey in 2013, as a 13 year 
-            old kid inspired by the freedom of street workout and the 
-            idea that you can build incredible strength using nothing 
-            more than your own body. Coming from a background in 
-            sports, including football and wrestling, I developed the 
-            discipline, determination, and competitive mindset that 
-            continue to guide me today.
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            Along the way I learned that real progress doesn't come
-            from shortcuts. It comes from consistency, intelligent
-            programming and patience. These are the principles I now
-            teach every client.
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            Today my goal is simple: help people avoid years of mistakes
-            and achieve results faster with proper guidance.
-          </p>
-
-        </div>
-
-        <div>
-
-          <img
-            src="folder/img5.jpg"
-            alt="Bruno Zgela"
-            class="rounded-3xl shadow-lg w-full"
-          >
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <br><br>
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-        <div>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-            Throughout my calisthenics journey, I have always been 
-            driven by one goal: to continuously push the limits of what 
-            the human body can achieve through bodyweight training.
-
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            After more than a decade of dedicated practice,
-            I have specialized in endurance calisthenics - a discipline 
-            that combines strength, stamina, mental toughness, and 
-            the ability to perform under extreme fatigue.
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            Today my goal is simple: help people avoid years of mistakes
-            and achieve results faster with proper guidance.
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-<br>
-
-<section class="section-spacing bg-[#f5f5f5]" id="features">
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="text-center mb-14">
-
-        <h2 class="text-3xl sm:text-4xl font-extrabold">
-          Some of my best personal achievements include:
-        </h2>
-
-      </div>
-
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-        <div class="card p-7 text-center">
-
-          <i class="fa-solid fa-dumbbell text-red-500"></i>
-
-          <h3 class="font-bold text-lg">
-            DIPS
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            420 Repetition in one set (while resting only in upper position of the exercise)
-            117 Repetitions with 20kg added weight
-          </p>
-
-        </div>
-
-        <div class="card p-7 text-center">
-
-         <i class="fa-solid fa-dumbbell text-red-500"></i>
-
-          <h3 class="font-bold text-lg">
-            PUSH UPS
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            1000 repetitions without leaving a push up position
-          </p>
-
-        </div>
-
-        <div class="card p-7 text-center">
-
-          <i class="fa-solid fa-dumbbell text-red-500"></i>
-
-          <h3 class="font-bold text-lg">
-            PULL UPS
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            60 Consecutive repetitions without leaving the bar
-            Total of 1000 repetitions in 1 hour
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-        <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-        <div>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-            My experience in pushing the limits of endurance and 
-            strength allows me to understand the challenges athletes 
-            face at every level. Through my coaching, I help others 
-            build their strength, improve their technique, and create 
-            the discipline needed to reach their own goals.
-
-
-
-          </p>
-
-        </div>
-
-         <div>
-
-          <img
-            src="folder/img6.jpg"
-            alt="Bruno Zgela"
-            class="rounded-3xl shadow-lg w-full"
-          >
-
-        </div>
-
-      </div>
-
-    </div>
-    <br>
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-        <div>
-
-          <h2 class="text-3xl sm:text-4xl font-extrabold">
-            My Titles & Competition Achievements
-          </h2>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-            Throughout my calisthenics career, I have had the 
-            opportunity to compete among some of the strongest 
-            athletes in the world and represent my country on both 
-            national and international stages.
-
-            My dedication to endurance calisthenics has led me to 
-            achieve multiple championship results, including national 
-            titles in Croatia and podium finishes at major international 
-            competitions.
-          </p>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-
-            My dedication to endurance calisthenics has led me to 
-            achieve multiple championship results, including national 
-            titles in Croatia and podium finishes at major international 
-            competitions.
-          </p>
-
-        </div>
-
-    </div>
-    <br>
-
-    <section class="section-spacing bg-[#f5f5f5]" id="features">
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="text-center mb-14">
-
-        <h2 class="text-3xl sm:text-4xl font-extrabold">
-             Some of my biggest achievements include:
-        </h2>
-
-      </div>
-
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-        <div class="card p-7">
-
-          <h3 class="font-bold text-lg">
-            🏆 Multiple-time Croatian National Champion
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            I have achieved multiple first-place finishes at 
-            national-level competitions, becoming one of the leading 
-            endurance calisthenics athletes in Croatia.
-          </p>
-
-        </div>
-
-        <div class="card p-7">
-
-          <h3 class="font-bold text-lg">
-            🥇 1st Place – Beast of the Barz European Championship (Sweden)
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Winning this competition was one of the most memorable 
-            moments of my career. It was a true test of strength, 
-            endurance, and mental toughness against top athletes 
-            from across Europe.
-          </p>
-
-        </div>
-
-        <div class="card p-7">
-
-          <h3 class="font-bold text-lg">
-            🥈 2nd Place – SWCF World Championship (Latvia)
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Competing at the world level and finishing as vice 
-            champion was a milestone that confirmed my place among 
-            the best endurance calisthenics athletes internationally.
-          </p>
-
-        </div>
-
-        <div class="card p-7">
-
-          <h3 class="font-bold text-lg">
-            🥇 1st Place – International Championship (Serbia)
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Another important victory that strengthened my 
-            experience as a competitive athlete and pushed me to 
-            continue improving.
-          </p>
-
-        </div>
-      </div>
-
-    </div>
-
-  </section>
-
-        <!-- NAKON NABRAJANJA USPJEHA-->
-      <div class="max-w-7xl mx-auto px-5">
-
-        <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-
-          <div>
-
-            <p class="mt-6 text-gray-600 leading-relaxed">
-            These achievements represent years of discipline, 
-            consistency, and a commitment to pushing the limits of 
-            what is possible with bodyweight training.
-            </p>
-
-            <p class="mt-5 text-gray-600 leading-relaxed">
-              Beyond medals and rankings, every competition has 
-              helped me develop a deeper understanding of training, 
-              preparation, and performance — knowledge that I now use 
-              to help my coaching clients reach their own goals.
-            </p>
-
-        </div>
-
-        <div>
-
-          <img
-            src="folder/img10.jpg"
-            alt="Bruno Zgela"
-            class="rounded-3xl shadow-lg w-full"
-          >
-
-        </div>
-
-      </div>
-
-    </div>
-
-      <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid lg:grid-cols-2 gap-12 items-center">
-
-        <div>
-
-          <p class="mt-6 text-gray-600 leading-relaxed">
-            My journey has taught me that progress is not built 
-            overnight. Real results come from consistency, smart 
-            programming, proper technique, and the willingness to 
-            challenge yourself every day.
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            I believe calisthenics is for everyone. 
-            Whether your goal is to build strength, achieve advanced 
-            skills, transform your physique, or simply become more 
-            capable in your own body, the right approach can help 
-            you get there.
-
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            My training philosophy is built around mastering 
-            the fundamentals, creating sustainable progress, and 
-            developing both physical and mental strength. 
-            I focus not only on the exercises themselves, 
-            but on teaching people how to train with purpose and 
-            understand their own potential.
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            Today, I use everything I have learned throughout my 
-            athletic journey to help others achieve their goals through 
-            personalized calisthenics coaching.
-
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            My mission is to guide people through the process of 
-            becoming stronger, more confident, and more capable — 
-            regardless of their starting point. I want to provide the 
-            knowledge, structure, and support that I wish I had when 
-            I was first beginning my own journey.
-
-
-          </p>
-
-          <p class="mt-5 text-gray-600 leading-relaxed">
-            Whether you are taking your first steps into calisthenics 
-            or looking to reach a higher level of performance, I will 
-            help you build the strength, skills, and mindset needed 
-            to keep progressing.
-
-
-          </p>
-
-            <p class="mt-5 text-gray-600 leading-relaxed">
-            For me, calisthenics has never been just about performing
-            impressive skills or achieving physical milestones. 
-            It represents discipline, growth, and the constant pursuit 
-            of becoming better than I was yesterday.
-
-
-          </p>
-
-           <p class="mt-5 text-gray-600 leading-relaxed">
-            My goal is to share my experience, inspire others, and 
-            prove that with the right guidance and commitment, your 
-            body can become one of the most powerful tools you have.
-          </p>
-
-        </div>
-
-        <div>
-
-          <img
-            src="folder/img2.jpeg"
-            alt="Bruno Zgela"
-            class="rounded-3xl shadow-lg w-full"
-          >
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- STATS -->
-  <section class="section-spacing bg-[#f7f7f7]">
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="grid md:grid-cols-4 gap-6">
-
-        <div class="card p-8 text-center">
-
-          <div class="text-red-500 text-5xl font-extrabold">
-            15+
-          </div>
-
-          <p class="mt-3 text-gray-500">
-            Years Training
-          </p>
-
-        </div>
-
-        <div class="card p-8 text-center">
-
-          <div class="text-red-500 text-5xl font-extrabold">
-            100+
-          </div>
-
-          <p class="mt-3 text-gray-500">
-            Clients Helped
-          </p>
-
-        </div>
-
-        <div class="card p-8 text-center">
-
-          <div class="text-red-500 text-5xl font-extrabold">
-            1000+
-          </div>
-
-          <p class="mt-3 text-gray-500">
-            Workouts Designed
-          </p>
-
-        </div>
-
-        <div class="card p-8 text-center">
-
-          <div class="text-red-500 text-5xl font-extrabold">
-            15+
-          </div>
-
-          <p class="mt-3 text-gray-500">
-            Years Experience
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- PHILOSOPHY -->
-  <section class="section-spacing bg-white">
-
-    <div class="max-w-7xl mx-auto px-5">
-
-      <div class="text-center mb-14">
-
-        <h2 class="text-3xl sm:text-4xl font-extrabold">
-          My Coaching Philosophy
-        </h2>
-
-      </div>
-
-      <div class="grid md:grid-cols-3 gap-6">
-
-        <div class="card p-7">
-
-          <div class="text-red-500 mb-5">
-            <i data-feather="activity" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Movement First
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Learn proper movement patterns before chasing advanced skills.
-          </p>
-
-        </div>
-
-        <div class="card p-7">
-
-          <div class="text-red-500 mb-5">
-            <i data-feather="trending-up" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Progressive Overload
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Every program is designed around measurable progress.
-          </p>
-
-        </div>
-
-        <div class="card p-7">
-
-          <div class="text-red-500 mb-5">
-            <i data-feather="shield" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Longevity
-          </h3>
-
-          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Build strength and mobility that lasts for decades.
-          </p>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- CTA -->
-  <section class="section-spacing bg-[#0f172a] text-white">
-
-    <div class="max-w-4xl mx-auto px-5 text-center">
-
-      <h2 class="text-4xl font-extrabold">
-        Ready To Train Together?
-      </h2>
-
-      <p class="mt-5 text-gray-300">
-        Whether you're a beginner or an advanced athlete,
-        I'll help you reach your goals faster.
+<!-- PHILOSOPHY -->
+<section class="section-spacing bg-white">
+
+  <div class="max-w-7xl mx-auto px-5">
+
+    <div class="text-center mb-14 reveal">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">My Coaching Philosophy</h2>
+      <p class="mt-4 text-gray-600 max-w-2xl mx-auto leading-relaxed">
+        Real results come from consistency, smart programming, proper technique and the
+        willingness to challenge yourself every day.
       </p>
+    </div>
 
-      <a href="index.html#plans"
-         class="btn-primary inline-block mt-8 px-8 py-4 rounded-xl font-semibold">
-        View Coaching Plans
-      </a>
+    <div class="grid md:grid-cols-3 gap-6">
+
+      <div class="card p-7 reveal">
+        <div class="text-[#008080] mb-5"><i data-feather="activity" class="w-7 h-7"></i></div>
+        <h3 class="font-bold text-lg">Movement First</h3>
+        <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+          Learn proper movement patterns before chasing advanced skills.
+        </p>
+      </div>
+
+      <div class="card p-7 reveal reveal-delay">
+        <div class="text-[#008080] mb-5"><i data-feather="trending-up" class="w-7 h-7"></i></div>
+        <h3 class="font-bold text-lg">Progressive Overload</h3>
+        <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+          Every program is designed around measurable progress.
+        </p>
+      </div>
+
+      <div class="card p-7 reveal reveal-delay">
+        <div class="text-[#008080] mb-5"><i data-feather="shield" class="w-7 h-7"></i></div>
+        <h3 class="font-bold text-lg">Longevity</h3>
+        <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+          Build strength and mobility that lasts for decades.
+        </p>
+      </div>
 
     </div>
 
-  </section>
+  </div>
 
-  <script>
-    feather.replace();
-  </script>
+</section>
+
+<!-- CALL TO ACTION -->
+<section class="cta-bg text-white">
+
+  <div class="max-w-3xl mx-auto px-5 py-28 sm:py-36 text-center reveal">
+
+    <span class="text-[#4db8b8] font-semibold uppercase tracking-wider">Your turn</span>
+
+    <h2 class="mt-4 text-4xl sm:text-5xl font-extrabold leading-tight">
+      Start your own journey today
+    </h2>
+
+    <p class="mt-6 text-white/90 leading-relaxed text-lg">
+      Every milestone on this page started with a single rep. Whether you are taking
+      your first steps or chasing your next big goal, I will give you the plan,
+      structure and support to get there.
+    </p>
+
+    <a href="index.html#plans"
+       class="btn-primary inline-flex items-center gap-2 mt-10 px-8 py-4 rounded-xl font-semibold text-white">
+      View Coaching Plans
+      <i data-feather="arrow-right" class="w-5 h-5"></i>
+    </a>
+
+  </div>
+
+</section>
+
+<script>
+  feather.replace();
+
+  (function () {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Fade and slide items in as they scroll into view.
+    const revealItems = document.querySelectorAll('.reveal');
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.classList.add('shown'));
+    } else {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('shown');
+          observer.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -12% 0px' });
+      revealItems.forEach((item) => observer.observe(item));
+
+      // Anything already on screen when the page opens (like the hero text) fades in
+      // straight away, without waiting for the observer.
+      setTimeout(() => {
+        revealItems.forEach((item) => {
+          if (item.getBoundingClientRect().top < window.innerHeight) item.classList.add('shown');
+        });
+      }, 60);
+    }
+
+    // Count the stats up from 0 when they appear.
+    const counters = document.querySelectorAll('[data-count]');
+    function countUp(element) {
+      const target = Number(element.dataset.count);
+      const start = performance.now();
+      const duration = 1400;
+      function step(now) {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        element.textContent = Math.round(target * eased) + '+';
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    if (!reduceMotion && 'IntersectionObserver' in window) {
+      const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          countUp(entry.target);
+          counterObserver.unobserve(entry.target);
+        });
+      }, { threshold: 0.6 });
+      counters.forEach((counter) => counterObserver.observe(counter));
+    }
+
+    // Teal line fills as you scroll, dots light up, photos zoom out slowly as you pass them.
+    const timeline = document.getElementById('timeline');
+    const fill = timeline.querySelector('.tl-fill');
+    const stages = timeline.querySelectorAll('.tl-item, .tl-end');
+    const photos = document.querySelectorAll('.photo img');
+    let ticking = false;
+
+    function update() {
+      ticking = false;
+      const viewHeight = window.innerHeight;
+      const marker = viewHeight * 0.6;
+      const box = timeline.getBoundingClientRect();
+      const filled = Math.max(0, Math.min(box.height, marker - box.top));
+      fill.style.setProperty('--progress', filled + 'px');
+
+      stages.forEach((stage) => {
+        const dot = stage.querySelector('.tl-dot');
+        const dotBox = dot.getBoundingClientRect();
+        stage.classList.toggle('reached', dotBox.top + dotBox.height / 2 <= marker);
+      });
+
+      if (reduceMotion) return;
+      photos.forEach((photo) => {
+        const frame = photo.parentElement.getBoundingClientRect();
+        if (frame.bottom < 0 || frame.top > viewHeight) return;
+        // 0 when the photo enters at the bottom, 1 when it leaves at the top.
+        const passed = Math.max(0, Math.min(1, (viewHeight - frame.top) / (viewHeight + frame.height)));
+        photo.style.setProperty('--zoom', (1.18 - passed * 0.18).toFixed(3));
+      });
+    }
+
+    function requestUpdate() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    update();
+  })();
+</script>
 
 </body>
 </html>

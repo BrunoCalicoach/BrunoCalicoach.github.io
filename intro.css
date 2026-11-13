@@ -91,9 +91,12 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
 .intro-hint {
   position: absolute;
   z-index: 2;
-  left: 50%;
+  /* Centred with margins, so its fade-in animation (which moves it) can't push it sideways */
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: 0 auto;
   bottom: 3.5svh;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -135,8 +138,9 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
 .intro-stage.leaving::after { opacity: 0; transition: opacity .6s ease; }
 
 @media (max-width: 640px) {
-  .intro-photo { top: 40%; }
-  .intro-title { bottom: max(13svh, 96px); }
+  .intro-photo { top: 44%; }
+  /* Headline tucked just under the photo, overlapping its faded bottom edge */
+  .intro-title { bottom: auto; top: calc(44% + min(42vw, 38svh)); }
 }
 
 /* Dark cover until the intro stage is on screen, so the normal page never flashes first. */

@@ -66,7 +66,7 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
   font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: min(7.8vw, 9.5svh, 8rem);
-  line-height: 1.08;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   white-space: nowrap;
   text-align: left;

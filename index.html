@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://unpkg.com/feather-icons"></script>
 
@@ -23,11 +23,14 @@
 
     /* Headline: always two lines; only the size changes with the screen width. */
     .hero-title {
-      font-size: min(4rem, 7.6vw);
-      line-height: 1.08;
+      font-size: min(2.6rem, 7.6vw);
+      line-height: 1.1;
       white-space: nowrap;
     }
     .hero-title .hero-line { display: block; }
+    /* First line light, second line extra bold (same font, Inter) */
+    .hero-line:first-child { font-weight: 300; }
+    .hero-line + .hero-line { font-weight: 800; }
 
     /* Hero: the whole square photo always shows, and its edges fade softly into
        a dark grey that matches the photo's own background.
@@ -223,7 +226,7 @@
   
   </style>
   <link rel="stylesheet" href="theme-dark.css?v=6">
-  <link rel="stylesheet" href="intro.css?v=4">
+  <link rel="stylesheet" href="intro.css?v=5">
   <!-- Intro: plays on the first home page visit of a session (see intro.js). Decided before the page shows. -->
   <script>
     (function () {

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <script src="https://unpkg.com/feather-icons"></script>
 
@@ -21,6 +21,14 @@
       background: #f5f5f5;
       color: #111827;
     }
+
+    /* Headline: always two lines; only the size changes with the screen width. */
+    .hero-title {
+      font-size: min(4rem, 7.6vw);
+      line-height: 1.08;
+      white-space: nowrap;
+    }
+    .hero-title .hero-line { display: block; }
 
     /* Hero: the whole square photo always shows, and its edges fade softly into
        a dark grey that matches the photo's own background.
@@ -216,7 +224,7 @@
   
   </style>
   <link rel="stylesheet" href="../theme-dark.css?v=6">
-  <link rel="stylesheet" href="../intro.css?v=3">
+  <link rel="stylesheet" href="../intro.css?v=4">
   <!-- Intro: plays on the first home page visit of a session (see intro.js). Decided before the page shows. -->
   <script>
     (function () {
@@ -271,9 +279,9 @@
 
       <div class="max-w-2xl">
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
-          Izgradi se kroz
-          <span class="text-[#008080]">calisthenics</span>
+        <h1 class="hero-title font-extrabold">
+          <span class="hero-line">Izgradi se kroz</span>
+          <span class="hero-line text-[#008080]">calisthenics</span>
         </h1>
 
         <p class="mt-6 text-white leading-relaxed text-sm sm:text-base max-w-md">
@@ -1107,7 +1115,7 @@
   </script>
 
 <script src="../site-motion.js?v=2"></script>
-<script src="../intro.js?v=1"></script>
+<script src="../intro.js?v=2"></script>
 <script src="../lang.js?v=1"></script>
 </body>
 </html>

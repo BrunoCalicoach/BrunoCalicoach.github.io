@@ -53,34 +53,34 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
   pointer-events: none;
 }
 
-/* The big cinematic headline, in front of the photo */
+/* The headline, in front of the photo: a bigger copy of the page headline, same font and
+   same two lines, so it can travel into place without changing. */
 .intro-title {
   position: absolute;
   z-index: 2;
   left: 50%;
   bottom: max(11svh, 88px);
-  width: min(94vw, 1200px);
   transform: translateX(-50%);
   transform-origin: 0 0;
   margin: 0;
-  font-family: 'Anton', 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: clamp(2.2rem, min(6.4vw, 10.5svh), 6rem);
-  line-height: .95;
-  letter-spacing: .01em;
-  text-align: center;
-  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: min(7.8vw, 9.5svh, 8rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-align: left;
   text-shadow: 0 8px 40px rgba(0,0,0,.6);
-  will-change: transform, opacity;
+  will-change: transform;
 }
-.intro-title .intro-line {
+.intro-title .hero-line {
   display: block;
   opacity: 0;
   transform: translateY(40px);
   animation: intro-line-in 1.1s cubic-bezier(.2,.7,.2,1) forwards;
 }
-.intro-title .intro-line:nth-child(1) { animation-delay: .7s; }
-.intro-title .intro-line:nth-child(2) { animation-delay: .95s; }
+.intro-title .hero-line:nth-child(1) { animation-delay: .7s; }
+.intro-title .hero-line:nth-child(2) { animation-delay: .95s; }
 
 @keyframes intro-line-in {
   to { opacity: 1; transform: none; }

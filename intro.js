@@ -22,18 +22,13 @@
     // Take the photo and the headline from the page itself, so it works in every language.
     const urls = [...getComputedStyle(realPhoto).backgroundImage.matchAll(/url\("?([^")]+)"?\)/g)];
     const photoUrl = urls.length ? urls[urls.length - 1][1] : '';
-    const accent = heading.querySelector('span');
-    const lead = [...heading.childNodes].filter((node) => node !== accent).map((node) => node.textContent).join(' ').replace(/\s+/g, ' ').trim();
     const hint = root.lang.slice(0, 2) === 'hr' ? 'Skrolaj' : 'Scroll';
 
     const stage = document.createElement('div');
     stage.className = 'intro-stage';
     stage.innerHTML = `
       <div class="intro-photo"><img src="${photoUrl}" alt=""></div>
-      <div class="intro-title" aria-hidden="true">
-        <span class="intro-line">${lead}</span>
-        <span class="intro-line ${accent ? accent.className : ''}">${accent ? accent.textContent.trim() : ''}</span>
-      </div>
+      <div class="intro-title" aria-hidden="true">${heading.innerHTML}</div>
       <button type="button" class="intro-hint"><span></span>${hint}</button>`;
     document.body.appendChild(stage);
 
@@ -71,42 +66,40 @@
       photoImage.style.animation = 'none';
       photoImage.animate([{ filter: 'brightness(.95)' }, { filter: 'brightness(.5)' }], { duration: duration * 0.7, easing: ease, fill: 'forwards' });
 
-      // Big headline: shrink towards the real headline and fade as it lands.
-      const lines = [...title.querySelectorAll('.intro-line')].map((line) => line.getBoundingClientRect());
-      const textBox = {
-        left: Math.min(...lines.map((r) => r.left)),
-        top: Math.min(...lines.map((r) => r.top)),
-        width: Math.max(...lines.map((r) => r.right)) - Math.min(...lines.map((r) => r.left)),
-        height: Math.max(...lines.map((r) => r.bottom)) - Math.min(...lines.map((r) => r.top))
-      };
-      const target = heading.getBoundingClientRect();
+      // Headline: the same text, font and lines as the page headline, only bigger. It travels to
+      // the page headline's spot, shrinking to its size, and settles with a small bounce.
+      // When it lands, the page headline takes over in exactly the same place.
       const titleBox = title.getBoundingClientRect();
-      const shrink = Math.min(target.width / textBox.width, target.height / textBox.height);
-      Object.assign(title.style, { left: titleBox.left + 'px', bottom: 'auto', top: titleBox.top + 'px', transform: 'none' });
-      title.style.transformOrigin = `${textBox.left - titleBox.left}px ${textBox.top - titleBox.top}px`;
+      const target = heading.getBoundingClientRect();
+      const shrink = parseFloat(getComputedStyle(heading).fontSize) / parseFloat(getComputedStyle(title).fontSize);
+      const dx = target.left - titleBox.left;
+      const dy = target.top - titleBox.top;
+      Object.assign(title.style, { left: titleBox.left + 'px', top: titleBox.top + 'px', bottom: 'auto', transform: 'none', transformOrigin: '0 0' });
+      title.querySelectorAll('.hero-line').forEach((line) => {
+        line.style.animation = 'none';
+        line.style.opacity = '1';
+        line.style.transform = 'none';
+      });
+      const travel = 1250;
       title.animate([
-        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-        { opacity: 1, offset: 0.45 },
-        { transform: `translate(${target.left - textBox.left}px, ${target.top - textBox.top}px) scale(${shrink})`, opacity: 0 }
-      ], { duration: duration * 0.85, easing: ease, fill: 'forwards' });
+        { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)' },
+        { transform: `translate(${dx}px, ${dy + 16}px) scale(${shrink})`, offset: 0.8, easing: 'cubic-bezier(.3,0,.3,1)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
+      ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
 
-      // The real headline drops in and settles.
       heading.style.transition = 'none';
+      heading.style.opacity = '0';
       heading.classList.add('shown');
-      heading.animate([
-        { opacity: 0, transform: 'translateY(-70px)' },
-        { opacity: 0, transform: 'translateY(-70px)', offset: 0.5 },
-        { opacity: 1, transform: 'translateY(8px)', offset: 0.82, easing: 'cubic-bezier(.3,1.4,.5,1)' },
-        { opacity: 1, transform: 'none' }
-      ], { duration, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+      setTimeout(() => {
+        heading.style.opacity = '';
+        title.style.visibility = 'hidden';
+        setTimeout(() => { heading.style.transition = ''; }, 50);
+      }, travel);
 
       // Menu, real photo, paragraph and buttons come in as the photo arrives.
       realPhoto.style.animation = 'none';
       setTimeout(finish, duration * 0.6);
-      setTimeout(() => {
-        stage.remove();
-        heading.style.transition = '';
-      }, duration + 50);
+      setTimeout(() => stage.remove(), duration + 50);
     }
 
     // ---------- What starts it ----------

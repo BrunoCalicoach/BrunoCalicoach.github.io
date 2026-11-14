@@ -165,7 +165,7 @@
     .plan-photo {
       position: relative;
       height: 230px;
-      background: var(--plan-img) center 22% / cover no-repeat;
+      background: var(--plan-img) var(--plan-pos, center 22%) / cover no-repeat;
     }
     .plan-photo::after {
       content: '';
@@ -721,7 +721,7 @@
         <!-- REGULAR -->
         <article class="plan-card plan-box">
 
-          <div class="plan-photo" style="--plan-img:url('folder/img9.jpeg')">
+          <div class="plan-photo" style="--plan-img:url('folder/img9.jpeg'); --plan-pos:center 2%">
             <span class="plan-badge">MOST POPULAR</span>
             <div class="plan-photo-text">
               <h3 class="plan-name">Coaching REGULAR</h3>

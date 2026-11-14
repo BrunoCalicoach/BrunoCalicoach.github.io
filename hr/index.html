@@ -22,6 +22,48 @@
       color: #111827;
     }
 
+
+    /* ---------- Home: wide photo (16:9) ----------
+       Phones: a tall crop around Bruno at the top, fading into the page below.
+       Wider screens: the photo covers the top section from about a fifth of the way in,
+       with Bruno on the right and a long, smooth gradient darkening the side with the text. */
+    .hero-bg .hero-photo.hero-photo-wide {
+      --hero-shade: 0.35;
+      aspect-ratio: 4 / 5;
+      background:
+        linear-gradient(rgba(var(--hero-grey),var(--hero-shade)), rgba(var(--hero-grey),var(--hero-shade))),
+        url('../folder/home-wide.jpg') 50% 22% / cover no-repeat;
+    }
+    .hero-bg .hero-photo.hero-photo-wide::after {
+      background:
+        linear-gradient(to bottom,
+          rgba(var(--hero-grey),0.35) 0%, rgba(var(--hero-grey),0) 14%,
+          rgba(var(--hero-grey),0) 42%, rgba(var(--hero-grey),0.25) 58%, rgba(var(--hero-grey),0.6) 74%,
+          rgba(var(--hero-grey),0.88) 88%, rgba(var(--hero-grey),1) 100%) !important;
+    }
+    @media (min-width: 768px) {
+      .hero-bg .hero-photo.hero-photo-wide {
+        --hero-shade: 0.2;
+        left: 22%;
+        right: 0;
+        width: auto;
+        height: 100%;
+        aspect-ratio: auto;
+        background-position: 0 0, 50% 22%;
+      }
+      .hero-bg .hero-photo.hero-photo-wide::after {
+        background:
+          linear-gradient(to right,
+            rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.9) 6%, rgba(var(--hero-grey),0.72) 14%,
+            rgba(var(--hero-grey),0.5) 23%, rgba(var(--hero-grey),0.28) 32%, rgba(var(--hero-grey),0.12) 41%,
+            rgba(var(--hero-grey),0.03) 50%, rgba(var(--hero-grey),0) 58%,
+            rgba(var(--hero-grey),0) 88%, rgba(var(--hero-grey),0.25) 96%, rgba(var(--hero-grey),0.45) 100%),
+          linear-gradient(to bottom,
+            rgba(var(--hero-grey),0.45) 0%, rgba(var(--hero-grey),0) 16%,
+            rgba(var(--hero-grey),0) 62%, rgba(var(--hero-grey),0.35) 78%, rgba(var(--hero-grey),0.75) 91%,
+            rgba(var(--hero-grey),1) 100%) !important;
+      }
+    }
     /* Headline: always two lines; only the size changes with the screen width. */
     .hero-title {
       font-size: min(1.9rem, 6vw);
@@ -251,7 +293,7 @@
 
   <!-- HERO -->
   <section class="hero-bg text-white">
-    <div class="hero-photo" aria-hidden="true"></div>
+    <div class="hero-photo hero-photo-wide" aria-hidden="true"></div>
 
     <!-- NAV -->
     <nav class="max-w-7xl mx-auto px-5 py-5 flex items-center justify-between">
@@ -1120,7 +1162,7 @@
   </script>
 
 <script src="../site-motion.js?v=2"></script>
-<script src="../intro.js?v=4"></script>
+<script src="../intro.js?v=5"></script>
 <script src="../lang.js?v=1"></script>
 </body>
 </html>

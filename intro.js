@@ -41,13 +41,16 @@
     const real = getComputedStyle(realPhoto);
     Object.assign(look.style, {
       backgroundImage: real.backgroundImage,
-      // Crop exactly like the intro photo while it changes shape (it ends square, like the real one).
-      backgroundSize: 'cover',
-      backgroundPosition: '50% 18%',
+      // Crop exactly like the page photo, so both layers line up the whole way.
+      backgroundSize: real.backgroundSize.split(',').map(() => 'cover').join(','),
+      backgroundPosition: real.backgroundPosition,
       backgroundRepeat: real.backgroundRepeat,
       filter: real.filter
     });
     look.querySelector('.intro-look-fade').style.backgroundImage = getComputedStyle(realPhoto, '::after').backgroundImage;
+    // The photo itself uses the page photo's crop point too (the last background layer is the photo).
+    const positions = real.backgroundPosition.split(',');
+    photoImage.style.objectPosition = positions[positions.length - 1].trim();
     const title = stage.querySelector('.intro-title');
     let started = false;
 

@@ -345,3 +345,47 @@ a.lang-option:hover { color: #ffffff; }
 .lang-suggest-yes:hover { background: var(--accent-dark); }
 .lang-suggest-no { color: var(--text-muted); font-weight: 600; }
 .lang-suggest-no:hover { color: #ffffff; }
+
+/* ---------- Wide header photos (16:9) ----------
+   For pages whose top photo has the class "hero-photo-wide" and sets its picture with
+   --hero-img on the element, e.g. style="--hero-img:url('folder/home-wide.jpg')".
+   Phones: a tall crop around the person at the top, fading into the page below.
+   Wider screens: the photo covers the top section from about a fifth of the way in,
+   with the person on the right and a long, smooth gradient darkening the side with the text. */
+.hero-photo.hero-photo-wide {
+  --hero-shade: 0.35;
+  aspect-ratio: 4 / 5 !important;
+  background:
+    linear-gradient(rgba(var(--hero-grey),var(--hero-shade)), rgba(var(--hero-grey),var(--hero-shade))),
+    var(--hero-img) 50% 22% / cover no-repeat !important;
+}
+.hero-photo.hero-photo-wide::after {
+  background:
+    linear-gradient(to bottom,
+      rgba(var(--hero-grey),0.35) 0%, rgba(var(--hero-grey),0) 14%,
+      rgba(var(--hero-grey),0) 42%, rgba(var(--hero-grey),0.25) 58%, rgba(var(--hero-grey),0.6) 74%,
+      rgba(var(--hero-grey),0.88) 88%, rgba(var(--hero-grey),1) 100%) !important;
+}
+@media (min-width: 768px) {
+  .hero-photo.hero-photo-wide {
+    --hero-shade: 0.2;
+    left: 22% !important;
+    right: 0 !important;
+    width: auto !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+    background-position: 0 0, 50% 22% !important;
+  }
+  .hero-photo.hero-photo-wide::after {
+    background:
+      linear-gradient(to right,
+        rgba(var(--hero-grey),1) 0%, rgba(var(--hero-grey),0.9) 6%, rgba(var(--hero-grey),0.72) 14%,
+        rgba(var(--hero-grey),0.5) 23%, rgba(var(--hero-grey),0.28) 32%, rgba(var(--hero-grey),0.12) 41%,
+        rgba(var(--hero-grey),0.03) 50%, rgba(var(--hero-grey),0) 58%,
+        rgba(var(--hero-grey),0) 88%, rgba(var(--hero-grey),0.25) 96%, rgba(var(--hero-grey),0.45) 100%),
+      linear-gradient(to bottom,
+        rgba(var(--hero-grey),0.45) 0%, rgba(var(--hero-grey),0) 16%,
+        rgba(var(--hero-grey),0) 62%, rgba(var(--hero-grey),0.35) 78%, rgba(var(--hero-grey),0.75) 91%,
+        rgba(var(--hero-grey),1) 100%) !important;
+  }
+}

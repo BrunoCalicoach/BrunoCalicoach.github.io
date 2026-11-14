@@ -33,7 +33,7 @@
   // 2. Everything else, revealed while scrolling.
   const selectors = [
     'main h2', 'section h2',
-    '.card', '.plan-card', '.question',
+    '.card', '.plan-card', '.question', '.offer-step', '.offer-proof', 'section h3.text-center',
     'section.section-spacing form',
     'footer .grid > *', 'footer .max-w-7xl > *'
   ];

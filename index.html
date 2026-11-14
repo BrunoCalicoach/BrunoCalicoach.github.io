@@ -22,6 +22,98 @@
     }
 
 
+
+    /* ---------- "What you get with me" ---------- */
+    .offer-icon {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 20px;
+      border-radius: 14px;
+      background: rgba(0,128,128,0.14);
+      color: #4db8b8;
+      transition: background-color .3s ease, color .3s ease;
+    }
+    .offer-card:hover .offer-icon { background: #008080; color: #ffffff; }
+
+    /* How it works: steps joined by a teal line (vertical on phones, horizontal on wider screens) */
+    .offer-steps {
+      position: relative;
+      display: grid;
+      gap: 32px;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0;
+      list-style: none;
+    }
+    .offer-steps::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 24px;
+      bottom: 24px;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(0,128,128,0.2), #008080, rgba(0,128,128,0.2));
+    }
+    .offer-step { position: relative; padding-left: 72px; }
+    .offer-step-dot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      border: 2px solid #008080;
+      background: #1d1d1d;
+      color: #4db8b8;
+    }
+    .offer-step-number {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      color: #4db8b8;
+      margin-bottom: 4px;
+    }
+    @media (min-width: 768px) {
+      .offer-steps { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+      .offer-steps::before {
+        left: 12.5%;
+        right: 12.5%;
+        top: 23px;
+        bottom: auto;
+        width: auto;
+        height: 2px;
+        background: linear-gradient(to right, rgba(0,128,128,0.2), #008080, rgba(0,128,128,0.2));
+      }
+      .offer-step { padding-left: 0; text-align: center; }
+      .offer-step-dot { position: relative; margin: 0 auto 18px; }
+    }
+
+    /* Credibility bar */
+    .offer-proof {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px 32px;
+      padding: 20px 24px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .offer-proof-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .92rem;
+      font-weight: 600;
+      color: #d4d4d4;
+    }
+    .offer-proof-item svg { flex-shrink: 0; color: #4db8b8; }
     /* Headline: always two lines; only the size changes with the screen width. */
     .hero-title {
       font-size: min(1.9rem, 6vw);
@@ -326,79 +418,122 @@
       <div class="text-center mb-14">
 
         <h2 class="text-3xl sm:text-4xl font-extrabold">
-          What do I offer?
+          What you get with me
         </h2>
+
+        <p class="text-gray-500 mt-4 max-w-2xl mx-auto leading-relaxed">
+          Everything you need to get stronger, in one coaching package.
+          Here's what's included and how it works.
+        </p>
 
       </div>
 
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Benefits -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        <div class="card p-7">
-
-          <div class="text-[#008080] mb-5">
-            <i data-feather="clipboard" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Personalized training plans
-          </h3>
-
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="clipboard" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">A plan built only for you</h3>
           <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Personalized workout routines based on your current fitness level,
-            goals and available equipment.
+            Based on your level, goals, schedule and equipment, and updated every week as you progress.
           </p>
-
         </div>
 
-        <div class="card p-7">
-
-          <div class="text-[#008080] mb-5">
-            <i data-feather="video" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Video demonstrations
-          </h3>
-
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="play-circle" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">Video library for every exercise</h3>
           <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Video tutorials for every exercise to ensure perfect form and technique.
+            Clear demonstrations of every movement, so you always know exactly how to perform it.
           </p>
-
         </div>
 
-        <div class="card p-7">
-
-          <div class="text-[#008080] mb-5">
-            <i data-feather="bar-chart-2" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Progress tracking
-          </h3>
-
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="video" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">Weekly form feedback</h3>
           <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            I track your progress throughout every workout and consistently implement
-            progressive overload to ensure sustainable, long-term results.
+            Send me videos of your training and I'll correct your technique, so you progress safely and faster.
           </p>
-
         </div>
 
-        <div class="card p-7">
-
-          <div class="text-[#008080] mb-5">
-            <i data-feather="activity" class="w-7 h-7"></i>
-          </div>
-
-          <h3 class="font-bold text-lg">
-            Nutritional guidance
-          </h3>
-
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="message-circle" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">Direct access to your coach</h3>
           <p class="text-gray-500 mt-3 text-sm leading-relaxed">
-            Providing guidance on nutrition, hydration and supplementation.
+            Questions answered on WhatsApp, 3 or 5 days a week depending on your plan.
           </p>
-
         </div>
 
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="map-pin" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">Train anywhere</h3>
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            A pull-up bar and dip bars are all you need, so a park, your home or a gym all work.
+          </p>
+        </div>
+
+        <div class="card offer-card p-7">
+          <div class="offer-icon"><i data-feather="heart" class="w-6 h-6"></i></div>
+          <h3 class="font-bold text-lg">Nutrition that fits your life</h3>
+          <p class="text-gray-500 mt-3 text-sm leading-relaxed">
+            Practical guidance in every plan, plus a fully personalised nutrition plan and sample menus in PRO.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- How it works -->
+      <div class="mt-20">
+
+        <h3 class="text-center text-2xl sm:text-3xl font-extrabold">How it works</h3>
+
+        <ol class="offer-steps mt-12">
+
+          <li class="offer-step">
+            <div class="offer-step-dot"><i data-feather="edit-3" class="w-5 h-5"></i></div>
+            <div class="offer-step-number">01</div>
+            <h4 class="font-bold text-lg">Apply</h4>
+            <p class="text-gray-500 mt-2 text-sm leading-relaxed">Fill out a short form about your goals and experience.</p>
+          </li>
+
+          <li class="offer-step">
+            <div class="offer-step-dot"><i data-feather="message-square" class="w-5 h-5"></i></div>
+            <div class="offer-step-number">02</div>
+            <h4 class="font-bold text-lg">We talk</h4>
+            <p class="text-gray-500 mt-2 text-sm leading-relaxed">I get back to you within 24–48 hours to make sure coaching is the right fit.</p>
+          </li>
+
+          <li class="offer-step">
+            <div class="offer-step-dot"><i data-feather="file-text" class="w-5 h-5"></i></div>
+            <div class="offer-step-number">03</div>
+            <h4 class="font-bold text-lg">Get your plan</h4>
+            <p class="text-gray-500 mt-2 text-sm leading-relaxed">Your personal training plan, with a short video showing you how to use it.</p>
+          </li>
+
+          <li class="offer-step">
+            <div class="offer-step-dot"><i data-feather="trending-up" class="w-5 h-5"></i></div>
+            <div class="offer-step-number">04</div>
+            <h4 class="font-bold text-lg">Weekly check-ins</h4>
+            <p class="text-gray-500 mt-2 text-sm leading-relaxed">We review your progress every week and adjust the plan as you get stronger.</p>
+          </li>
+
+        </ol>
+
+      </div>
+
+      <!-- Credibility -->
+      <div class="offer-proof mt-16">
+        <div class="offer-proof-item">
+          <i data-feather="award" class="w-5 h-5"></i>
+          <span>Coached by a multiple-time Croatian national champion and European champion</span>
+        </div>
+        <div class="offer-proof-item">
+          <i data-feather="clock" class="w-5 h-5"></i>
+          <span>15+ years of experience</span>
+        </div>
+        <div class="offer-proof-item">
+          <i data-feather="users" class="w-5 h-5"></i>
+          <span>100+ athletes helped</span>
+        </div>
       </div>
 
     </div>
@@ -1127,7 +1262,7 @@
     });
   </script>
 
-<script src="site-motion.js?v=2"></script>
+<script src="site-motion.js?v=3"></script>
 <script src="intro.js?v=5"></script>
 <script src="lang.js?v=1"></script>
 </body>

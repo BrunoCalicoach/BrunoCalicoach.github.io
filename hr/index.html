@@ -115,6 +115,156 @@
       color: #d4d4d4;
     }
     .offer-proof-item svg { flex-shrink: 0; color: #4db8b8; }
+
+    /* ---------- Plan cards ---------- */
+    /* 1 month / 3 months switch above the cards */
+    .billing-switch {
+      display: flex;
+      width: max-content;
+      max-width: 100%;
+      margin: 0 auto 36px;
+      padding: 5px;
+      gap: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+    }
+    .billing-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: .92rem;
+      color: #b4b4b4;
+      transition: background-color .25s ease, color .25s ease;
+    }
+    .billing-option:hover { color: #ffffff; }
+    .billing-option.active { background: #008080; color: #ffffff; }
+    .billing-save {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .03em;
+      background: rgba(0,128,128,0.22);
+      color: #7fcccc;
+    }
+    .billing-option.active .billing-save { background: rgba(255,255,255,0.22); color: #ffffff; }
+
+    /* The card: photo band on top, everything to read on the plain dark card below */
+    .plan-box {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #181818;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .plan-box:hover { border-color: rgba(0,128,128,0.5); }
+
+    .plan-photo {
+      position: relative;
+      height: 230px;
+      background: var(--plan-img) center 22% / cover no-repeat;
+    }
+    .plan-photo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(24,24,24,0.1) 0%, rgba(24,24,24,0.15) 45%, rgba(24,24,24,0.85) 85%, #181818 100%);
+    }
+    .plan-photo-text {
+      position: absolute;
+      z-index: 1;
+      left: 28px;
+      right: 28px;
+      bottom: 14px;
+    }
+    .plan-name { font-size: 1.6rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
+    .plan-tagline { margin-top: 2px; font-size: .9rem; font-weight: 600; color: #7fcccc; }
+    .plan-badge {
+      position: absolute;
+      z-index: 1;
+      top: 16px;
+      right: 16px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      background: #008080;
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    }
+
+    .plan-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 18px 28px 28px;
+    }
+
+    /* Price: only the selected billing period shows */
+    .plan-price { display: none; }
+    .plans-grid[data-billing="1"] .plan-price[data-months="1"],
+    .plans-grid[data-billing="3"] .plan-price[data-months="3"] { display: block; animation: plan-price-in .35s ease; }
+    @keyframes plan-price-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .plan-price-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+    .plan-amount { font-size: 2.9rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: #ffffff; }
+    .plan-per { font-size: .95rem; color: #b4b4b4; }
+    .plan-old { font-size: 1.3rem; font-weight: 700; color: #6b6b6b; text-decoration: line-through; text-decoration-thickness: 2px; }
+    .plan-note { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: .88rem; color: #8c8c8c; min-height: 26px; }
+    .plan-save {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 800;
+      background: rgba(0,128,128,0.22);
+      color: #7fcccc;
+    }
+
+    .plan-features {
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: grid;
+      gap: 12px;
+      font-size: .92rem;
+      color: #d4d4d4;
+    }
+    .plan-features li { display: flex; align-items: center; gap: 12px; }
+    .plan-features b { margin-left: auto; font-weight: 700; color: #ffffff; text-align: right; white-space: nowrap; }
+    .plan-features svg { flex-shrink: 0; width: 18px; height: 18px; }
+    .plan-yes { color: #2fb3a3; }
+    .plan-no { color: #ef4444; }
+    .plan-missing { color: #6b6b6b; }
+
+    .plan-actions { margin-top: auto; padding-top: 28px; display: grid; gap: 10px; }
+    .plan-details, .plan-apply {
+      display: block;
+      padding: 13px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .plan-details {
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: #ffffff;
+      transition: background-color .25s ease;
+    }
+    .plan-details:hover { background: rgba(255,255,255,0.12); }
+    .plan-apply { color: #ffffff; font-weight: 700; }
+
+    @media (max-width: 640px) {
+      .plan-photo { height: 200px; }
+      .plan-photo-text, .plan-body { padding-left: 0; padding-right: 0; }
+      .plan-photo-text { left: 22px; right: 22px; }
+      .plan-body { padding: 16px 22px 22px; }
+      .plan-amount { font-size: 2.5rem; }
+      .billing-option { padding: 10px 14px; }
+    }
     /* Headline: always two lines; only the size changes with the screen width. */
     .hero-title {
       font-size: min(1.9rem, 6vw);
@@ -540,7 +690,7 @@
 
     <div class="max-w-7xl mx-auto px-5">
 
-      <div class="text-center mb-14">
+      <div class="text-center mb-10">
 
         <h2 class="text-3xl sm:text-4xl font-extrabold">
           Odaberi pravi plan za sebe
@@ -552,261 +702,111 @@
 
       </div>
 
-      <!-- Two plans while the challenge is hidden. With the challenge back: grid lg:grid-cols-3 gap-7 max-w-6xl -->
-      <div class="grid md:grid-cols-2 gap-7 max-w-4xl mx-auto items-stretch">
+      <!-- Billing switch: changes the prices on both cards (see the script at the end of the page) -->
+      <div class="billing-switch" role="radiogroup" aria-label="Trajanje pretplate">
+        <button type="button" role="radio" aria-checked="true" class="billing-option active" data-billing="1">1 mjesec</button>
+        <button type="button" role="radio" aria-checked="false" class="billing-option" data-billing="3">
+          <span>3 mjeseca</span>
+          <span class="billing-save">Uštedi 60€</span>
+        </button>
+      </div>
 
-        <!--
-         PLAN 
-        <div class="plan-card popular-card plan-image bg-[#f7f7f7] border border-gray-200 p-7 text-white flex flex-col h-full"
-         style="background-image:url('folder/img8.jpeg');">
+      <div class="plans-grid grid md:grid-cols-2 gap-7 max-w-4xl mx-auto items-stretch" data-billing="1">
 
-          <h3 class="font-extrabold text-2xl">
-            8-WEEK PLAN
-          </h3>
+        <!-- REGULAR -->
+        <article class="plan-card plan-box">
 
-          <div class="mt-2 text-5xl font-extrabold">
-            40€
+          <div class="plan-photo" style="--plan-img:url('../folder/img9.jpeg')">
+            <span class="plan-badge">NAJPOPULARNIJE</span>
+            <div class="plan-photo-text">
+              <h3 class="plan-name">Coaching REGULAR</h3>
+              <p class="plan-tagline">Calisthenics plan</p>
+            </div>
           </div>
 
-          <ul class="mt-8 space-y-4 text-sm">
+          <div class="plan-body">
 
-            <li class="flex items-start gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Basic workout plan
-            </li>
-
-            <li class="flex items-start gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Daily one-on-one forever
-            </li>
-
-            <li class="flex items-start gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Reusable after 8-weeks
-            </li>
-
-          </ul>
-
-            <div class="mt-auto pt-8">
-
-              <a href="8week.html"
-                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
-                Check details
-              </a>
-
-              <a href="apply.html"
-                class="mt-3 block w-full btn-primary text-white py-3 rounded-xl font-semibold text-center transition">
-                Apply Now
-              </a>
-
+            <div class="plan-price" data-months="1">
+              <div class="plan-price-line">
+                <span class="plan-amount">200€</span>
+                <span class="plan-per">/mjesečno</span>
+              </div>
+              <p class="plan-note">Mjesečna pretplata</p>
             </div>
 
-        </div>
-        -->
-
-        <!-- POPULAR -->
-        <div class="plan-card popular-card plan-image1 text-white p-7 relative shadow-2xl flex flex-col h-full"
-        style="background-image:url('../folder/img9.jpeg');">
-
-          <div class="absolute top-0 right-0 bg-[#008080] text-white text-xs font-bold tracking-wide px-3 py-1 rounded-bl-xl">
-            NAJPOPULARNIJE
-          </div>
-
-          <h3 class="font-extrabold text-2xl">
-            Coaching REGULAR
-          </h3>
-
-          <div class="mt-2">
-            <span class="text-5xl font-extrabold">200€</span>
-            <span class="text-white/80">/mjesečno</span>
-          </div>
-
-          <p class="mt-2 text-sm text-white">
-            60€ popusta uz pretplatu na 3 mjeseca
-          </p>
-
-          <ul class="mt-8 space-y-4 text-sm">
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Osobni plan treninga
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Dostupnost trenera<b>3 puta tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Povratna informacija o treningu <b>jednom tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Tjedni check-in <b>jednom tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Osnovni savjeti o prehrani
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="x" class="w-4 h-4 text-red-500 mt-0.5"></i>
-              Plan prehrane
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="x" class="w-4 h-4 text-red-500 mt-0.5"></i>
-              Prilagodljivi primjeri jelovnika
-            </li>
-
-          </ul>
-
-            <div class="mt-auto pt-8">
-
-            <a href="regular.html"
-              class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
-              Pogledaj detalje
-            </a>
-
-            <a href="apply.html?plan=regular"
-            class="mt-3 block w-full btn-primary text-white py-3 rounded-xl font-semibold text-center transition">
-            Prijavi se
-            </a>
-
+            <div class="plan-price" data-months="3">
+              <div class="plan-price-line">
+                <span class="plan-old">600€</span>
+                <span class="plan-amount">540€</span>
+                <span class="plan-per">za 3 mjeseca</span>
+              </div>
+              <p class="plan-note"><span class="plan-save">Uštedi 60€</span> <span>180€ / mjesečno</span></p>
             </div>
 
-        </div>
+            <ul class="plan-features">
+              <li><i data-feather="check" class="plan-yes"></i><span>Osobni plan treninga</span></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Dostupnost trenera</span> <b>3 puta tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Povratna informacija o treningu</span> <b>jednom tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Tjedni check-in</span> <b>jednom tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Osnovni savjeti o prehrani</span></li>
+              <li class="plan-missing"><i data-feather="x" class="plan-no"></i><span>Plan prehrane</span></li>
+              <li class="plan-missing"><i data-feather="x" class="plan-no"></i><span>Prilagodljivi primjeri jelovnika</span></li>
+            </ul>
+
+            <div class="plan-actions">
+              <a href="regular.html" class="plan-details">Pogledaj detalje</a>
+              <a href="apply.html?plan=regular" class="plan-apply btn-primary" data-plan="regular">Prijavi se</a>
+            </div>
+
+          </div>
+        </article>
 
         <!-- PRO -->
-        <div class="plan-card popular-card plan-image2 border border-gray-200 p-7 text-white flex flex-col h-full"
-        style="background-image:url('../folder/img7.jpeg');">
+        <article class="plan-card plan-box">
 
-          <h3 class="font-extrabold text-2xl">
-            Coaching PRO
-          </h3>
-
-          <div class="mt-2">
-            <span class="text-5xl font-extrabold">300€</span>
-            <span>/mjesečno</span>
+          <div class="plan-photo" style="--plan-img:url('../folder/img7.jpeg')">
+            <div class="plan-photo-text">
+              <h3 class="plan-name">Coaching PRO</h3>
+              <p class="plan-tagline">Calisthenics + prehrana</p>
+            </div>
           </div>
 
-          <p class="mt-2 text-sm text-white">
-            60€ popusta uz pretplatu na 3 mjeseca
-          </p>
+          <div class="plan-body">
 
-          <ul class="mt-8 space-y-4 text-sm">
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Osobni plan treninga
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Dostupnost trenera <b>5 puta tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Povratna informacija o treningu <b>jednom tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Tjedni check-in <b>jednom tjedno</b>
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Osnovni savjeti o prehrani
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Plan prehrane
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Prilagodljivi primjeri jelovnika
-            </li>
-
-          </ul>
-
-            <div class="mt-auto pt-8">
-
-              <a href="pro.html"
-                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
-                Pogledaj detalje
-              </a>
-
-              <a href="apply.html?plan=pro"
-              class="mt-3 block w-full btn-primary text-white py-3 rounded-xl font-semibold text-center transition">
-              Prijavi se
-              </a>
+            <div class="plan-price" data-months="1">
+              <div class="plan-price-line">
+                <span class="plan-amount">300€</span>
+                <span class="plan-per">/mjesečno</span>
+              </div>
+              <p class="plan-note">Mjesečna pretplata</p>
             </div>
 
-        </div>
+            <div class="plan-price" data-months="3">
+              <div class="plan-price-line">
+                <span class="plan-old">900€</span>
+                <span class="plan-amount">840€</span>
+                <span class="plan-per">za 3 mjeseca</span>
+              </div>
+              <p class="plan-note"><span class="plan-save">Uštedi 60€</span> <span>280€ / mjesečno</span></p>
+            </div>
 
-        <!-- 12-WEEK CHALLENGE: hidden until the challenge is finished. Remove the comment markers around it to show it again.
-        <div class="plan-card popular-card plan-image2 border border-gray-200 p-7 text-white flex flex-col h-full"
-        style="background-image:linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.75)),url('folder/img8.jpeg');">
+            <ul class="plan-features">
+              <li><i data-feather="check" class="plan-yes"></i><span>Osobni plan treninga</span></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Dostupnost trenera</span> <b>5 puta tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Povratna informacija o treningu</span> <b>jednom tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Tjedni check-in</span> <b>jednom tjedno</b></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Osnovni savjeti o prehrani</span></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Plan prehrane</span></li>
+              <li><i data-feather="check" class="plan-yes"></i><span>Prilagodljivi primjeri jelovnika</span></li>
+            </ul>
 
-          <h3 class="font-extrabold text-2xl">
-            12-Week Challenge
-          </h3>
+            <div class="plan-actions">
+              <a href="pro.html" class="plan-details">Pogledaj detalje</a>
+              <a href="apply.html?plan=pro" class="plan-apply btn-primary" data-plan="pro">Prijavi se</a>
+            </div>
 
-          <div class="mt-2">
-            <span class="text-5xl font-extrabold">12</span>
-            <span>weeks</span>
           </div>
-
-          <p class="mt-2 text-sm text-[#008080]">
-            Price coming soon
-          </p>
-
-          <ul class="mt-8 space-y-4 text-sm">
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Plan based on your max pull-ups, push-ups and dips
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Adapted to your starting level
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Log the results of every session
-            </li>
-
-            <li class="flex gap-3">
-              <i data-feather="check" class="w-4 h-4 text-green-500 mt-0.5"></i>
-              Your program and progress history in your own account
-            </li>
-
-          </ul>
-
-            <div class="mt-auto pt-8">
-
-              <a href="challenge.html"
-                class="block w-full bg-[#ebebeb] text-[#006666] hover:bg-[#dedede] py-3 rounded-xl font-medium transition text-center">
-                Check details
-              </a>
-
-              <a href="challenge-app.html"
-              class="mt-3 block w-full btn-primary text-white py-3 rounded-xl font-semibold text-center transition">
-              Start Challenge
-              </a>
-            </div>
-
-        </div>
-        END OF 12-WEEK CHALLENGE -->
+        </article>
 
       </div>
 
@@ -1196,6 +1196,28 @@
   <script>
     feather.replace();
 
+
+    // Plan cards: the 1 month / 3 months switch changes the prices and the Apply Now links.
+    (function () {
+      const grid = document.querySelector('.plans-grid');
+      if (!grid) return;
+      const options = document.querySelectorAll('.billing-option');
+      options.forEach((option) => {
+        option.addEventListener('click', () => {
+          const months = option.dataset.billing;
+          grid.dataset.billing = months;
+          options.forEach((other) => {
+            const active = other === option;
+            other.classList.toggle('active', active);
+            other.setAttribute('aria-checked', String(active));
+          });
+          // The application form pre-selects the matching option (plan-regular or plan-regular-3)
+          grid.querySelectorAll('.plan-apply').forEach((link) => {
+            link.href = 'apply.html?plan=' + link.dataset.plan + (months === '3' ? '-3' : '');
+          });
+        });
+      });
+    })();
     // FAQ accordion: a question opens its answer; clicking it again closes it.
     (function () {
       const list = document.querySelector('.faq-list');

@@ -28,6 +28,7 @@ my %ATTR = (
   'Message' => 'Poruka',
   'Your name' => 'Tvoje ime',
   'Back to home page' => 'Natrag na početnu stranicu',
+  'Subscription length' => 'Trajanje pretplate',
 );
 
 # Messages written by the pages' scripts (exact text inside the quotes).

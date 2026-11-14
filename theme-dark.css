@@ -389,3 +389,12 @@ a.lang-option:hover { color: #ffffff; }
         rgba(var(--hero-grey),1) 100%) !important;
   }
 }
+
+/* Small square "back to home" button with a house icon (top right on inner pages) */
+.home-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}

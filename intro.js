@@ -27,13 +27,27 @@
     const stage = document.createElement('div');
     stage.className = 'intro-stage';
     stage.innerHTML = `
-      <div class="intro-photo"><img src="${photoUrl}" alt=""></div>
+      <div class="intro-photo"><img src="${photoUrl}" alt=""><div class="intro-look"><div class="intro-look-fade"></div></div></div>
       <div class="intro-title" aria-hidden="true">${heading.innerHTML}</div>
       <button type="button" class="intro-hint"><span></span>${hint}</button>`;
     document.body.appendChild(stage);
 
     const photo = stage.querySelector('.intro-photo');
     const photoImage = photo.querySelector('img');
+
+    // Copy the page photo's own look (darkening, crop and soft edge fades), so the intro photo
+    // can turn into it on the way and land looking exactly like the real one.
+    const look = photo.querySelector('.intro-look');
+    const real = getComputedStyle(realPhoto);
+    Object.assign(look.style, {
+      backgroundImage: real.backgroundImage,
+      // Crop exactly like the intro photo while it changes shape (it ends square, like the real one).
+      backgroundSize: 'cover',
+      backgroundPosition: '50% 18%',
+      backgroundRepeat: real.backgroundRepeat,
+      filter: real.filter
+    });
+    look.querySelector('.intro-look-fade').style.backgroundImage = getComputedStyle(realPhoto, '::after').backgroundImage;
     const title = stage.querySelector('.intro-title');
     let started = false;
 
@@ -47,16 +61,21 @@
       const duration = 1500;
       const ease = 'cubic-bezier(.65,0,.25,1)';
 
-      // Photo: glide from the centre into the real photo's place, dimming like the real one.
-      const from = photo.getBoundingClientRect();
+      // Photo: shrink from full screen into the real photo's exact place and size, while the
+      // page photo's darkening and soft edges fade in over it.
       const to = realPhoto.getBoundingClientRect();
-      Object.assign(photo.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', transform: 'none' });
-      const scale = to.width / from.width;
+      const box = (rect) => ({ left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px' });
       photo.animate([
-        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-        { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${scale})`, opacity: 1, offset: 0.7 },
-        { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${scale})`, opacity: 0 }
+        { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight + 'px', opacity: 1 },
+        { ...box(to), opacity: 1, offset: 0.8 },
+        { ...box(to), opacity: 0 }
       ], { duration, easing: ease, fill: 'forwards' });
+      look.animate([
+        { opacity: 0 },
+        { opacity: 0, offset: 0.15 },
+        { opacity: 1, offset: 0.75 },
+        { opacity: 1 }
+      ], { duration, easing: 'ease-in-out', fill: 'forwards' });
       // The stage.s dark background thins out so the page underneath shows through.
       stage.animate([
         { backgroundColor: "rgba(11,11,11,1)" },
@@ -64,7 +83,6 @@
         { backgroundColor: "rgba(11,11,11,0)" }
       ], { duration: duration * 0.75, easing: "ease", fill: "forwards" });
       photoImage.style.animation = 'none';
-      photoImage.animate([{ filter: 'brightness(.95)' }, { filter: 'brightness(.5)' }], { duration: duration * 0.7, easing: ease, fill: 'forwards' });
 
       // Headline: the same text, font and lines as the page headline, only bigger. It travels to
       // the page headline's spot, shrinking to its size, and settles with a small bounce.

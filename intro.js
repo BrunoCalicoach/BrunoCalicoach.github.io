@@ -83,14 +83,12 @@
       // With a video, everything moves at the video's own pace, so the headline lands and the
       // photo settles just as the pose is reached.
       let duration = 1500;
-      let travel = 1250;
       if (video) {
         const seconds = isFinite(video.duration) && video.duration > 0 ? video.duration : 1.7;
         duration = Math.max(1500, Math.round(seconds * 1000 + 200));
-        travel = Math.round(duration * 0.9);
         video.play().catch(() => { /* the first frame simply moves into place */ });
       }
-      const ease = 'cubic-bezier(.65,0,.25,1)';
+      const travel = Math.round(duration * 0.9);
 
       // The page below the top section comes in front of the shrinking photo (see intro.css).
       root.style.setProperty('--intro-body-fade', Math.round(duration * 0.5) + 'ms');
@@ -101,18 +99,8 @@
       const to = realPhoto.getBoundingClientRect();
       const box = (rect) => ({ left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px' });
       const fullScreen = { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight + 'px' };
-      if (video) {
-        // Video: one continuous move that uses the whole time and glides softly into place
-        // (long ease-out), coming to rest just as the video reaches its last frame.
-        photo.animate([fullScreen, box(to)], { duration, easing: 'cubic-bezier(.5,0,.1,1)', fill: 'forwards' });
-      } else {
-        // Picture: arrives early, then fades out over the page's identical photo.
-        photo.animate([
-          { ...fullScreen, opacity: 1 },
-          { ...box(to), opacity: 1, offset: 0.8 },
-          { ...box(to), opacity: 0 }
-        ], { duration, easing: ease, fill: 'forwards' });
-      }
+      // One continuous move that uses the whole time and glides softly into place (long ease-out).
+      photo.animate([fullScreen, box(to)], { duration, easing: 'cubic-bezier(.5,0,.1,1)', fill: 'forwards' });
       look.animate([
         { opacity: 0 },
         { opacity: 0, offset: 0.15 },
@@ -147,20 +135,12 @@
         line.style.opacity = '1';
         line.style.transform = 'none';
       });
-      if (video) {
-        // Travels down with a soft finish, then eases gently back up into place (no hard stop).
-        title.animate([
-          { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)', easing: 'cubic-bezier(.55,0,.3,1)' },
-          { transform: `translate(${dx}px, ${dy + 12}px) scale(${shrink})`, offset: 0.72, easing: 'cubic-bezier(.3,0,.15,1)' },
-          { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
-        ], { duration: travel, easing: 'linear', fill: 'forwards' });
-      } else {
-        title.animate([
-          { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)' },
-          { transform: `translate(${dx}px, ${dy + 16}px) scale(${shrink})`, offset: 0.8, easing: 'cubic-bezier(.3,0,.3,1)' },
-          { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
-        ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
-      }
+      // Travels with a soft finish, then eases gently the last few pixels into place (no hard stop).
+      title.animate([
+        { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)', easing: 'cubic-bezier(.55,0,.3,1)' },
+        { transform: `translate(${dx}px, ${dy + 12}px) scale(${shrink})`, offset: 0.72, easing: 'cubic-bezier(.3,0,.15,1)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
+      ], { duration: travel, easing: 'linear', fill: 'forwards' });
 
       const showHeading = () => {
         heading.style.opacity = '';
@@ -169,26 +149,18 @@
       };
       realPhoto.style.animation = 'none';
 
-      if (!video) {
-        // Picture: the page headline takes over when the copy lands, and the menu, paragraph
-        // and buttons come in as the photo arrives.
-        setTimeout(showHeading, travel);
-        setTimeout(finish, duration * 0.6);
-        setTimeout(() => stage.remove(), duration + 50);
-        return;
-      }
-
-      // Video: the page around the photo shows through while it shrinks, but the menu, text and
-      // buttons wait. Once the photo has settled and the video has reached its last frame, the
-      // whole page takes over in one single frame, so nothing is ever half covered.
+      // The page around the photo shows through while it shrinks, but the menu, text and buttons
+      // wait. Once the photo has settled (and a video has reached its last frame), the whole page
+      // takes over in one single frame, so nothing is ever half covered. By then the intro photo
+      // looks exactly like the page photo it lies on, so removing it changes nothing.
       const settled = new Promise((resolve) => setTimeout(resolve, duration));
       const ended = new Promise((resolve) => {
-        if (video.ended) resolve();
+        if (!video || video.ended) { resolve(); return; }
         video.addEventListener('ended', resolve, { once: true });
         setTimeout(resolve, duration + 1500); // never wait forever on a slow connection
       });
       Promise.all([settled, ended]).then(() => {
-        handOverFrame(video, realPhoto);
+        if (video) handOverFrame(video, realPhoto);
         realPhoto.style.transition = 'none';
         showHeading();
         finish();

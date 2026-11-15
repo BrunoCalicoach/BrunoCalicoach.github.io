@@ -390,6 +390,9 @@ a.lang-option:hover { color: #ffffff; }
   }
 }
 
+/* Add "hero-photo-bw" to show a top photo in black and white (the home intro video follows it). */
+.hero-photo.hero-photo-bw { filter: grayscale(1); }
+
 /* Small square "back to home" button with a house icon (top right on inner pages) */
 .home-button {
   display: inline-grid;

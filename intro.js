@@ -58,9 +58,11 @@
       // Crop exactly like the page photo, so both layers line up the whole way.
       backgroundSize: real.backgroundSize.split(',').map(() => 'cover').join(','),
       backgroundPosition: real.backgroundPosition,
-      backgroundRepeat: real.backgroundRepeat,
-      filter: real.filter
+      backgroundRepeat: real.backgroundRepeat
     });
+    // The page photo's colour filter (e.g. black and white) goes on the whole intro photo box,
+    // so the video or picture looks the same from the very first frame.
+    photo.style.filter = real.filter;
     look.querySelector('.intro-look-fade').style.backgroundImage = getComputedStyle(realPhoto, '::after').backgroundImage;
     // The photo itself uses the page photo's crop point too (the last background layer is the photo).
     const positions = real.backgroundPosition.split(',');

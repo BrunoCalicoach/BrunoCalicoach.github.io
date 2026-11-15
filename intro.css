@@ -2,6 +2,9 @@
 
 /* While the intro plays: no scrolling, and the real top section waits underneath. */
 html.intro, html.intro body { overflow: hidden; }
+/* The scrollbar's space is kept even while scrolling is off, so the page doesn't shift
+   sideways when the scrollbar comes back after the intro (phones have no such space). */
+html { scrollbar-gutter: stable; }
 html.intro .hero-bg nav,
 html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
 .hero-bg nav { transition: opacity .7s ease; }
@@ -51,8 +54,28 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
 
 @keyframes intro-photo-in {
   from { opacity: 0; transform: scale(1.12); filter: brightness(.4); }
-  to   { opacity: 1; transform: none; filter: brightness(.95); }
+  to   { opacity: 1; transform: none; filter: none; }
 }
+
+/* After the intro, its video becomes the page photo itself: it sits under the page photo's
+   darkening (::before) and soft edges (::after), cropped exactly like the photo it covers. */
+.hero-photo.has-video > video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-photo.has-video::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(var(--hero-grey), var(--hero-shade));
+}
+.hero-photo.has-video::after { z-index: 2; }
 
 /* Darkens the bottom so the headline stays readable over the photo */
 .intro-stage::after {

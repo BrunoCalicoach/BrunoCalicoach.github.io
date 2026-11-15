@@ -53,8 +53,11 @@
     // can turn into it on the way and land looking exactly like the real one.
     const look = photo.querySelector('.intro-look');
     const real = getComputedStyle(realPhoto);
+    // With a video, only the darkening layer is copied (the first background layer): the video
+    // itself becomes the page photo at the end, so there is no second picture to swap to.
+    const shadeLayer = (real.backgroundImage.match(/^linear-gradient\((?:[^()]|\([^()]*\))*\)/) || [''])[0];
     Object.assign(look.style, {
-      backgroundImage: real.backgroundImage,
+      backgroundImage: video && shadeLayer ? shadeLayer : real.backgroundImage,
       // Crop exactly like the page photo, so both layers line up the whole way.
       backgroundSize: real.backgroundSize.split(',').map(() => 'cover').join(','),
       backgroundPosition: real.backgroundPosition,
@@ -96,13 +99,13 @@
       photo.animate([
         { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight + 'px', opacity: 1 },
         { ...box(to), opacity: 1, offset: 0.8 },
-        { ...box(to), opacity: 0 }
+        // A picture fades out over the page's identical photo; a video stays and is handed over.
+        { ...box(to), opacity: video ? 1 : 0 }
       ], { duration, easing: ease, fill: 'forwards' });
-      // (With a video the page photo comes in later, so the movement stays visible to the end.)
       look.animate([
         { opacity: 0 },
-        { opacity: 0, offset: video ? 0.55 : 0.15 },
-        { opacity: 1, offset: video ? 0.95 : 0.75 },
+        { opacity: 0, offset: 0.15 },
+        { opacity: 1, offset: 0.75 },
         { opacity: 1 }
       ], { duration, easing: 'ease-in-out', fill: 'forwards' });
       // The stage.s dark background thins out so the page underneath shows through.
@@ -116,6 +119,12 @@
       // Headline: the same text, font and lines as the page headline, only bigger. It travels to
       // the page headline's spot, shrinking to its size, and settles with a small bounce.
       // When it lands, the page headline takes over in exactly the same place.
+      // The page headline is first put in its final state (no fade-up offset), so the copy
+      // aims at exactly the spot where the page headline will be.
+      // (important: the site's fade-up transition is itself marked important)
+      heading.style.setProperty('transition', 'none', 'important');
+      heading.style.opacity = '0';
+      heading.classList.add('shown');
       const titleBox = title.getBoundingClientRect();
       const target = heading.getBoundingClientRect();
       const shrink = parseFloat(getComputedStyle(heading).fontSize) / parseFloat(getComputedStyle(title).fontSize);
@@ -133,19 +142,25 @@
         { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
       ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
 
-      heading.style.transition = 'none';
-      heading.style.opacity = '0';
-      heading.classList.add('shown');
       setTimeout(() => {
         heading.style.opacity = '';
         title.style.visibility = 'hidden';
-        setTimeout(() => { heading.style.transition = ''; }, 50);
+        setTimeout(() => { heading.style.removeProperty('transition'); }, 50);
       }, travel);
 
       // Menu, real photo, paragraph and buttons come in as the photo arrives.
       realPhoto.style.animation = 'none';
       setTimeout(finish, duration * 0.6);
-      setTimeout(() => stage.remove(), duration + 50);
+      setTimeout(() => {
+        // The video moves into the page photo as it is (same element, same frame, same crop),
+        // and keeps going if it hasn't quite finished. Nothing is swapped, so nothing jumps.
+        if (video) {
+          video.style.animation = '';
+          realPhoto.classList.add('has-video');
+          realPhoto.appendChild(video);
+        }
+        stage.remove();
+      }, duration + 50);
     }
 
     // ---------- What starts it ----------

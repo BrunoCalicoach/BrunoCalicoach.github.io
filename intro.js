@@ -92,6 +92,10 @@
       }
       const ease = 'cubic-bezier(.65,0,.25,1)';
 
+      // The page below the top section comes in front of the shrinking photo (see intro.css).
+      root.style.setProperty('--intro-body-fade', Math.round(duration * 0.5) + 'ms');
+      root.classList.add('intro-leaving');
+
       // Photo: shrink from full screen into the real photo's exact place and size, while the
       // page photo's darkening and soft edges fade in over it.
       const to = realPhoto.getBoundingClientRect();
@@ -161,7 +165,6 @@
       // Video: the page around the photo shows through while it shrinks, but the menu, text and
       // buttons wait. Once the photo has settled and the video has reached its last frame, the
       // whole page takes over in one single frame, so nothing is ever half covered.
-      root.classList.add('intro-leaving');
       const settled = new Promise((resolve) => setTimeout(resolve, duration));
       const ended = new Promise((resolve) => {
         if (video.ended) resolve();

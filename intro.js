@@ -11,7 +11,7 @@
   if (!root.classList.contains('intro')) return;
 
   const finish = () => {
-    root.classList.remove('intro');
+    root.classList.remove('intro', 'intro-leaving');
     document.dispatchEvent(new Event('intro:done'));
     if ('scrollRestoration' in history) history.scrollRestoration = 'auto';
   };
@@ -142,25 +142,74 @@
         { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
       ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
 
-      setTimeout(() => {
+      const showHeading = () => {
         heading.style.opacity = '';
         title.style.visibility = 'hidden';
         setTimeout(() => { heading.style.removeProperty('transition'); }, 50);
-      }, travel);
-
-      // Menu, real photo, paragraph and buttons come in as the photo arrives.
+      };
       realPhoto.style.animation = 'none';
-      setTimeout(finish, duration * 0.6);
-      setTimeout(() => {
-        // The video moves into the page photo as it is (same element, same frame, same crop),
-        // and keeps going if it hasn't quite finished. Nothing is swapped, so nothing jumps.
-        if (video) {
-          video.style.animation = '';
-          realPhoto.classList.add('has-video');
-          realPhoto.appendChild(video);
-        }
+
+      if (!video) {
+        // Picture: the page headline takes over when the copy lands, and the menu, paragraph
+        // and buttons come in as the photo arrives.
+        setTimeout(showHeading, travel);
+        setTimeout(finish, duration * 0.6);
+        setTimeout(() => stage.remove(), duration + 50);
+        return;
+      }
+
+      // Video: the page around the photo shows through while it shrinks, but the menu, text and
+      // buttons wait. Once the photo has settled and the video has reached its last frame, the
+      // whole page takes over in one single frame, so nothing is ever half covered.
+      root.classList.add('intro-leaving');
+      const settled = new Promise((resolve) => setTimeout(resolve, duration));
+      const ended = new Promise((resolve) => {
+        if (video.ended) resolve();
+        video.addEventListener('ended', resolve, { once: true });
+        setTimeout(resolve, duration + 1500); // never wait forever on a slow connection
+      });
+      Promise.all([settled, ended]).then(() => {
+        handOverFrame(video, realPhoto);
+        realPhoto.style.transition = 'none';
+        showHeading();
+        finish();
         stage.remove();
-      }, duration + 50);
+      });
+    }
+
+    // Paint the video's last frame into the page photo, cropped exactly like the video was, so
+    // the header shows the very same picture (the page's own photo stays underneath).
+    function handOverFrame(source, target) {
+      try {
+        const rect = target.getBoundingClientRect();
+        const ratio = window.devicePixelRatio || 1;
+        const canvas = document.createElement('canvas');
+        canvas.className = 'hero-frame';
+        canvas.width = Math.round(rect.width * ratio);
+        canvas.height = Math.round(rect.height * ratio);
+        const vw = source.videoWidth, vh = source.videoHeight;
+        if (!vw || !vh || !canvas.width || !canvas.height) return;
+        const scale = Math.max(canvas.width / vw, canvas.height / vh);
+        const [px, py] = getComputedStyle(source).objectPosition.split(' ').map((v) => parseFloat(v) / 100);
+        const dw = vw * scale, dh = vh * scale;
+        const context = canvas.getContext('2d');
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(source, (canvas.width - dw) * (isNaN(px) ? 0.5 : px), (canvas.height - dh) * (isNaN(py) ? 0.5 : py), dw, dh);
+        target.classList.add('has-frame');
+        target.appendChild(canvas);
+        // If the photo changes size (phone turned, window resized), the page's own photo,
+        // which is the same picture, takes over again with its own crop.
+        const drop = () => { canvas.remove(); target.classList.remove('has-frame'); };
+        if (!('ResizeObserver' in window)) { window.addEventListener('resize', drop, { once: true }); return; }
+        const watcher = new ResizeObserver(() => {
+          const now = target.getBoundingClientRect();
+          if (Math.abs(now.width - rect.width) > 1 || Math.abs(now.height - rect.height) > 1) {
+            drop();
+            watcher.disconnect();
+          }
+        });
+        watcher.observe(target);
+      } catch (error) { /* the page's own photo shows instead */ }
     }
 
     // ---------- What starts it ----------

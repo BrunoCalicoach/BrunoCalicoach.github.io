@@ -87,7 +87,7 @@
       if (video) {
         const seconds = isFinite(video.duration) && video.duration > 0 ? video.duration : 1.7;
         duration = Math.max(1500, Math.round(seconds * 1000 + 200));
-        travel = Math.round(duration * 0.83);
+        travel = Math.round(duration * 0.9);
         video.play().catch(() => { /* the first frame simply moves into place */ });
       }
       const ease = 'cubic-bezier(.65,0,.25,1)';
@@ -100,12 +100,19 @@
       // page photo's darkening and soft edges fade in over it.
       const to = realPhoto.getBoundingClientRect();
       const box = (rect) => ({ left: rect.left + 'px', top: rect.top + 'px', width: rect.width + 'px', height: rect.height + 'px' });
-      photo.animate([
-        { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight + 'px', opacity: 1 },
-        { ...box(to), opacity: 1, offset: 0.8 },
-        // A picture fades out over the page's identical photo; a video stays and is handed over.
-        { ...box(to), opacity: video ? 1 : 0 }
-      ], { duration, easing: ease, fill: 'forwards' });
+      const fullScreen = { left: '0px', top: '0px', width: innerWidth + 'px', height: innerHeight + 'px' };
+      if (video) {
+        // Video: one continuous move that uses the whole time and glides softly into place
+        // (long ease-out), coming to rest just as the video reaches its last frame.
+        photo.animate([fullScreen, box(to)], { duration, easing: 'cubic-bezier(.5,0,.1,1)', fill: 'forwards' });
+      } else {
+        // Picture: arrives early, then fades out over the page's identical photo.
+        photo.animate([
+          { ...fullScreen, opacity: 1 },
+          { ...box(to), opacity: 1, offset: 0.8 },
+          { ...box(to), opacity: 0 }
+        ], { duration, easing: ease, fill: 'forwards' });
+      }
       look.animate([
         { opacity: 0 },
         { opacity: 0, offset: 0.15 },
@@ -140,11 +147,20 @@
         line.style.opacity = '1';
         line.style.transform = 'none';
       });
-      title.animate([
-        { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)' },
-        { transform: `translate(${dx}px, ${dy + 16}px) scale(${shrink})`, offset: 0.8, easing: 'cubic-bezier(.3,0,.3,1)' },
-        { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
-      ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
+      if (video) {
+        // Travels down with a soft finish, then eases gently back up into place (no hard stop).
+        title.animate([
+          { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)', easing: 'cubic-bezier(.55,0,.3,1)' },
+          { transform: `translate(${dx}px, ${dy + 12}px) scale(${shrink})`, offset: 0.72, easing: 'cubic-bezier(.3,0,.15,1)' },
+          { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
+        ], { duration: travel, easing: 'linear', fill: 'forwards' });
+      } else {
+        title.animate([
+          { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)' },
+          { transform: `translate(${dx}px, ${dy + 16}px) scale(${shrink})`, offset: 0.8, easing: 'cubic-bezier(.3,0,.3,1)' },
+          { transform: `translate(${dx}px, ${dy}px) scale(${shrink})`, textShadow: '0 0 0 rgba(0,0,0,0)' }
+        ], { duration: travel, easing: 'cubic-bezier(.6,0,.35,1)', fill: 'forwards' });
+      }
 
       const showHeading = () => {
         heading.style.opacity = '';

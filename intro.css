@@ -27,7 +27,8 @@ html.intro .hero-bg .hero-photo { opacity: 0; animation: none; }
   overflow: hidden;
   will-change: left, top, width, height, opacity;
 }
-.intro-photo img {
+.intro-photo img,
+.intro-photo video {
   width: 100%;
   height: 100%;
   object-fit: cover;

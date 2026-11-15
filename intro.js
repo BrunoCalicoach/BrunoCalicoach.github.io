@@ -4,6 +4,9 @@
 // top section up. After that the page behaves exactly as normal.
 // The small script in the page's <head> decides whether the intro plays (adds class "intro").
 (function () {
+  // Paths in data-intro-video / data-intro-poster are from the site's main folder (where this
+  // script lives), so the Croatian pages in hr/ find the same files.
+  const scriptUrl = document.currentScript ? document.currentScript.src : location.href;
   const root = document.documentElement;
   if (!root.classList.contains('intro')) return;
 
@@ -24,16 +27,27 @@
     const photoUrl = urls.length ? urls[urls.length - 1][1] : '';
     const hint = root.lang.slice(0, 2) === 'hr' ? 'Skrolaj' : 'Scroll';
 
+    // With a video (data-intro-video on the page photo): its first frame shows at the start, the
+    // first swipe plays it, and it stops on its last frame, which is the page photo itself.
+    const videoPath = realPhoto.dataset.introVideo;
+    const posterPath = realPhoto.dataset.introPoster;
+    const fromRoot = (path) => new URL(path, scriptUrl).href;
+    const media = videoPath
+      ? `<video src="${fromRoot(videoPath)}"${posterPath ? ` poster="${fromRoot(posterPath)}"` : ''} muted playsinline preload="auto" disablepictureinpicture></video>`
+      : `<img src="${photoUrl}" alt="">`;
+
     const stage = document.createElement('div');
     stage.className = 'intro-stage';
     stage.innerHTML = `
-      <div class="intro-photo"><img src="${photoUrl}" alt=""><div class="intro-look"><div class="intro-look-fade"></div></div></div>
+      <div class="intro-photo">${media}<div class="intro-look"><div class="intro-look-fade"></div></div></div>
       <div class="intro-title" aria-hidden="true">${heading.innerHTML}</div>
       <button type="button" class="intro-hint"><span></span>${hint}</button>`;
     document.body.appendChild(stage);
 
     const photo = stage.querySelector('.intro-photo');
-    const photoImage = photo.querySelector('img');
+    const photoImage = photo.querySelector('img, video');
+    const video = photo.querySelector('video');
+    if (video) video.muted = true; // some phones only allow inline playback when muted is set here too
 
     // Copy the page photo's own look (darkening, crop and soft edge fades), so the intro photo
     // can turn into it on the way and land looking exactly like the real one.
@@ -61,7 +75,16 @@
       stage.classList.add('leaving');
       try { sessionStorage.setItem('intro-seen', '1'); } catch (e) { /* private mode */ }
 
-      const duration = 1500;
+      // With a video, everything moves at the video's own pace, so the headline lands and the
+      // photo settles just as the pose is reached.
+      let duration = 1500;
+      let travel = 1250;
+      if (video) {
+        const seconds = isFinite(video.duration) && video.duration > 0 ? video.duration : 1.7;
+        duration = Math.max(1500, Math.round(seconds * 1000 + 200));
+        travel = Math.round(duration * 0.83);
+        video.play().catch(() => { /* the first frame simply moves into place */ });
+      }
       const ease = 'cubic-bezier(.65,0,.25,1)';
 
       // Photo: shrink from full screen into the real photo's exact place and size, while the
@@ -73,10 +96,11 @@
         { ...box(to), opacity: 1, offset: 0.8 },
         { ...box(to), opacity: 0 }
       ], { duration, easing: ease, fill: 'forwards' });
+      // (With a video the page photo comes in later, so the movement stays visible to the end.)
       look.animate([
         { opacity: 0 },
-        { opacity: 0, offset: 0.15 },
-        { opacity: 1, offset: 0.75 },
+        { opacity: 0, offset: video ? 0.55 : 0.15 },
+        { opacity: 1, offset: video ? 0.95 : 0.75 },
         { opacity: 1 }
       ], { duration, easing: 'ease-in-out', fill: 'forwards' });
       // The stage.s dark background thins out so the page underneath shows through.
@@ -101,7 +125,6 @@
         line.style.opacity = '1';
         line.style.transform = 'none';
       });
-      const travel = 1250;
       title.animate([
         { transform: 'translate(0, 0) scale(1)', textShadow: '0 8px 40px rgba(0,0,0,.6)' },
         { transform: `translate(${dx}px, ${dy + 16}px) scale(${shrink})`, offset: 0.8, easing: 'cubic-bezier(.3,0,.3,1)' },

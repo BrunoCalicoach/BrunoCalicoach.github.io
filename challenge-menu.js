@@ -2,8 +2,8 @@
 // Kept apart from the test tools so it can move to the member area later as it is.
 // Loaded before challenge-test.js, whose globals (testState, draft, render...) it uses at run time.
 
-// Training days of the week: Sunday is 0. Day 1 on Monday, Day 2 on Tuesday, Day 3 on Thursday, Day 4 on Saturday.
-const TRAINING_DAYS = { 1: 1, 2: 2, 4: 3, 6: 4 };
+// Training days of the week: Sunday is 0. Day 1 on Monday, Day 2 on Wednesday, Day 3 on Friday, Day 4 on Saturday.
+const TRAINING_DAYS = { 1: 1, 3: 2, 5: 3, 6: 4 };
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 // Rough height the body rises in one pull-up, for the "you climbed" fact
 const PULL_UP_METRES = 0.6;

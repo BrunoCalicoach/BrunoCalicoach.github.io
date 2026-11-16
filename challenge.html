@@ -2,148 +2,440 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Hidden from search engines until the challenge launches -->
+<meta name="robots" content="noindex, nofollow">
 
-<title>12-Week Challenge | Bruno Zgela Coaching</title>
+<title>9-Week Calisthenics Challenge | Bruno Zgela Coaching</title>
+<meta name="description" content="A 9-week bodyweight challenge that adapts after every workout. Test yourself, train with a guided app, and let your plan adjust to what you actually do.">
 
 <script src="https://cdn.tailwindcss.com"></script>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/feather-icons"></script>
 
 <style>
-
-body{
-  font-family:'Inter',sans-serif;
-  background:#f5f5f5;
-  color:#111827;
-}
-
-.hero{
-  background:
-    linear-gradient(to bottom,rgba(0,0,0,0.78),rgba(0,0,0,0.92)),
-    url('folder/img1.jpeg');
-  background-size:cover;
-  background-position:center;
-}
-
-.btn-primary{
-  background:#008080;
-  transition:.25s ease;
-}
-
-.btn-primary:hover{
-  background:#006666;
-}
-
-.btn-secondary{
-  border:1px solid rgba(255,255,255,0.18);
-  background:rgba(255,255,255,0.05);
-  transition:.25s ease;
-}
-
-.btn-secondary:hover{
-  background:rgba(255,255,255,0.12);
-}
-
-.card{
-  background:#ffffff;
-  border-radius:18px;
-  border:1px solid #ececec;
-}
-
+body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
+.btn-primary { background: #008080; transition: .25s; }
+.btn-primary:hover { background: #006666; }
+.btn-secondary { border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); transition: .25s; }
+.btn-secondary:hover { background: rgba(255,255,255,.12); }
+.card { border-radius: 20px; }
 </style>
+<link rel="stylesheet" href="theme-dark.css?v=9">
+<link rel="stylesheet" href="challenge-page.css?v=1">
 </head>
 
 <body>
 
-<!-- HERO -->
+<!-- ============ HERO ============ -->
 <section class="hero text-white">
+  <div class="hero-photo" aria-hidden="true" style="--hero-img:url('folder/about/dips.jpg')"></div>
 
   <nav class="max-w-7xl mx-auto px-5 py-6 flex justify-between items-center">
-
-    <a href="index.html" class="font-extrabold tracking-wide">
-      BRUNO ZGELA COACHING
-    </a>
-
-    <a href="index.html" class="btn-secondary px-5 py-3 rounded-xl">
-      ← Back
-    </a>
-
+    <a href="index.html" class="font-extrabold tracking-wide">BRUNO ZGELA COACHING</a>
+    <a href="index.html" class="btn-secondary home-button rounded-xl" aria-label="Back to home page" title="Back to home page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
   </nav>
 
-  <div class="max-w-7xl mx-auto px-5 py-20">
-
+  <div class="max-w-7xl mx-auto px-5 pt-16 pb-24 sm:pt-24">
     <div class="max-w-2xl">
-
-      <span class="text-[#4db8b8] font-semibold">
-        PROGRAM
-      </span>
-
-      <h1 class="text-4xl sm:text-6xl font-extrabold mt-3">
-        12-Week Challenge
+      <span class="text-[#4db8b8] font-semibold tracking-wide">9-WEEK CHALLENGE · LEVEL 1</span>
+      <h1 class="challenge-title mt-4">
+        <span class="hero-line">A plan that adapts</span>
+        <span class="hero-line text-[#008080]">after every workout</span>
       </h1>
-
-      <p class="text-gray-300 mt-6 leading-relaxed">
-        A personalized calisthenics program built from your own starting numbers.
-        Test your max pull-ups, push-ups and dips, get your 12-week plan, and log
-        every session in your own account.
+      <p class="mt-6 text-gray-300 leading-8 text-lg">
+        Test yourself, train with a guided app, and log how it went. Your plan adjusts
+        to what you actually did, every single workout, like having a coach next to you.
       </p>
-
-      <a href="challenge-app.html" class="inline-block mt-8 btn-primary px-8 py-4 rounded-xl font-semibold">
-        Start Challenge
-      </a>
-
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="#join" class="btn-primary px-7 py-4 rounded-xl font-semibold">Join the challenge · 50€</a>
+        <a href="#how-it-adapts" class="btn-secondary px-7 py-4 rounded-xl font-semibold">See how it adapts</a>
+      </div>
+      <ul class="fact-chips mt-10">
+        <li><i data-feather="calendar"></i>9 weeks + retest</li>
+        <li><i data-feather="repeat"></i>4 workouts a week</li>
+        <li><i data-feather="user"></i>Bodyweight only</li>
+        <li><i data-feather="map-pin"></i>Home, park or gym</li>
+      </ul>
     </div>
-
   </div>
-
 </section>
 
-<!-- HOW IT WORKS -->
-<section class="max-w-7xl mx-auto px-5 py-20">
-
-  <h2 class="text-3xl sm:text-4xl font-extrabold text-center">
-    How it works
-  </h2>
-
-  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-
-    <div class="card p-7">
-      <span class="text-[#008080] font-extrabold text-2xl">1</span>
-      <h3 class="font-bold text-lg mt-3">Create your account</h3>
-      <p class="text-gray-500 mt-2 text-sm leading-relaxed">Your program and results are saved to your own login.</p>
+<!-- ============ THE DIFFERENCE ============ -->
+<section class="section-spacing bg-[#f5f5f5] py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Most plans are written once.<br class="hidden sm:block"> Yours keeps adjusting.</h2>
+      <p class="text-gray-500 mt-6 leading-relaxed">
+        Typical online challenges build your plan from one test and never look back.
+        Here, every workout you log decides what comes next.
+      </p>
     </div>
 
-    <div class="card p-7">
-      <span class="text-[#008080] font-extrabold text-2xl">2</span>
-      <h3 class="font-bold text-lg mt-3">Test your starting level</h3>
-      <p class="text-gray-500 mt-2 text-sm leading-relaxed">Enter your max pull-ups, push-ups and dips.</p>
+    <div class="compare-grid mt-12">
+      <div class="compare-card compare-old">
+        <h3>A typical online challenge</h3>
+        <ul>
+          <li><span class="compare-mark no">✕</span>One test at the start, then the plan is fixed</li>
+          <li><span class="compare-mark no">✕</span>Too hard? You keep failing the same sets</li>
+          <li><span class="compare-mark no">✕</span>Too easy? You waste weeks below your level</li>
+          <li><span class="compare-mark no">✕</span>A bad night's sleep counts as a failure</li>
+          <li><span class="compare-mark no">✕</span>You guess what to change on your own</li>
+        </ul>
+      </div>
+      <div class="compare-card compare-new">
+        <span class="compare-badge">This challenge</span>
+        <h3>A plan that coaches you</h3>
+        <ul>
+          <li><span class="compare-mark yes">✓</span>Built from 11 tests of your own strength and endurance</li>
+          <li><span class="compare-mark yes">✓</span>Adjusted after every workout, set by set</li>
+          <li><span class="compare-mark yes">✓</span>Steps up when you're ready, holds when you're not</li>
+          <li><span class="compare-mark yes">✓</span>Reads your energy and sleep, not just your reps</li>
+          <li><span class="compare-mark yes">✓</span>You just train and log. The app does the rest</li>
+        </ul>
+      </div>
     </div>
-
-    <div class="card p-7">
-      <span class="text-[#008080] font-extrabold text-2xl">3</span>
-      <h3 class="font-bold text-lg mt-3">Get your personal plan</h3>
-      <p class="text-gray-500 mt-2 text-sm leading-relaxed">12 weeks of training, three sessions a week, adapted to your numbers.</p>
-    </div>
-
-    <div class="card p-7">
-      <span class="text-[#008080] font-extrabold text-2xl">4</span>
-      <h3 class="font-bold text-lg mt-3">Log and track progress</h3>
-      <p class="text-gray-500 mt-2 text-sm leading-relaxed">Record each session, see your history, and repeat the test in week 12.</p>
-    </div>
-
   </div>
-
-  <p class="text-gray-500 text-sm text-center mt-12 max-w-2xl mx-auto leading-relaxed">
-    Please check with a doctor before starting if you have an injury or medical condition.
-    Stop training and seek advice if you feel pain.
-  </p>
-
 </section>
 
+<!-- ============ LIVE DEMO: HOW IT ADAPTS ============ -->
+<section id="how-it-adapts" class="section-spacing bg-white py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <span class="text-[#4db8b8] font-semibold text-sm tracking-wide">TRY IT</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold mt-2">See how your plan reacts</h2>
+      <p class="text-gray-500 mt-6 leading-relaxed">
+        Pick how a workout went. You only enter your reps and how you felt,
+        and the next workout adjusts on its own.
+      </p>
+    </div>
+
+    <div class="demo-tabs mt-10" role="tablist" aria-label="Example workouts">
+      <button type="button" role="tab" class="demo-tab" data-scenario="strong" aria-selected="true">Strong day</button>
+      <button type="button" role="tab" class="demo-tab" data-scenario="miss" aria-selected="false">Missed it, felt fine</button>
+      <button type="button" role="tab" class="demo-tab" data-scenario="tired" aria-selected="false">Missed it, slept badly</button>
+      <button type="button" role="tab" class="demo-tab" data-scenario="easy" aria-selected="false">Too easy</button>
+    </div>
+
+    <div class="demo-stage mt-8" aria-live="polite">
+      <!-- What the athlete logs -->
+      <div class="demo-panel">
+        <div class="demo-label">You log today · Pull-ups, 4 sets</div>
+        <div class="demo-sets">
+          <div class="demo-row"><span class="demo-row-name">Target</span><span class="demo-cells" data-row="target"></span></div>
+          <div class="demo-row"><span class="demo-row-name">You did</span><span class="demo-cells" data-row="did"></span></div>
+        </div>
+        <div class="demo-feel">
+          <div class="demo-feel-item"><span>Energy</span><span class="demo-dots" data-feel="energy"></span></div>
+          <div class="demo-feel-item"><span>Sleep</span><span class="demo-dots" data-feel="sleep"></span></div>
+          <div class="demo-feel-item demo-easy" data-easy><span class="demo-check">✓</span><span>This was too easy</span></div>
+        </div>
+      </div>
+
+      <div class="demo-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+      </div>
+
+      <!-- What the app does with it -->
+      <div class="demo-panel demo-result">
+        <div class="demo-label">Your next pull-up workout</div>
+        <div class="demo-sets">
+          <div class="demo-row"><span class="demo-row-name">New target</span><span class="demo-cells" data-row="next"></span></div>
+        </div>
+        <p class="demo-why" data-why></p>
+      </div>
+    </div>
+    <p class="text-center text-gray-500 text-sm mt-6">Every exercise in every workout is adjusted like this, automatically.</p>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section-spacing bg-[#f5f5f5] py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">How it works</h2>
+      <p class="text-gray-500 mt-6 leading-relaxed">From your first test to your retest, the app guides every step.</p>
+    </div>
+
+    <ol class="steps mt-12">
+      <li class="step">
+        <span class="step-number">1</span>
+        <h3>Test yourself</h3>
+        <p>Three guided testing days with 11 short tests: max reps of pull-ups, dips, push-ups and rows, plus beep tests for endurance. The app times everything.</p>
+      </li>
+      <li class="step">
+        <span class="step-number">2</span>
+        <h3>Get your plan</h3>
+        <p>Your 9-week plan is built from your own results, exercise by exercise, starting at a level you can handle and growing from there.</p>
+      </li>
+      <li class="step">
+        <span class="step-number">3</span>
+        <h3>Train, guided</h3>
+        <p>One clear screen per set: the exercise, your target, a demo video and a rest timer. EMOM rounds run themselves with a beep.</p>
+      </li>
+      <li class="step">
+        <span class="step-number">4</span>
+        <h3>Log in seconds</h3>
+        <p>Enter the reps you did, then rate your energy, sleep and effort. Your next workouts adjust immediately.</p>
+      </li>
+      <li class="step">
+        <span class="step-number">5</span>
+        <h3>Retest and level up</h3>
+        <p>After 9 weeks you take 2 to 3 days off, retest, see how far you've come, and start the next cycle from your new numbers.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ INSIDE THE APP ============ -->
+<section class="section-spacing bg-white py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <span class="text-[#4db8b8] font-semibold text-sm tracking-wide">INSIDE THE APP</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold mt-2">Built for training, not for scrolling</h2>
+      <p class="text-gray-500 mt-6 leading-relaxed">
+        No spreadsheets, no notes app. Open it on your phone at the bar and follow the screen.
+      </p>
+    </div>
+
+    <div class="phones mt-12">
+      <!-- 1. Set screen -->
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="app-top"><span>Day 2 · Exercise 1 of 5</span><span class="app-clock">12:40</span></div>
+          <div class="app-name">Pull-ups submax</div>
+          <div class="app-media"><video src="media/pull-up.mp4" poster="media/pull-up.jpg" muted loop playsinline preload="none" data-lazy-video></video></div>
+          <div class="app-set">Set 2 of 4</div>
+          <div class="app-target">7 reps</div>
+          <div class="app-button">Set done</div>
+        </div>
+        <figcaption><strong>Every set, one screen.</strong> The exercise, your target and a demo. Tap when you're done.</figcaption>
+      </figure>
+
+      <!-- 2. Rest screen -->
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="app-top"><span>Day 2 · Exercise 1 of 5</span><span class="app-clock">13:05</span></div>
+          <div class="app-rest-label">REST</div>
+          <div class="app-rest-time" data-rest-time>2:30</div>
+          <div class="app-rest-hint" data-rest-hint>Keep resting until the minimum</div>
+          <div class="app-rest-range">Rest 2–4 min</div>
+          <div class="app-reps">
+            <div class="app-reps-title">Reps you did</div>
+            <div class="app-stepper"><span>–</span><span class="app-stepper-value">7</span><span>+</span></div>
+          </div>
+          <div class="app-next">Next: Pull-ups submax · Set 3 of 4 · 6 reps</div>
+          <div class="app-rest-bar"><span class="app-rest-fill" data-rest-fill></span><span class="app-rest-min"></span><span class="app-rest-text" data-rest-text>Start</span></div>
+        </div>
+        <figcaption><strong>Rest that guides you.</strong> The bar fills red until your minimum rest, then turns green. The next set starts on its own.</figcaption>
+      </figure>
+
+      <!-- 3. EMOM screen -->
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="app-top"><span>Day 1 · Exercise 2 of 5</span><span class="app-clock">21:12</span></div>
+          <div class="app-name">Pull-ups EMOM</div>
+          <div class="app-emom">
+            <svg viewBox="0 0 120 120" class="app-ring"><circle cx="60" cy="60" r="52" class="app-ring-track"/><circle cx="60" cy="60" r="52" class="app-ring-fill" data-emom-ring/></svg>
+            <div class="app-emom-center"><div class="app-emom-seconds" data-emom-seconds>42</div><div class="app-emom-unit">seconds left</div></div>
+          </div>
+          <div class="app-set" data-emom-round>Round 4 of 10</div>
+          <div class="app-target">5 reps</div>
+          <div class="app-emom-note">A beep starts every new round</div>
+        </div>
+        <figcaption><strong>EMOMs on autopilot.</strong> Every round starts by itself with a beep. Just do your reps.</figcaption>
+      </figure>
+
+      <!-- 4. Check-in -->
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="app-top"><span>Workout complete</span><span class="app-clock">48:31</span></div>
+          <div class="app-name">How did it feel?</div>
+          <div class="app-check">
+            <div class="app-check-row"><span>Energy</span><span class="app-scale" data-scale="4"><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="app-check-row"><span>Sleep</span><span class="app-scale" data-scale="3"><i></i><i></i><i></i><i></i><i></i></span></div>
+            <div class="app-check-row"><span>Effort</span><span class="app-scale" data-scale="4"><i></i><i></i><i></i><i></i><i></i></span></div>
+          </div>
+          <div class="app-adapt" data-adapt>✓ Next workouts updated</div>
+          <div class="app-button">Finish workout</div>
+        </div>
+        <figcaption><strong>Ten seconds of feedback.</strong> Energy, sleep and effort tell the plan whether a miss was a bad day or your real level.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT'S INCLUDED ============ -->
+<section class="section-spacing bg-[#f5f5f5] py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Everything you get</h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+      <div class="card include-card"><i data-feather="sliders"></i><h3>Your personal 9-week plan</h3><p>Built from your own 11 test results, not from a template for everyone.</p></div>
+      <div class="card include-card"><i data-feather="trending-up"></i><h3>Adaptive progression</h3><p>Targets adjust after every workout, set by set, based on your reps, energy and sleep.</p></div>
+      <div class="card include-card"><i data-feather="smartphone"></i><h3>Guided workout app</h3><p>Set screens, rest timers, EMOM clocks and beeps. It runs in your phone's browser, nothing to install.</p></div>
+      <div class="card include-card"><i data-feather="clipboard"></i><h3>3 guided testing days</h3><p>Clear instructions and timers for every test, plus a full retest after week 9.</p></div>
+      <div class="card include-card"><i data-feather="activity"></i><h3>Strength, endurance, abs and legs</h3><p>Submax sets, EMOMs, supersets, pyramids and circuits, plus abs and leg work every week.</p></div>
+      <div class="card include-card"><i data-feather="bar-chart-2"></i><h3>Your progress in one place</h3><p>Every rep you log, your records and your workout calendar, saved to your account.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ IS IT FOR YOU ============ -->
+<section class="section-spacing bg-white py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Is it for you?</h2>
+      <p class="text-gray-500 mt-6 leading-relaxed">
+        Level 1 is for people who already have the basics and want to build real strength and endurance.
+      </p>
+    </div>
+
+    <div class="fit-grid mt-12">
+      <div class="card fit-card">
+        <h3>You can already do, without stopping</h3>
+        <div class="fit-numbers">
+          <div><strong>6</strong><span>pull-ups</span></div>
+          <div><strong>10</strong><span>dips</span></div>
+          <div><strong>12</strong><span>push-ups</span></div>
+        </div>
+        <p class="fit-note"><strong>Just below?</strong> You can still join. A resistance band makes the exercises easier until you reach the minimum, and the app tells you when you need one.</p>
+        <p class="fit-small">Above 15 pull-ups, 24 dips and 28 push-ups in a row, Level 1 will feel easy. Levels 2 and 3 are on the way.</p>
+      </div>
+      <div class="card fit-card">
+        <h3>What you need</h3>
+        <ul class="fit-list">
+          <li><i data-feather="check"></i>A pull-up bar</li>
+          <li><i data-feather="check"></i>Parallel bars or a dip station</li>
+          <li><i data-feather="check"></i>A low bar or rings for rows</li>
+          <li><i data-feather="check"></i>Your phone, for the app</li>
+        </ul>
+        <p class="fit-note">No weights, no machines. Every outdoor workout park has all of it, and so does any gym.</p>
+        <p class="fit-small">Optional: a resistance band, if you're just below the minimum.</p>
+      </div>
+      <div class="card fit-card">
+        <h3>Your week</h3>
+        <div class="week-strip" aria-label="Example week: training Monday, Tuesday, Thursday and Saturday">
+          <span class="on">M</span><span class="on">T</span><span>W</span><span class="on">T</span><span>F</span><span class="on">S</span><span>S</span>
+        </div>
+        <p class="fit-note">Four workouts a week with rest days in between, for 9 weeks. Then a few days off and a retest.</p>
+        <p class="fit-small">Missed a day? The plan simply continues where you left off.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICE ============ -->
+<section id="join" class="section-spacing bg-[#f5f5f5] py-20">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="price-card">
+      <div class="price-main">
+        <span class="text-[#4db8b8] font-semibold text-sm tracking-wide">LEVEL 1 CHALLENGE</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold mt-2">Start your 9 weeks</h2>
+        <div class="price-amount"><span>50€</span><small>one-time payment</small></div>
+        <a href="#join" class="btn-primary price-button" data-join>Join the challenge</a>
+        <p class="price-note">No subscription. You get the full plan, the app and the retest.</p>
+      </div>
+      <ul class="price-list">
+        <li><i data-feather="check"></i>Personal plan built from 11 tests</li>
+        <li><i data-feather="check"></i>Adjusted after every workout</li>
+        <li><i data-feather="check"></i>Guided app with timers and demos</li>
+        <li><i data-feather="check"></i>Testing days and a retest after week 9</li>
+        <li><i data-feather="check"></i>Bodyweight only, train anywhere</li>
+        <li><i data-feather="check"></i>Progress saved to your account</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section-spacing bg-white py-20">
+  <div class="max-w-3xl mx-auto px-5">
+    <div class="text-center">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Questions</h2>
+    </div>
+
+    <div class="faq-list card mt-12">
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-1" id="cfaq-q1"><span>How is this different from a normal training plan?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-1" role="region" aria-labelledby="cfaq-q1"><div><p class="text-gray-500 text-sm leading-relaxed">A normal plan is written once and stays the same, whether it suits you or not. This one reads every workout you log, your reps plus your energy and sleep, and adjusts your next targets set by set. It steps up when you're ready, holds when you had a bad day, and resets to your real level when you miss on a good day.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-2" id="cfaq-q2"><span>What if I can't hit a target?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-2" role="region" aria-labelledby="cfaq-q2"><div><p class="text-gray-500 text-sm leading-relaxed">Just enter what you did. If you slept badly or had low energy, the target stays the same. If you felt good and still missed, the plan takes that as your real level, sets the next target to match, and climbs back up from there. Two misses in a row bring a lighter week.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-3" id="cfaq-q3"><span>What if it's too easy?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-3" role="region" aria-labelledby="cfaq-q3"><div><p class="text-gray-500 text-sm leading-relaxed">Tick "This was too easy" and the plan skips ahead a step. You may also go past your first-set target when you feel strong, and that higher number becomes your new starting point.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-4" id="cfaq-q4"><span>Do I need any equipment?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-4" role="region" aria-labelledby="cfaq-q4"><div><p class="text-gray-500 text-sm leading-relaxed">No weights or machines. You need a pull-up bar, parallel bars or a dip station, and a low bar or rings for rows. Any outdoor workout park or gym has them, and you can also train at home with a pull-up bar and a dip station. A resistance band is optional, for anyone just below the minimum.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-5" id="cfaq-q5"><span>Am I strong enough to start?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-5" role="region" aria-labelledby="cfaq-q5"><div><p class="text-gray-500 text-sm leading-relaxed">If you can do about 6 pull-ups, 10 dips and 12 push-ups in a row, yes. If you're slightly below, a resistance band helps you reach the minimum, and the app suggests it during testing. If you can't do a pull-up yet, my personal coaching plans are a better place to start.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-6" id="cfaq-q6"><span>How does the testing work?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-6" role="region" aria-labelledby="cfaq-q6"><div><p class="text-gray-500 text-sm leading-relaxed">Three testing days, each with a few short tests: max reps of pull-ups, dips and push-ups (with and without breaks), bodyweight rows and neutral-grip pull-ups, plus three beep tests where every round adds one rep. The app explains each test, runs the timers and beeps, and builds your plan when you finish.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-7" id="cfaq-q7"><span>What if I miss a workout or go on holiday?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-7" role="region" aria-labelledby="cfaq-q7"><div><p class="text-gray-500 text-sm leading-relaxed">Nothing is lost. When you come back, the plan continues exactly where you left off.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-8" id="cfaq-q8"><span>Do I need to install an app?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-8" role="region" aria-labelledby="cfaq-q8"><div><p class="text-gray-500 text-sm leading-relaxed">No. The app runs in your phone's browser after you log in. You can add it to your home screen so it opens like any other app. Your plan and results are saved to your account.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-9" id="cfaq-q9"><span>What happens after the 9 weeks?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-9" role="region" aria-labelledby="cfaq-q9"><div><p class="text-gray-500 text-sm leading-relaxed">You take 2 to 3 days off and retest. You see exactly how much you improved, and your next cycle is built from your new numbers.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-10" id="cfaq-q10"><span>What kind of training is in the plan?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-10" role="region" aria-labelledby="cfaq-q10"><div><p class="text-gray-500 text-sm leading-relaxed">Pull-ups, dips, push-ups and rows in different formats: submax sets for strength, EMOMs and pyramids for endurance, supersets and a weekly circuit. Each workout also has abs or leg work. The goal is both a higher one-set max and more total reps with less drop-off between sets.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-11" id="cfaq-q11"><span>How is this different from personal coaching?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-11" role="region" aria-labelledby="cfaq-q11"><div><p class="text-gray-500 text-sm leading-relaxed">The challenge follows my coaching methods automatically, at a fraction of the price. Personal coaching adds a plan written by me for your goals, weekly feedback on your technique and direct contact on WhatsApp.</p></div></div>
+      </div>
+      <div class="faq-item">
+        <h3><button type="button" class="faq-question" aria-expanded="false" aria-controls="cfaq-12" id="cfaq-q12"><span>Is it safe if I have an injury?</span><i data-feather="chevron-down" class="faq-chevron w-5 h-5 text-[#008080]"></i></button></h3>
+        <div class="faq-answer" id="cfaq-12" role="region" aria-labelledby="cfaq-q12"><div><p class="text-gray-500 text-sm leading-relaxed">Please check with a doctor before starting if you have an injury or a medical condition, and stop training if you feel pain.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CALL ============ -->
+<section class="section-spacing bg-[#f5f5f5] py-20">
+  <div class="max-w-3xl mx-auto px-5 text-center">
+    <h2 class="text-3xl sm:text-4xl font-extrabold">Train. Log. Let the plan do the rest.</h2>
+    <p class="text-gray-500 mt-6 leading-relaxed">Nine weeks of training that adjusts to you, for 50€.</p>
+    <a href="#join" class="btn-primary inline-block mt-8 px-8 py-4 rounded-xl font-semibold">Join the challenge</a>
+  </div>
+</section>
+
+<footer class="bg-slate-900 text-white py-12">
+  <div class="max-w-7xl mx-auto px-5 flex justify-between items-center">
+    <div>
+      <h3 class="font-bold">BRUNO ZGELA COACHING</h3>
+      <p class="text-gray-400 mt-2">Helping people build strength through calisthenics.</p>
+    </div>
+    <div class="flex gap-5">
+      <a href="https://www.instagram.com/bruno.zgela/" aria-label="Instagram"><i data-feather="instagram"></i></a>
+      <a href="https://youtube.com/@bruno_zgela" aria-label="YouTube"><i data-feather="youtube"></i></a>
+      <a href="mailto:bzcoaching@gmail.com" aria-label="Email"><i data-feather="mail"></i></a>
+    </div>
+  </div>
+</footer>
+
+<script>feather.replace();</script>
+<script src="challenge-page.js?v=1"></script>
+<script src="site-motion.js?v=3"></script>
 </body>
 </html>

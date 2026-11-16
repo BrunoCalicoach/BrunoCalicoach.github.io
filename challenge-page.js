@@ -119,9 +119,10 @@
       const ready = elapsed >= MIN;
       restFill.style.width = `${Math.min(100, (elapsed / MAX) * 100)}%`;
       restFill.classList.toggle('ready', ready);
-      restTime.textContent = ready ? fmt(MAX - elapsed) : fmt(MIN - elapsed);
+      // The rest clock counts up from 0:00 and stops at the maximum
+      restTime.textContent = fmt(Math.min(elapsed, MAX));
       restHint.textContent = ready ? 'Start when you are ready' : 'Keep resting until the minimum';
-      restText.textContent = ready ? 'Start' : 'Start';
+      restText.textContent = 'Start';
     };
     if (reduceMotion) { elapsed = 150; draw(); }
     else {

@@ -472,6 +472,7 @@
   
   </style>
   <link rel="stylesheet" href="../theme-dark.css?v=9">
+  <link rel="stylesheet" href="../signup.css?v=1">
   <link rel="stylesheet" href="../intro.css?v=16">
   <!-- Intro: plays on the first home page visit of a session (see intro.js). Decided before the page shows. -->
   <script>
@@ -812,6 +813,53 @@
 
     </div>
 
+  </section>
+
+  <!-- NEWSLETTER / WAITLIST: sign-ups go to Brevo (see signup.js) -->
+  <section id="updates" class="signup-band">
+    <div class="max-w-6xl mx-auto px-5">
+      <div class="signup-grid">
+
+        <div class="signup-intro">
+          <span class="signup-label">Ostani u toku</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold mt-3">Broj mjesta za coaching je ograničen</h2>
+          <p class="signup-text">
+            Primam samo onoliko klijenata koliko mogu kvalitetno trenirati. Prijavi se na listu i prvi ćeš saznati kad se otvori mjesto za 1-na-1 coaching, kad krene challenge ili kad bude nešto novo.
+          </p>
+          <ul class="signup-points">
+            <li><i data-feather="bell"></i><span>Prvi saznaješ kad se otvori mjesto</span></li>
+            <li><i data-feather="check-circle"></i><span>Samo teme koje odabereš, bez spama</span></li>
+            <li><i data-feather="log-out"></i><span>Odjava jednim klikom</span></li>
+          </ul>
+        </div>
+
+        <form class="signup-form card" data-signup novalidate>
+          <div class="signup-fields">
+            <input type="text" name="FIRSTNAME" placeholder="Ime" aria-label="Ime" autocomplete="given-name" maxlength="200" required>
+            <input type="email" name="EMAIL" placeholder="E-mail adresa" aria-label="E-mail adresa" autocomplete="email" required>
+          </div>
+
+          <fieldset class="signup-topics">
+            <legend>O čemu želiš primati obavijesti?</legend>
+            <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="3"><span>Otvori se mjesto za 1-na-1 coaching</span></label>
+            <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="4"><span>Challenge krene</span></label>
+            <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="5"><span>Novosti</span></label>
+          </fieldset>
+
+          <!-- Hidden from visitors: catches spam bots -->
+          <input type="text" name="email_address_check" value="" class="signup-trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+          <button type="submit" class="btn-primary signup-button">Pridruži se listi</button>
+
+          <p class="signup-consent">
+            Prijavom pristaješ primati e-mailove o temama koje odabereš. Odjaviti se možeš u bilo kojem trenutku. Tvoje podatke čuva Brevo, servis koji koristim za e-mailove.
+          </p>
+
+          <p class="signup-status" data-signup-status role="status" aria-live="polite"></p>
+        </form>
+
+      </div>
+    </div>
   </section>
 
   <!-- FAQ -->
@@ -1278,6 +1326,7 @@
     });
   </script>
 
+<script src="../signup.js?v=1"></script>
 <script src="../site-motion.js?v=3"></script>
 <script src="../intro.js?v=14"></script>
 <script src="../lang.js?v=1"></script>

@@ -25,6 +25,7 @@ my %ATTR = (
   'Young Bruno training on outdoor street workout bars' => 'Mladi Bruno trenira na vanjskim street workout šipkama',
   'Close' => 'Zatvori',
   'Email address' => 'E-mail adresa',
+  'First name' => 'Ime',
   'Message' => 'Poruka',
   'Your name' => 'Tvoje ime',
   'Back to home page' => 'Natrag na početnu stranicu',

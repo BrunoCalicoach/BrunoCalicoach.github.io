@@ -201,9 +201,5 @@
     });
   }
 
-  // Payments aren't set up yet: the join buttons lead to the price for now.
-  document.querySelectorAll('[data-join]').forEach((button) => button.addEventListener('click', (event) => {
-    event.preventDefault();
-    button.textContent = 'Coming soon';
-  }));
+  // Until payments are set up, the join buttons lead to the "notify me at launch" sign-up (#notify).
 })();

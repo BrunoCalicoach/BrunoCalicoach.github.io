@@ -25,6 +25,7 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
 </style>
 <link rel="stylesheet" href="theme-dark.css?v=9">
 <link rel="stylesheet" href="challenge-page.css?v=1">
+<link rel="stylesheet" href="signup.css?v=2">
 </head>
 
 <body>
@@ -50,7 +51,7 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
         to what you actually did, every single workout, like having a coach next to you.
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
-        <a href="#join" class="btn-primary px-7 py-4 rounded-xl font-semibold">Join the challenge · 50€</a>
+        <a href="#notify" class="btn-primary px-7 py-4 rounded-xl font-semibold">Get notified at launch</a>
         <a href="#how-it-adapts" class="btn-secondary px-7 py-4 rounded-xl font-semibold">See how it adapts</a>
       </div>
       <ul class="fact-chips mt-10">
@@ -336,8 +337,8 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
         <span class="text-[#4db8b8] font-semibold text-sm tracking-wide">LEVEL 1 CHALLENGE</span>
         <h2 class="text-3xl sm:text-4xl font-extrabold mt-2">Start your 9 weeks</h2>
         <div class="price-amount"><span>50€</span><small>one-time payment</small></div>
-        <a href="#join" class="btn-primary price-button" data-join>Join the challenge</a>
-        <p class="price-note">No subscription. You get the full plan, the app and the retest.</p>
+        <a href="#notify" class="btn-primary price-button">Get notified at launch</a>
+        <p class="price-note">Launching soon. No subscription: you get the full plan, the app and the retest.</p>
       </div>
       <ul class="price-list">
         <li><i data-feather="check"></i>Personal plan built from 11 tests</li>
@@ -347,6 +348,46 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
         <li><i data-feather="check"></i>Bodyweight only, train anywhere</li>
         <li><i data-feather="check"></i>Progress saved to your account</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ NOTIFY AT LAUNCH: same Brevo sign-up as the home page (signup.js) ============ -->
+<section id="notify" class="signup-band">
+  <div class="max-w-6xl mx-auto px-5">
+    <div class="signup-grid">
+      <div class="signup-intro">
+        <span class="signup-label">Launching soon</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold mt-3">Be the first to know</h2>
+        <p class="signup-text">
+          The challenge opens soon. Leave your email and you'll get a message the moment you can join, before anyone else.
+        </p>
+        <ul class="signup-points">
+          <li><i data-feather="bell"></i><span>One email when it launches</span></li>
+          <li><i data-feather="check-circle"></i><span>Only the topics you choose, no spam</span></li>
+          <li><i data-feather="log-out"></i><span>Unsubscribe with one click</span></li>
+        </ul>
+      </div>
+
+      <form class="signup-form card" data-signup data-signup-topic="challenge" novalidate>
+        <div class="signup-fields">
+          <input type="text" name="FIRSTNAME" placeholder="First name" aria-label="First name" autocomplete="given-name" maxlength="200" required>
+          <input type="email" name="EMAIL" placeholder="Email address" aria-label="Email address" autocomplete="email" required>
+        </div>
+        <fieldset class="signup-topics">
+          <legend>What would you like to hear about?</legend>
+          <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="4"><span>The challenge launches</span></label>
+          <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="3"><span>A 1-on-1 coaching spot opens</span></label>
+          <label class="signup-topic"><input type="checkbox" name="lists_26[]" value="5"><span>News and updates</span></label>
+        </fieldset>
+        <!-- Hidden from visitors: catches spam bots -->
+        <input type="text" name="email_address_check" value="" class="signup-trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button type="submit" class="btn-primary signup-button">Notify me at launch</button>
+        <p class="signup-consent">
+          By joining, you agree to receive emails about the topics you picked. You can unsubscribe at any time. Your details are stored by Brevo, my email service.
+        </p>
+        <p class="signup-status" data-signup-status role="status" aria-live="polite"></p>
+      </form>
     </div>
   </div>
 </section>
@@ -416,7 +457,7 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
   <div class="max-w-3xl mx-auto px-5 text-center">
     <h2 class="text-3xl sm:text-4xl font-extrabold">Train. Log. Let the plan do the rest.</h2>
     <p class="text-gray-500 mt-6 leading-relaxed">Nine weeks of training that adjusts to you, for 50€.</p>
-    <a href="#join" class="btn-primary inline-block mt-8 px-8 py-4 rounded-xl font-semibold">Join the challenge</a>
+    <a href="#notify" class="btn-primary inline-block mt-8 px-8 py-4 rounded-xl font-semibold">Get notified at launch</a>
   </div>
 </section>
 
@@ -435,7 +476,8 @@ body { font-family: Inter, sans-serif; background: #0b0b0b; color: #f2f2f2; }
 </footer>
 
 <script>feather.replace();</script>
-<script src="challenge-page.js?v=2"></script>
+<script src="challenge-page.js?v=3"></script>
+<script src="signup.js?v=2"></script>
 <script src="site-motion.js?v=3"></script>
 </body>
 </html>

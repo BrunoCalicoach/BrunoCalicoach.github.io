@@ -39,9 +39,15 @@
     const name = form.querySelector('[name="FIRSTNAME"]');
     const email = form.querySelector('[name="EMAIL"]');
 
-    if (wanted && TOPICS[wanted]) {
-      boxes.forEach((box) => { if (box.value === TOPICS[wanted]) box.checked = true; });
-    }
+    // Pre-tick from the page address (?topic=...) or from the form itself (data-signup-topic="...")
+    [wanted, form.dataset.signupTopic].forEach((topic) => {
+      if (topic && TOPICS[topic]) boxes.forEach((box) => { if (box.value === TOPICS[topic]) box.checked = true; });
+    });
+    // Other scripts (e.g. the "coaching is full" switch) can tick a topic too
+    form.addEventListener('signup:topic', (event) => {
+      boxes.forEach((box) => { if (box.value === TOPICS[event.detail]) box.checked = true; });
+      topics.classList.remove('invalid');
+    });
 
     const show = (message) => {
       status.textContent = message;

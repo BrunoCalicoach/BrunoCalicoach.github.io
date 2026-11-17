@@ -3,7 +3,7 @@
 // true  = coaching is full: every Apply button becomes "Join the waitlist" (the newsletter sign-up
 //         with "A 1-on-1 coaching spot opens" ticked), a short notice appears at the top of the page,
 //         and the application form is replaced by the waitlist link.
-const COACHING_FULL = false;
+const COACHING_FULL = true;
 // ======================================================
 
 (function () {

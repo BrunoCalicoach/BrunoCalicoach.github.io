@@ -1,25 +1,38 @@
-# Free Supabase projects pause after 7 days without activity, which stops logins on the site.
-# This asks the database one small question every 3 days so that never happens.
+# Free Supabase projects pause after a week of low activity, which stops logins on the site.
+# A "permission denied" ping (our first version, every 3 days) did not count: the project paused anyway.
+# So every day this now makes a few requests that really succeed: it reads the tiny public table
+# keep_alive (created with supabase/keep-alive.sql) and checks the login service.
 # If the project does not answer (paused or down), the run fails and GitHub emails the repository owner.
 # Not needed once the project is on Supabase Pro, which never pauses.
 name: Keep Supabase awake
 
 on:
   schedule:
-    - cron: '17 6 */3 * *'
+    - cron: '17 6 * * *'
+    - cron: '43 18 * * *'
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ask the database a question
+      - name: Read from the database and check the login service
         env:
           # The public key already used by the website, not a secret
           SUPABASE_URL: https://nhohgqpvxuibtrtnqewn.supabase.co
           SUPABASE_KEY: sb_publishable_eDXtsUYHrXDELNfE_0LrTA_KPesC0dp
         run: |
-          # Without a login the database refuses to show data (code 42501), which still counts as activity
-          body=$(curl -s -m 60 "$SUPABASE_URL/rest/v1/session_logs?select=id&limit=1" -H "apikey: $SUPABASE_KEY")
-          echo "Database answered: $body"
-          echo "$body" | grep -q -E '42501|^\[' || { echo "No answer from the database. The project may be paused: restore it in the Supabase dashboard."; exit 1; }
+          ok=0
+          for attempt in 1 2 3; do
+            body=$(curl -s -m 60 "$SUPABASE_URL/rest/v1/keep_alive?select=id,note" -H "apikey: $SUPABASE_KEY")
+            echo "Database answered: $body"
+            if echo "$body" | grep -q '"id":1'; then ok=1; break; fi
+            sleep 20
+          done
+          if [ "$ok" != 1 ]; then
+            echo "The database did not return the keep_alive row. Either the project is paused (restore it in the Supabase dashboard) or the table is missing (run supabase/keep-alive.sql in the SQL Editor)."
+            exit 1
+          fi
+          # Two more small successful requests, so the day has real traffic
+          curl -s -m 60 "$SUPABASE_URL/rest/v1/keep_alive?select=note&id=eq.1" -H "apikey: $SUPABASE_KEY" > /dev/null
+          echo "Login service: $(curl -s -m 60 "$SUPABASE_URL/auth/v1/health" -H "apikey: $SUPABASE_KEY")"

@@ -819,6 +819,7 @@ function authView(container, { title = 'Log in', intro = '' } = {}) {
     else if (mode !== 'newpass') links.append(el('a', { href: '#', onclick: (e) => { e.preventDefault(); show('login'); } }, '← Back to log in'));
 
     const f = el('form', { class: 'card stack' }, ...fields, button, msg, links);
+    if (mode === 'signup') f.append(el('p', { class: 'tiny muted' }, 'By creating an account you accept the ', el('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'privacy policy'), '.'));
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       button.disabled = true; msg.className = 'msg'; msg.textContent = 'Please wait…';
@@ -867,8 +868,20 @@ function watchAuth(onUser, onLoggedOut) {
   });
 }
 
+// Logging out also removes the offline copy of this person's data from the device (shared phones, gym computers).
+// Entries still waiting to be sent are kept unless the person confirms, so nothing is lost by accident.
 async function signOut() {
   if (DEMO) { location.href = location.pathname.replace(/[^/]*$/, '') + 'index.html'; return; }
+  const waiting = Data.outbox().length;
+  if (waiting && !confirm(`${waiting} entr${waiting === 1 ? 'y has' : 'ies have'} not been sent yet because you are offline. Log out anyway and delete ${waiting === 1 ? 'it' : 'them'} from this device?`)) return;
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('coaching-cache:') || k.startsWith('coaching-outbox:'))) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* storage unavailable: nothing to clear */ }
   await supa.auth.signOut();
 }
 

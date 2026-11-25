@@ -1,0 +1,15 @@
+{
+  "name": "Bruno Zgela Coaching",
+  "short_name": "BZ Coaching",
+  "description": "Your training plan, progress and nutrition.",
+  "start_url": "coaching.html",
+  "scope": "coaching",
+  "display": "standalone",
+  "background_color": "#0b0b0b",
+  "theme_color": "#0b0b0b",
+  "icons": [
+    { "src": "media/coaching-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "media/coaching-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "media/coaching-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -187,6 +187,14 @@ create table public.coaching_meal_plans (
   updated_at timestamptz not null default now()
 );
 
+-- PRO athlete's own swaps in the meal plan: { dayId: { mealIndex: { basedOn, from, items } } }.
+-- Each swap is checked in the app to stay within that meal's share of the daily targets.
+create table public.coaching_meal_choices (
+  client_id uuid primary key references public.coaching_clients (user_id) on delete cascade,
+  choices jsonb not null default '{}' check (jsonb_typeof(choices) = 'object' and pg_column_size(choices) < 200000),
+  updated_at timestamptz not null default now()
+);
+
 -- Guideline texts (RPE scale, training, nutrition, supplements, lifestyle). pro_only hides one from REGULAR.
 create table public.coaching_guides (
   key text primary key check (char_length(key) <= 40),
@@ -210,14 +218,15 @@ alter table public.coaching_measurements enable row level security;
 alter table public.coaching_targets enable row level security;
 alter table public.coaching_meal_plans enable row level security;
 alter table public.coaching_foods enable row level security;
+alter table public.coaching_meal_choices enable row level security;
 alter table public.coaching_guides enable row level security;
 
 revoke all on public.coaching_clients, public.coaching_profiles, public.coaching_drafts, public.coaching_weeks,
   public.coaching_logs, public.coaching_feedback, public.coaching_checkins, public.coaching_daily,
-  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods from anon;
+  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods, public.coaching_meal_choices from anon;
 grant select, insert, update, delete on public.coaching_clients, public.coaching_profiles, public.coaching_drafts,
   public.coaching_weeks, public.coaching_logs, public.coaching_feedback, public.coaching_checkins, public.coaching_daily,
-  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods to authenticated;
+  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods, public.coaching_meal_choices to authenticated;
 grant execute on function public.publish_week(uuid, date), public.unpublish_week(uuid, date),
   public.coach_add_client(text, text, text), public.is_coach(), public.is_client(), public.is_pro(uuid) to authenticated;
 revoke execute on function public.publish_week(uuid, date), public.unpublish_week(uuid, date),
@@ -237,6 +246,7 @@ create policy "Coach manages targets" on public.coaching_targets for all to auth
 create policy "Coach manages meal plans" on public.coaching_meal_plans for all to authenticated using (public.is_coach()) with check (public.is_coach());
 create policy "Coach manages guides" on public.coaching_guides for all to authenticated using (public.is_coach()) with check (public.is_coach());
 create policy "Coach manages foods" on public.coaching_foods for all to authenticated using (public.is_coach()) with check (public.is_coach());
+create policy "Coach reads meal choices" on public.coaching_meal_choices for select to authenticated using (public.is_coach());
 
 -- Athletes: their own rows only
 create policy "Athlete reads own client row" on public.coaching_clients for select to authenticated
@@ -259,6 +269,8 @@ create policy "Athlete reads own targets" on public.coaching_targets for select 
   using ((select auth.uid()) = client_id);
 create policy "PRO athlete reads own meal plans" on public.coaching_meal_plans for select to authenticated
   using ((select auth.uid()) = client_id and public.is_pro(client_id));
+create policy "PRO athlete manages own meal choices" on public.coaching_meal_choices for all to authenticated
+  using ((select auth.uid()) = client_id) with check ((select auth.uid()) = client_id and public.is_pro(client_id));
 create policy "Athletes read guides" on public.coaching_guides for select to authenticated
   using (public.is_client() and (not pro_only or public.is_pro((select auth.uid()))));
 

@@ -110,7 +110,7 @@ const KEYS = {
   coaching_weeks: ['client_id', 'week_start'], coaching_logs: ['client_id', 'week_start', 'day_index'],
   coaching_feedback: ['client_id', 'week_start', 'day_index'], coaching_checkins: ['client_id', 'week_start'],
   coaching_daily: ['client_id', 'day'], coaching_measurements: ['client_id', 'day'], coaching_targets: ['client_id'],
-  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id']
+  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id']
 };
 
 class OfflineError extends Error {}
@@ -168,7 +168,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v2';
+const DEMO_KEY = 'coaching-demo-db-v4';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -424,6 +424,103 @@ function mealTotals(items) {
   return t;
 }
 const dayItems = (day) => day.meals.flatMap((m) => m.items);
+
+/* Stage 2: every meal has its own share of the day's targets, so any breakfast can replace any other breakfast */
+
+const DEFAULT_SPLIT = [30, 35, 35];
+function mealSplit(plan) {
+  const s = plan?.split;
+  return Array.isArray(s) && s.length === 3 && s.every((x) => num(x) > 0) && Math.abs(s.reduce((a, b) => a + num(b), 0) - 100) < 0.5 ? s.map(num) : DEFAULT_SPLIT;
+}
+
+// dayTarget: { kcal, protein, carbs, fat } -> the share for one meal
+function mealTargetFor(dayTarget, share) {
+  if (!dayTarget?.kcal) return null;
+  const x = share / 100;
+  return { kcal: dayTarget.kcal * x, p: (num(dayTarget.protein) || 0) * x, c: (num(dayTarget.carbs) || 0) * x, f: (num(dayTarget.fat) || 0) * x };
+}
+
+// A meal fits when calories are within 5% (at least 25 kcal) and each macro within a few grams
+const FIT_RULES = [['kcal', 'kcal', '', 25, 0.05], ['p', 'protein', ' g', 5, 0.10], ['c', 'carbs', ' g', 10, 0.15], ['f', 'fat', ' g', 5, 0.15]];
+function mealFit(totals, target) {
+  if (!target) return null;
+  const issues = [];
+  for (const [k, label, unit, abs, rel] of FIT_RULES) {
+    if (!target[k]) continue;
+    const d = totals[k] - target[k];
+    if (Math.abs(d) > Math.max(abs, target[k] * rel)) issues.push(`${label} ${d > 0 ? '+' : '−'}${Math.round(Math.abs(d))}${unit}`);
+  }
+  return { ok: !issues.length, issues };
+}
+
+// When the original meal itself is off target, swaps are judged against the original meal instead
+function swapReference(items, target) {
+  const t = mealTotals(items);
+  return target && mealFit(t, target).ok ? target : { kcal: t.kcal, p: t.p, c: t.c, f: t.f };
+}
+
+const mealSignature = (meal) => (meal?.items || []).map((i) => `${i.food}:${i.g}`).join('|');
+
+// Other days' meals in the same slot that fit this slot's target
+function mealSwapOptions(days, dayIndex, mealIndex, target) {
+  const current = days[dayIndex].meals[mealIndex];
+  const ref = swapReference(current.items, target);
+  return days.map((d, i) => ({ day: d, dayIndex: i, meal: d.meals[mealIndex] }))
+    .filter((o) => o.dayIndex !== dayIndex && o.meal?.items.length && mealSignature(o.meal) !== mealSignature(current))
+    .map((o) => ({ ...o, totals: mealTotals(o.meal.items) }))
+    .filter((o) => mealFit(o.totals, ref).ok);
+}
+
+// Equivalent foods from the same group, in the amount that keeps the main nutrient the same
+const SWAP_BASIS = { protein: 'p', dairy: 'p', legumes: 'c', carbs: 'c', fruit: 'c', fats: 'f', veg: 'kcal', other: 'kcal' };
+const NO_SWAP = /sugar|honey|maple|flour|semolina|lemon juice|garlic|butter|passata|sauerkraut|egg yolk/i;
+function foodSwapOptions(items, itemIndex, target) {
+  const it = items[itemIndex];
+  const lib = FOOD_LIBRARY.find((f) => f.id === it.food);
+  if (!lib || NO_SWAP.test(lib.name)) return [];
+  const basis = SWAP_BASIS[lib.cat] || 'kcal';
+  const amount = ((it.per100[basis] || 0) * (num(it.g) || 0)) / 100;
+  if (!amount) return [];
+  const old = mealTotals(items);
+  const ref = swapReference(items, target);
+  return FOOD_LIBRARY.filter((f) => f.cat === lib.cat && f.id !== lib.id && !NO_SWAP.test(f.name) && f[basis] > 0)
+    .map((f) => {
+      const g = Math.round((amount / f[basis]) * 100 / 5) * 5;
+      if (g < 5 || g > 700) return null;
+      const next = items.map((x, i) => (i === itemIndex ? { ...newMealItem(f, g), id: x.id } : x));
+      const t = mealTotals(next);
+      if (!mealFit(t, ref).ok) return null;
+      const score = Math.abs(t.kcal - old.kcal) / 50 + Math.abs(t.p - old.p) / 5 + Math.abs(t.c - old.c) / 10 + Math.abs(t.f - old.f) / 5;
+      return { food: f, g, items: next, totals: t, score };
+    })
+    .filter(Boolean).sort((a, b) => a.score - b.score).slice(0, 10);
+}
+
+// Adjusts the grams of the foods already in the meal so calories, protein, carbs and fat all come as close as
+// possible to the target (least squares, amounts kept between 5 g and 3x the start, then rounded to 5 g).
+// Returns whether the result fits. Foods are never added or removed: that stays Bruno's choice.
+function fitMealToTarget(meal, target) {
+  const items = meal.items.filter((it) => num(it.g) > 0);
+  if (!target?.kcal || !items.length) return false;
+  const keys = [['kcal', 25], ['p', 5], ['c', 10], ['f', 5]].filter(([k]) => target[k]);
+  const a = items.map((it) => keys.map(([k]) => (it.per100[k] || 0) / 100));
+  const start = items.map((it) => num(it.g));
+  let g = start.map((x) => x * (target.kcal / Math.max(1, mealTotals(items).kcal)));
+  const lo = start.map(() => 5), hi = start.map((x) => Math.max(30, x * 3));
+  const cost = (gs) => keys.reduce((s, [k, sc], j) => s + ((gs.reduce((acc, x, i) => acc + a[i][j] * x, 0) - target[k]) / sc) ** 2, 0)
+    + gs.reduce((s, x, i) => s + 0.02 * ((x - start[i]) / start[i]) ** 2, 0);
+  for (let iter = 0; iter < 4000; iter++) {
+    const grad = g.map((_, i) => keys.reduce((s, [k, sc], j) => s + 2 * a[i][j] * ((g.reduce((acc, x, n) => acc + a[n][j] * x, 0) - target[k]) / sc ** 2), 0)
+      + 0.04 * (g[i] - start[i]) / start[i] ** 2);
+    const norm = Math.sqrt(grad.reduce((s, x) => s + x * x, 0));
+    if (norm < 1e-6) break;
+    const step = Math.max(0.2, 30 / (1 + iter / 50));
+    const next = g.map((x, i) => Math.min(hi[i], Math.max(lo[i], x - (step * grad[i]) / norm)));
+    if (cost(next) < cost(g)) g = next;
+  }
+  items.forEach((it, i) => { it.g = Math.max(5, Math.round(g[i] / 5) * 5); });
+  return mealFit(mealTotals(meal.items), target).ok;
+}
 
 // Plans saved before the food library (free-text rows) are shown as they were
 function isLegacyMealPlan(plans) { return Array.isArray(plans) && plans.some((p) => p && Array.isArray(p.rows)); }
@@ -757,6 +854,8 @@ function demoSeed() {
     const day = emptyMealDay(1);
     day.title = title;
     [b, l, d].forEach((list, i) => { day.meals[i].items = items(list); });
+    // Demo plan fitted to the demo athlete's estimated targets so every meal is swappable
+    day.meals.forEach((m, i) => fitMealToTarget(m, mealTargetFor({ kcal: 2230, protein: 162, carbs: 256, fat: 62 }, DEFAULT_SPLIT[i])));
     return day;
   };
   return {
@@ -783,13 +882,13 @@ function demoSeed() {
         { client_id: A, day: addDays(twoAgo, 6), chest: 104, waist_narrow: 84, waist_navel: 88, hips: 99, biceps: 38, thigh: 59 },
         { client_id: A, day: addDays(lastWeek, 6), chest: 104, waist_narrow: 83, waist_navel: 87, hips: 98.5, biceps: 38, thigh: 58.5 }],
       coaching_targets: [],
-      coaching_meal_plans: [{ client_id: A, note: 'Weigh foods raw or dry. Swap whole days as you like: every day has about the same calories and macros.', plans: [
+      coaching_meal_plans: [{ client_id: A, note: 'Weigh foods raw or dry. Every breakfast, lunch and dinner has about the same calories and macros, so you can swap them between days.', plans: [
         meal('Day 1', [['Oats (rolled), dry', 80], ['Greek yogurt, 0% fat', 200], ['Blueberries', 150], ['Walnuts', 15]],
-          [['Chicken breast, raw', 200], ['Rice, white, dry', 90], ['Broccoli', 200], ['Olive oil', 10]],
+          [['Chicken breast, raw', 200], ['Rice, white (long grain), dry', 90], ['Broccoli', 200], ['Olive oil', 10]],
           [['Salmon (farmed), raw', 150], ['Potatoes, raw', 350], ['Lettuce (romaine)', 100], ['Tomato', 150]]),
         meal('Day 2', [['Egg, whole, raw', 150], ['Egg white, raw', 100], ['Bread, whole wheat', 80], ['Tomato', 100]],
           [['Turkey breast, raw', 200], ['Pasta, dry', 100], ['Pepper, red', 150], ['Olive oil', 10]],
-          [['Beef, lean (top round), raw', 180], ['Bulgur, dry', 70], ['Zucchini', 200], ['Banana', 120]]),
+          [['Beef, lean (top round), raw', 180], ['Bulgur, dry', 70], ['Zucchini', 200], ['Banana', 120], ['Olive oil', 10]]),
         meal('Day 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
           [['Tuna, canned in water, drained', 150], ['Tortilla (wheat)', 120], ['Cucumber', 150], ['Avocado', 60]],
           [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]])] }],

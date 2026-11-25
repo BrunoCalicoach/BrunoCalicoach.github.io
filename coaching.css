@@ -253,6 +253,9 @@ table.meal-table td { vertical-align: middle; }
 .meal-items { margin-top: 8px; }
 .meal-items li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .meal-items li:last-child { border-bottom: 0; }
+.food-swap-link { background: none; border: 0; padding: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.food-swap-link .swap-icon { color: var(--accent-soft); font-size: 13px; }
+.food-swap-link:hover { color: var(--accent-soft); }
 .meal-items .g { color: var(--text-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- First-launch tour ---------- */

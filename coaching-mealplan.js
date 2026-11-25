@@ -99,14 +99,45 @@ function mealPlanEditor(meals, target, onChange) {
         el('p', { class: 'tiny muted', style: 'margin-top:6px' }, '"≥" means one or more foods have no value for that nutrient in the source data.')));
     };
 
-    const mealCards = day.meals.map((meal) => mealCard(meal, () => { updateDay(); onChange(); }, target));
+    const split = mealSplit(meals);
+    const mealCards = day.meals.map((meal, i) => mealCard(meal, () => { updateDay(); onChange(); }, target, i, split[i]));
     updateDay();
+
+    // How the day's targets are shared between the 3 meals (same for every day, so meals in a slot can be swapped)
+    const splitInputs = split.map((v) => el('input', { class: 'set-in', style: 'width:64px;padding:7px 4px', inputMode: 'numeric', value: String(v) }));
+    const splitMsg = el('span', { class: 'small muted' });
+    splitInputs.forEach((inp) => inp.addEventListener('change', () => {
+      const vals = splitInputs.map((x) => num(x.value) || 0);
+      const sum = vals.reduce((a, b) => a + b, 0);
+      if (Math.abs(sum - 100) > 0.5) { splitMsg.className = 'small msg err'; splitMsg.textContent = `Adds up to ${sum}%, needs to be 100%.`; return; }
+      meals.split = vals; onChange(); draw();
+    }));
+    const splitRow = el('div', { class: 'row small' }, el('b', {}, 'Meal split:'),
+      ...day.meals.map((m, i) => el('label', { class: 'row nowrap', style: 'gap:4px' }, m.name || `Meal ${i + 1}`, splitInputs[i], '%')),
+      splitMsg);
+
     node.replaceChildren(tabs,
-      el('div', { class: 'card stack' }, el('div', { class: 'row between' }, title, el('span', { class: 'small muted' }, 'Day total')), summary, micros),
+      el('div', { class: 'card stack' }, el('div', { class: 'row between' }, title, el('span', { class: 'small muted' }, 'Day total')), summary, micros,
+        splitRow,
+        el('p', { class: 'tiny muted' }, 'Every meal gets this share of the daily targets. A meal that fits its target can be swapped by the athlete for the same meal on any other day.')),
       ...mealCards);
   }
 
-  function mealCard(meal, changed, dayTarget) {
+  function mealCard(meal, changed, dayTarget, index, share) {
+    const target = mealTargetFor(dayTarget, share);
+    const fitLine = el('div', { class: 'row small' });
+    const updateFit = () => {
+      if (!target) { fitLine.replaceChildren(); return; }
+      const fit = mealFit(mealTotals(meal.items), target);
+      fitLine.replaceChildren(...[
+        el('span', { class: 'muted' }, `Target (${share}%): ${fmt(target.kcal, 0)} kcal · P ${fmt(target.p, 0)} g · C ${fmt(target.c, 0)} g · F ${fmt(target.f, 0)} g`),
+        meal.items.length ? el('span', { class: 'pill ' + (fit.ok ? 'good' : 'warn') }, fit.ok ? '✓ Fits, swappable' : 'Off: ' + fit.issues.join(', ')) : null,
+        meal.items.length && !fit.ok ? el('button', { class: 'btn small', type: 'button', title: 'Adjusts the grams of these foods to hit calories, protein, carbs and fat', onclick: () => {
+          const ok = fitMealToTarget(meal, target);
+          drawRows(); updateFoot(); changed();
+          if (!ok) fitLine.append(el('span', { class: 'small accent' }, 'Closer, but these foods cannot hit every macro. Swap or add a food (e.g. more protein or a fat source).'));
+        } }, 'Fit to target') : null].filter(Boolean));
+    };
     const name = el('input', { class: 'field', style: 'max-width:200px;font-weight:700;padding:8px 12px', value: meal.name });
     name.addEventListener('input', () => { meal.name = name.value; changed(); });
     const foot = el('div', { class: 'small', style: 'font-weight:700' });
@@ -115,6 +146,7 @@ function mealPlanEditor(meals, target, onChange) {
       const t = mealTotals(meal.items);
       const share = dayTarget?.kcal ? ` · ${fmt((t.kcal / dayTarget.kcal) * 100, 0)}% of the day's target` : '';
       foot.textContent = `${meal.name || 'Meal'}: ${macroLine(t)}${share}`;
+      updateFit();
     };
     const drawRows = () => {
       body.replaceChildren(...meal.items.map((it, i) => {
@@ -146,11 +178,31 @@ function mealPlanEditor(meals, target, onChange) {
     return el('div', { class: 'card stack' }, name,
       el('div', { class: 'table-wrap' }, el('table', { class: 'data meal-table' },
         el('thead', {}, el('tr', {}, el('th', {}, 'Food (raw / dry weight)'), el('th', {}, 'Amount'), el('th', {}, 'Values'), el('th', {}))), body)),
-      picker, foot, note);
+      picker, foot, fitLine, note);
   }
 
   draw();
   return node;
+}
+
+// What the athlete changed in the published plan (only swaps still based on the current meal count)
+function athleteSwaps() {
+  const plans = C.d.meals?.plans;
+  const choices = C.d.choices || {};
+  const lines = [];
+  if (Array.isArray(plans) && !isLegacyMealPlan(plans)) {
+    for (const day of plans) {
+      day.meals.forEach((meal, mi) => {
+        const ch = choices[day.id]?.[mi];
+        if (!ch || ch.basedOn !== mealSignature(meal)) return;
+        const what = [ch.from ? `uses ${ch.from}` : null, ...(ch.swaps || [])].filter(Boolean).join('; ');
+        lines.push(el('li', {}, el('b', {}, `${day.title} · ${meal.name}: `), what));
+      });
+    }
+  }
+  return el('div', { class: 'card stack' }, el('h2', {}, 'Athlete\'s swaps'),
+    lines.length ? el('ul', { class: 'small soft', style: 'margin:0;padding-left:18px' }, ...lines)
+      : el('p', { class: 'small muted' }, 'No swaps yet. When the athlete swaps a meal or a food, it shows here. Changing a meal yourself resets the athlete\'s swap for that meal.'));
 }
 
 // Bruno's own food from a label: values per 100 g, with a check that calories fit the macros

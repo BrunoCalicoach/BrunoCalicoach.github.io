@@ -69,7 +69,7 @@ async function startFor(clientId, { preview = false, coachView = false }) {
   try {
     await Data.flush();
     const id = { client_id: clientId };
-    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides] = await Promise.all([
+    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides, choices] = await Promise.all([
       Data.select('coaching_clients', { user_id: clientId }),
       Data.select('coaching_profiles', { user_id: clientId }),
       Data.select(preview ? 'coaching_drafts' : 'coaching_weeks', id, ['week_start']),
@@ -80,10 +80,11 @@ async function startFor(clientId, { preview = false, coachView = false }) {
       Data.select('coaching_checkins', id, ['week_start']),
       Data.select('coaching_targets', id),
       Data.select('coaching_meal_plans', id).catch(() => []),
-      loadGuides()
+      loadGuides(),
+      Data.select('coaching_meal_choices', id).catch(() => [])
     ]);
     Object.assign(S, { client: client[0], profile: profile[0] || { user_id: clientId }, weeks, logs, feedback, daily, measurements, checkins,
-      targets: targets[0] || null, meals: meals[0] || null, guides });
+      targets: targets[0] || null, meals: meals[0] || null, guides, choices: choices[0]?.choices || {} });
   } catch (error) { return fatal(error); }
   if (!S.client) return fatal(new Error('No coaching account found.'));
   if (S.readOnly) {
@@ -785,7 +786,7 @@ function renderNutrition() {
   if (isPro()) {
     const plans = S.meals?.plans || [];
     const hasFood = isLegacyMealPlan(plans) || plans.some((d) => d.meals?.some((m) => m.items.length));
-    mealsSection = hasFood ? mealPlansCard(plans, S.meals.note) : el('div', { class: 'card' }, el('h2', {}, 'Meal plan'), el('p', { class: 'soft', style: 'margin-top:8px' }, 'Bruno is preparing your meal plan. It appears here when ready.'));
+    mealsSection = hasFood ? mealPlansCard(plans, S.meals.note, { kcal, protein: macros.protein, carbs: macros.carbs, fat: macros.fat }) : el('div', { class: 'card' }, el('h2', {}, 'Meal plan'), el('p', { class: 'soft', style: 'margin-top:8px' }, 'Bruno is preparing your meal plan. It appears here when ready.'));
   } else {
     mealsSection = el('div', { class: 'card lock' }, icon('lock'), el('h2', { style: 'margin-top:8px' }, 'Personal meal plans'),
       el('p', { class: 'soft', style: 'margin-top:8px' }, 'Coaching PRO includes a personal meal plan built around your calories and macros, plus food lists and supplement advice.'),
@@ -801,35 +802,100 @@ const MEAL_COLUMNS = [
   { key: 'kcal', label: 'kcal', width: 70 }, { key: 'protein', label: 'Protein', width: 70 }, { key: 'fat', label: 'Fat', width: 60 }, { key: 'carbs', label: 'Carbs', width: 60 }
 ];
 
-function mealPlansCard(plans, note) {
-  return isLegacyMealPlan(plans) ? legacyMealPlansCard(plans, note) : mealDaysCard(plans, note);
+function mealPlansCard(plans, note, dayTarget) {
+  return isLegacyMealPlan(plans) ? legacyMealPlansCard(plans, note) : mealDaysCard(plans, note, dayTarget);
 }
 
 // Days of 3 meals with foods and grams, totals per meal and per day
-function mealDaysCard(days, note) {
+// The athlete's version of a meal: their swap if Bruno has not changed that meal since, otherwise Bruno's meal
+function effectiveMeal(day, mi) {
+  const original = day.meals[mi];
+  const choice = S.choices?.[day.id]?.[mi];
+  if (choice && choice.basedOn === mealSignature(original)) return { ...original, items: choice.items, choice };
+  return original;
+}
+
+async function saveChoices() {
+  await saveRow('coaching_meal_choices', { client_id: S.client.user_id, choices: S.choices });
+}
+
+function mealDaysCard(days, note, dayTarget) {
   let active = 0;
+  const split = mealSplit(S.meals);
   const seg = el('div', { class: 'seg' });
   const body = el('div', { class: 'stack', style: 'margin-top:12px' });
   const line = (t) => `${fmt(t.kcal, 0)} kcal · P ${fmt(t.p, 0)} g · C ${fmt(t.c, 0)} g · F ${fmt(t.f, 0)} g`;
+  const canSwap = !S.readOnly;
+
+  function setChoice(day, mi, choice) {
+    S.choices = { ...S.choices, [day.id]: { ...(S.choices[day.id] || {}) } };
+    if (choice) S.choices[day.id][mi] = choice; else delete S.choices[day.id][mi];
+    saveChoices().catch((e) => alert('Not saved: ' + e.message));
+    draw();
+  }
+
+  function swapMealDialog(day, mi) {
+    const current = effectiveMeal(day, mi);
+    const target = mealTargetFor(dayTarget, split[mi]);
+    const ref = swapReference(current.items, target);
+    const options = days.map((d, i) => ({ d, i, meal: d.meals[mi] }))
+      .filter((o) => o.d.id !== day.id && o.meal?.items.length && mealSignature(o.meal) !== mealSignature(current))
+      .filter((o) => mealFit(mealTotals(o.meal.items), ref).ok);
+    const m = modal(`Swap ${current.name.toLowerCase()}`,
+      el('p', { class: 'small soft' }, `These ${current.name.toLowerCase()}s from other days have about the same calories and macros, so your day stays on target.`),
+      ...(options.length ? options.map((o) => el('button', { class: 'card card-link tight', type: 'button', onclick: () => {
+        m.close();
+        setChoice(day, mi, { basedOn: mealSignature(day.meals[mi]), from: `${o.meal.name} from ${o.d.title}`, items: clone(o.meal.items), swaps: [] });
+      } }, el('div', { class: 'row between nowrap' }, el('b', {}, `${o.d.title}`), el('span', { class: 'pill' }, `${fmt(mealTotals(o.meal.items).kcal, 0)} kcal`)),
+        el('p', { class: 'small soft', style: 'margin-top:4px' }, o.meal.items.map((it) => `${it.name} ${fmt(num(it.g), 0)} g`).join(' · '))))
+        : [el('p', { class: 'muted' }, 'No other day has a matching meal for this slot yet.')]));
+  }
+
+  function swapFoodDialog(day, mi, ii) {
+    const current = effectiveMeal(day, mi);
+    const target = mealTargetFor(dayTarget, split[mi]);
+    const item = current.items[ii];
+    const options = foodSwapOptions(current.items, ii, target);
+    const m = modal(`Instead of ${item.name.toLowerCase()}`,
+      el('p', { class: 'small soft' }, `${fmt(num(item.g), 0)} g now. Each option keeps this meal within its calorie and macro target; the amount is adjusted for you.`),
+      ...(options.length ? options.map((o) => el('button', { class: 'card card-link tight', type: 'button', onclick: () => {
+        m.close();
+        const prev = current.choice;
+        setChoice(day, mi, { basedOn: mealSignature(day.meals[mi]), from: prev?.from || null, items: o.items,
+          swaps: [...(prev?.swaps || []), `${item.name} → ${o.food.name} ${o.g} g`] });
+      } }, el('div', { class: 'row between nowrap' }, el('b', {}, o.food.name), el('span', { class: 'g' }, `${o.g} g`)),
+        el('p', { class: 'tiny muted', style: 'margin-top:4px' }, `Meal becomes ${line(o.totals)}`)))
+        : [el('p', { class: 'muted' }, 'No equal swap for this food keeps the meal on target.')]));
+  }
+
   function draw() {
     seg.replaceChildren(...days.map((d, i) => el('button', { type: 'button', class: i === active ? 'active' : '', onclick: () => { active = i; draw(); } }, d.title || `Day ${i + 1}`)));
     const day = days[active];
-    const total = mealTotals(dayItems(day));
+    const meals = day.meals.map((_, mi) => effectiveMeal(day, mi));
+    const total = mealTotals(meals.flatMap((m) => m.items));
     body.replaceChildren(
-      ...day.meals.filter((m) => m.items.length).map((m) => el('div', { class: 'card alt tight' },
-        el('div', { class: 'row between nowrap' }, el('b', {}, m.name), el('span', { class: 'pill' }, `${fmt(mealTotals(m.items).kcal, 0)} kcal`)),
+      ...meals.map((m, mi) => m.items.length ? el('div', { class: 'card alt tight' },
+        el('div', { class: 'row between nowrap' }, el('b', {}, m.name),
+          el('div', { class: 'row nowrap', style: 'gap:6px' }, m.choice ? el('span', { class: 'pill teal' }, 'Your swap') : null,
+            el('span', { class: 'pill' }, `${fmt(mealTotals(m.items).kcal, 0)} kcal`))),
+        m.choice?.from ? el('p', { class: 'tiny muted', style: 'margin-top:2px' }, `Using ${m.choice.from}`) : null,
         el('ul', { class: 'meal-items', style: 'list-style:none;padding:0;margin:8px 0 0' },
-          ...m.items.map((it) => el('li', {}, el('span', {}, it.name), el('span', { class: 'g' }, `${fmt(num(it.g), 0)} g`)))),
+          ...m.items.map((it, ii) => el('li', {},
+            canSwap ? el('button', { class: 'food-swap-link', type: 'button', title: 'Swap this food', onclick: () => swapFoodDialog(day, mi, ii) }, it.name, el('span', { class: 'swap-icon', 'aria-hidden': 'true' }, ' ⇄')) : el('span', {}, it.name),
+            el('span', { class: 'g' }, `${fmt(num(it.g), 0)} g`)))),
         el('p', { class: 'tiny muted', style: 'margin-top:6px' }, line(mealTotals(m.items))),
-        m.note ? el('p', { class: 'small soft pre', style: 'margin-top:6px' }, m.note) : null)),
+        m.note && !m.choice ? el('p', { class: 'small soft pre', style: 'margin-top:6px' }, m.note) : null,
+        canSwap ? el('div', { class: 'row', style: 'margin-top:8px' },
+          el('button', { class: 'btn small', type: 'button', onclick: () => swapMealDialog(day, mi) }, `Swap ${m.name.toLowerCase()}`),
+          m.choice ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setChoice(day, mi, null) }, 'Back to Bruno\'s meal') : null) : null) : null),
       el('div', { class: 'row between small', style: 'font-weight:700' }, el('span', {}, 'Day total'), el('span', {}, line(total))),
       day.note ? el('p', { class: 'small soft pre' }, day.note) : null,
-      el('p', { class: 'tiny muted' }, 'Weights are raw or dry, before cooking. Values: USDA FoodData Central.'));
+      el('p', { class: 'tiny muted' }, 'Weights are raw or dry, before cooking. Tap a food to swap it. Values: USDA FoodData Central.'));
   }
   draw();
   return el('div', { class: 'card' },
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), el('span', { class: 'pill pro' }, 'PRO')),
-    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Every day has about the same calories and macros, so you can swap days as you like.'),
+    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Swap any meal for the same meal on another day, or swap single foods: your calories and macros stay on target.'),
     seg, body);
 }
 

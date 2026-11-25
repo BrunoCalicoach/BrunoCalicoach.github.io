@@ -78,12 +78,13 @@ async function openAthlete(id) {
 
 async function loadAthlete() {
   const id = { client_id: C.current };
-  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile] = await Promise.all([
+  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile, choices] = await Promise.all([
     Data.select('coaching_drafts', id, ['week_start']), Data.select('coaching_weeks', id, ['week_start']),
     Data.select('coaching_logs', id), Data.select('coaching_feedback', id), Data.select('coaching_daily', id, ['day']),
     Data.select('coaching_measurements', id, ['day']), Data.select('coaching_checkins', id, ['week_start']),
-    Data.select('coaching_targets', id), Data.select('coaching_meal_plans', id), Data.select('coaching_profiles', { user_id: C.current })]);
-  C.d = { loaded: C.current, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null };
+    Data.select('coaching_targets', id), Data.select('coaching_meal_plans', id), Data.select('coaching_profiles', { user_id: C.current }),
+    Data.select('coaching_meal_choices', id).catch(() => [])]);
+  C.d = { loaded: C.current, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null, choices: choices[0]?.choices || {} };
 }
 
 async function renderAthlete(content) {
@@ -415,7 +416,8 @@ function renderNutrition(body) {
     el('p', { class: 'small soft' }, planTarget
       ? `Checked against ${C.d.targets?.kcal ? 'your targets' : 'the estimated targets'}: ${fmt(planTarget.kcal, 0)} kcal, protein ${fmt(planTarget.protein, 0)} g min, carbs ${fmt(planTarget.carbs, 0)} g, fat ${fmt(planTarget.fat, 0)} g. Green = within 5%.`
       : 'No targets yet: the athlete has not entered their details and you have not set targets above.'),
-    editorHost];
+    editorHost,
+    athleteSwaps()];
 
   body.replaceChildren(el('div', { class: 'stack-lg' },
     el('div', { class: 'card stack' },

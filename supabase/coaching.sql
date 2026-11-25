@@ -22,6 +22,9 @@ create table public.coaching_clients (
   tier text not null default 'regular' check (tier in ('regular', 'pro')),
   active boolean not null default true,
   start_date date not null default current_date,
+  -- set by the coach: EU label allergens (gluten, milk, nuts...) and other foods to leave out of meal plans
+  allergies text[] not null default '{}' check (cardinality(allergies) <= 14),
+  avoid_foods text check (char_length(avoid_foods) <= 500),
   created_at timestamptz not null default now()
 );
 
@@ -174,6 +177,7 @@ create table public.coaching_foods (
   name text not null check (char_length(name) between 1 and 120),
   cat text not null default 'other' check (char_length(cat) <= 20),
   per100 jsonb not null check (jsonb_typeof(per100) = 'object' and pg_column_size(per100) < 4000),
+  allergens text[] not null default '{}',
   note text check (char_length(note) <= 300),
   updated_at timestamptz not null default now()
 );

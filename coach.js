@@ -408,7 +408,7 @@ function renderNutrition(body) {
   const planTarget = C.d.targets?.kcal ? { kcal: C.d.targets.kcal, protein: C.d.targets.protein, fat: C.d.targets.fat, carbs: C.d.targets.carbs }
     : est ? { kcal: est.kcal, protein: est.protein, fat: est.fat, carbs: est.carbs } : null;
   const editorHost = el('div', {}, el('p', { class: 'muted' }, 'Loading foods…'));
-  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged)));
+  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged, blockFor(c))));
   const planBlocks = [
     legacy ? el('div', { class: 'notice warn' }, 'This athlete had an older typed-in meal plan. It is replaced as soon as you add a food here.') : null,
     el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => ownFoodDialog() }, '+ Add your own food (from a label)'),
@@ -441,16 +441,31 @@ function renderSettings(body) {
   const tier = el('select', { class: 'select field' }, el('option', { value: 'regular', selected: c.tier === 'regular' }, 'REGULAR'), el('option', { value: 'pro', selected: c.tier === 'pro' }, 'PRO'));
   const active = el('select', { class: 'select field' }, el('option', { value: '1', selected: c.active }, 'Active'), el('option', { value: '0', selected: !c.active }, 'Inactive (no access)'));
   const startDate = el('input', { class: 'field', type: 'date', value: c.start_date || '' });
+  const current = new Set(c.allergies || []);
+  const boxes = ALLERGENS.map(([k, label]) => {
+    const box = el('input', { type: 'checkbox', value: k, checked: current.has(k) });
+    return { k, box, node: el('label', { class: 'row nowrap small', style: 'gap:8px' }, box, label) };
+  });
+  const avoid = el('input', { class: 'field', value: c.avoid_foods || '', placeholder: 'e.g. kiwi, mushrooms, pork' });
   const msg = el('p', { class: 'msg' });
   const save = el('button', { class: 'btn primary' }, 'Save');
   save.addEventListener('click', async () => {
-    const row = { user_id: c.user_id, name: name.value.trim() || c.name, tier: tier.value, active: active.value === '1', start_date: startDate.value || c.start_date };
+    const row = { user_id: c.user_id, name: name.value.trim() || c.name, tier: tier.value, active: active.value === '1', start_date: startDate.value || c.start_date,
+      allergies: boxes.filter((b) => b.box.checked).map((b) => b.k), avoid_foods: avoid.value.trim() || null };
     try { await Data.upsert('coaching_clients', row); Object.assign(c, row); render(); } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
   });
-  body.replaceChildren(el('div', { class: 'card stack', style: 'max-width:520px' },
-    el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching plan', tier),
-    el('label', { class: 'lab' }, 'Access', active), el('label', { class: 'lab' }, 'Start date', startDate), save, msg,
-    el('p', { class: 'small muted' }, 'PRO unlocks meal plans, food lists and supplement texts for this athlete. Inactive athletes can no longer save anything; their data stays.')));
+  body.replaceChildren(el('div', { class: 'stack', style: 'max-width:620px' },
+    el('div', { class: 'card stack' },
+      el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching plan', tier),
+      el('label', { class: 'lab' }, 'Access', active), el('label', { class: 'lab' }, 'Start date', startDate),
+      el('p', { class: 'small muted' }, 'PRO unlocks meal plans, food lists and supplement texts for this athlete. Inactive athletes can no longer save anything; their data stays.')),
+    el('div', { class: 'card stack' },
+      el('h2', {}, 'Allergies and foods to avoid'),
+      el('p', { class: 'small soft' }, 'Foods containing these are hidden from your food search and from every swap the athlete is offered. Meals that still contain one are flagged in the meal plan with a button to replace them.'),
+      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px' }, ...boxes.map((b) => b.node)),
+      el('label', { class: 'lab' }, 'Other foods to avoid (words in the food name, separated by commas)', avoid),
+      el('p', { class: 'tiny muted' }, 'Allergens follow the 14 the EU requires on food labels. For your own foods, tick their allergens when you add them. Always double-check product labels.')),
+    save, msg));
 }
 
 function addAthlete() {

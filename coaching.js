@@ -821,6 +821,7 @@ async function saveChoices() {
 
 function mealDaysCard(days, note, dayTarget) {
   let active = 0;
+  const block = blockFor(S.client);
   const split = mealSplit(S.meals);
   const seg = el('div', { class: 'seg' });
   const body = el('div', { class: 'stack', style: 'margin-top:12px' });
@@ -840,22 +841,22 @@ function mealDaysCard(days, note, dayTarget) {
     const ref = swapReference(current.items, target);
     const options = days.map((d, i) => ({ d, i, meal: d.meals[mi] }))
       .filter((o) => o.d.id !== day.id && o.meal?.items.length && mealSignature(o.meal) !== mealSignature(current))
-      .filter((o) => mealFit(mealTotals(o.meal.items), ref).ok);
+      .filter((o) => mealFit(mealTotals(o.meal.items), ref).ok && mealAllowed(o.meal, block));
     const m = modal(`Swap ${current.name.toLowerCase()}`,
-      el('p', { class: 'small soft' }, `These ${current.name.toLowerCase()}s from other days have about the same calories and macros, so your day stays on target.`),
+      el('p', { class: 'small soft' }, `These ${current.name.toLowerCase()}s from your other plans have about the same calories and macros, so your day stays on target.`),
       ...(options.length ? options.map((o) => el('button', { class: 'card card-link tight', type: 'button', onclick: () => {
         m.close();
         setChoice(day, mi, { basedOn: mealSignature(day.meals[mi]), from: `${o.meal.name} from ${o.d.title}`, items: clone(o.meal.items), swaps: [] });
       } }, el('div', { class: 'row between nowrap' }, el('b', {}, `${o.d.title}`), el('span', { class: 'pill' }, `${fmt(mealTotals(o.meal.items).kcal, 0)} kcal`)),
         el('p', { class: 'small soft', style: 'margin-top:4px' }, o.meal.items.map((it) => `${it.name} ${fmt(num(it.g), 0)} g`).join(' · '))))
-        : [el('p', { class: 'muted' }, 'No other day has a matching meal for this slot yet.')]));
+        : [el('p', { class: 'muted' }, 'No other plan has a matching meal for this slot yet.')]));
   }
 
   function swapFoodDialog(day, mi, ii) {
     const current = effectiveMeal(day, mi);
     const target = mealTargetFor(dayTarget, split[mi]);
     const item = current.items[ii];
-    const options = foodSwapOptions(current.items, ii, target);
+    const options = foodSwapOptions(current.items, ii, target, block);
     const m = modal(`Instead of ${item.name.toLowerCase()}`,
       el('p', { class: 'small soft' }, `${fmt(num(item.g), 0)} g now. Each option keeps this meal within its calorie and macro target; the amount is adjusted for you.`),
       ...(options.length ? options.map((o) => el('button', { class: 'card card-link tight', type: 'button', onclick: () => {
@@ -869,7 +870,7 @@ function mealDaysCard(days, note, dayTarget) {
   }
 
   function draw() {
-    seg.replaceChildren(...days.map((d, i) => el('button', { type: 'button', class: i === active ? 'active' : '', onclick: () => { active = i; draw(); } }, d.title || `Day ${i + 1}`)));
+    seg.replaceChildren(...days.map((d, i) => el('button', { type: 'button', class: i === active ? 'active' : '', onclick: () => { active = i; draw(); } }, d.title || `Plan ${i + 1}`)));
     const day = days[active];
     const meals = day.meals.map((_, mi) => effectiveMeal(day, mi));
     const total = mealTotals(meals.flatMap((m) => m.items));
@@ -888,14 +889,15 @@ function mealDaysCard(days, note, dayTarget) {
         canSwap ? el('div', { class: 'row', style: 'margin-top:8px' },
           el('button', { class: 'btn small', type: 'button', onclick: () => swapMealDialog(day, mi) }, `Swap ${m.name.toLowerCase()}`),
           m.choice ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setChoice(day, mi, null) }, 'Back to Bruno\'s meal') : null) : null) : null),
-      el('div', { class: 'row between small', style: 'font-weight:700' }, el('span', {}, 'Day total'), el('span', {}, line(total))),
+      el('div', { class: 'row between small', style: 'font-weight:700' }, el('span', {}, 'Total for the day'), el('span', {}, line(total))),
       day.note ? el('p', { class: 'small soft pre' }, day.note) : null,
       el('p', { class: 'tiny muted' }, 'Weights are raw or dry, before cooking. Tap a food to swap it. Values: USDA FoodData Central.'));
   }
   draw();
   return el('div', { class: 'card' },
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), el('span', { class: 'pill pro' }, 'PRO')),
-    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Swap any meal for the same meal on another day, or swap single foods: your calories and macros stay on target.'),
+    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Swap any meal for the same meal in another plan, or swap single foods: your calories and macros stay on target.'),
+    block.any ? el('p', { class: 'tiny muted', style: 'margin:-6px 0 12px' }, `Swaps never include: ${[...block.allergens.map(allergenLabel), ...block.avoid].join(', ')}.`) : null,
     seg, body);
 }
 

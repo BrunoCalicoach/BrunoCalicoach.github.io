@@ -142,7 +142,7 @@ const FOOD_LIBRARY = [
   {"id":"usda:168448","cat":"veg","name":"Pumpkin","src":"USDA SR Legacy 168448: Pumpkin, raw","kcal":26,"p":1,"c":6.5,"f":0.1,"fib":0.5,"sug":2.76,"sat":0.05,"na":1,"k":340,"ca":21,"fe":0.8,"mg":12,"zn":0.32,"vc":9,"vd":0,"b12":0,"va":426,"fol":16},
   {"id":"usda:169276","cat":"veg","name":"Radish","src":"USDA SR Legacy 169276: Radishes, raw","kcal":16,"p":0.68,"c":3.4,"f":0.1,"fib":1.6,"sug":1.86,"sat":0.03,"na":39,"k":233,"ca":25,"fe":0.34,"mg":10,"zn":0.28,"vc":14.8,"vd":0,"b12":0,"va":0,"fol":25},
   {"id":"usda:169279","cat":"veg","name":"Sauerkraut","src":"USDA SR Legacy 169279: Sauerkraut, canned, solids and liquids","kcal":19,"p":0.91,"c":4.28,"f":0.14,"fib":2.9,"sug":1.78,"sat":0.03,"na":661,"k":170,"ca":30,"fe":1.47,"mg":13,"zn":0.19,"vc":14.7,"vd":0,"b12":0,"va":1,"fol":24},
-  {"id":"usda:170460","cat":"veg","name":"Tomato passata (canned purÃ©e)","src":"USDA SR Legacy 170460: Tomato products, canned, puree, without salt added","kcal":38,"p":1.65,"c":8.98,"f":0.21,"fib":1.9,"sug":4.83,"sat":0.03,"na":28,"k":439,"ca":18,"fe":1.78,"mg":23,"zn":0.36,"vc":10.6,"vd":0,"b12":0,"va":26,"fol":11},
+  {"id":"usda:170460","cat":"veg","name":"Tomato passata (canned puree)","src":"USDA SR Legacy 170460: Tomato products, canned, puree, without salt added","kcal":38,"p":1.65,"c":8.98,"f":0.21,"fib":1.9,"sug":4.83,"sat":0.03,"na":28,"k":439,"ca":18,"fe":1.78,"mg":23,"zn":0.36,"vc":10.6,"vd":0,"b12":0,"va":26,"fol":11},
   {"id":"usda:171413","cat":"fats","name":"Olive oil","src":"USDA SR Legacy 171413: Oil, olive, salad or cooking","kcal":884,"p":0,"c":0,"f":100,"fib":0,"sug":0,"sat":13.81,"na":2,"k":1,"ca":1,"fe":0.56,"mg":0,"zn":0,"vc":0,"vd":0,"b12":0,"va":0,"fol":0},
   {"id":"usda:171412","cat":"fats","name":"Coconut oil","src":"USDA SR Legacy 171412: Oil, coconut","kcal":892,"p":0,"c":0,"f":99.06,"fib":0,"sug":0,"sat":82.47,"na":0,"k":0,"ca":1,"fe":0.05,"mg":0,"zn":0.02,"vc":0,"vd":0,"b12":0,"va":0,"fol":0},
   {"id":"usda:171017","cat":"fats","name":"Sunflower oil","src":"USDA SR Legacy 171017: Oil, sunflower, linoleic (less than 60%)","kcal":884,"p":0,"c":0,"f":100,"fib":0,"sug":0,"sat":10.1,"na":0,"k":0,"ca":0,"fe":0.03,"mg":0,"zn":0,"vc":0,"b12":0,"va":0,"fol":0},
@@ -170,3 +170,28 @@ const FOOD_LIBRARY = [
   {"id":"usda:171942","cat":"other","name":"Rice drink, unsweetened","src":"USDA SR Legacy 171942: Beverages, rice milk, unsweetened","kcal":47,"p":0.28,"c":9.17,"f":0.97,"fib":0.3,"sug":5.28,"sat":0,"na":39,"k":27,"ca":118,"fe":0.2,"mg":11,"zn":0.13,"vc":0,"vd":1,"b12":0.63,"va":63,"fol":2}
 
 ];
+
+// The 14 allergens EU law requires on labels (Regulation 1169/2011, Annex II), tagged per food by Bruno's
+// coaching app. Oats count as gluten (cross-contamination is common unless labelled gluten-free).
+// Dark chocolate is tagged milk and soy because most bars contain or may contain them.
+const FOOD_ALLERGENS = {
+  gluten: ['Oats (rolled), dry', 'Pasta, dry', 'Pasta, whole wheat, dry', 'Bulgur, dry', 'Couscous, dry', 'Barley, pearled, dry', 'Semolina',
+    'Bread, white', 'Bread, whole wheat', 'Bread, rye', 'Tortilla (wheat)', 'Crispbread (rye)', 'Wheat flour, whole grain', 'Wheat flour, white'],
+  crustaceans: ['Shrimp, raw'],
+  eggs: ['Egg, whole, raw', 'Egg white, raw', 'Egg yolk, raw'],
+  fish: ['Salmon (farmed), raw', 'Salmon (wild), raw', 'Tuna, canned in water, drained', 'Tuna, fresh, raw', 'Cod, raw', 'Hake, raw', 'Sea bass, raw',
+    'Trout (farmed), raw', 'Mackerel, raw', 'Sardines, canned in oil, drained', 'Tilapia, raw'],
+  peanuts: ['Peanuts', 'Peanut butter (no salt)'],
+  soy: ['Tofu, firm', 'Tempeh', 'Edamame, frozen', 'Soy drink, unsweetened', 'Dark chocolate 70-85%'],
+  milk: ['Milk 0.1% (skim)', 'Milk 1%', 'Milk 2%', 'Milk 3.25% (whole)', 'Greek yogurt, 0% fat', 'Greek yogurt, low fat', 'Greek yogurt, whole milk',
+    'Yogurt, plain, low fat', 'Kefir, low fat, plain', 'Cottage cheese, 1% fat', 'Cottage cheese, 2% fat', 'Ricotta, part skim', 'Mozzarella, part skim',
+    'Mozzarella, whole milk', 'Parmesan', 'Cheddar', 'Feta', 'Swiss cheese (Emmental)', 'Butter', 'Dark chocolate 70-85%'],
+  nuts: ['Almonds', 'Walnuts', 'Hazelnuts', 'Cashews', 'Brazil nuts', 'Macadamia nuts', 'Pistachios', 'Almond butter', 'Almond drink, unsweetened'],
+  celery: ['Celery'],
+  mustard: [],
+  sesame: ['Sesame seeds', 'Hummus'],
+  sulphites: ['Dried apricots', 'Raisins'],
+  lupin: [],
+  molluscs: ['Squid, raw', 'Octopus, raw']
+};
+FOOD_LIBRARY.forEach((f) => { f.al = Object.keys(FOOD_ALLERGENS).filter((a) => FOOD_ALLERGENS[a].includes(f.name)); });

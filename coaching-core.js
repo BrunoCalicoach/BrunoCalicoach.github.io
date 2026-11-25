@@ -168,7 +168,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v4';
+const DEMO_KEY = 'coaching-demo-db-v5';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -399,15 +399,45 @@ const MICROS = [
 const MEAL_NAMES = ['Breakfast', 'Lunch', 'Dinner'];
 
 function emptyMealDay(n) {
-  return { id: uid(), title: `Day ${n}`, note: '', meals: MEAL_NAMES.map((name) => ({ id: uid(), name, note: '', items: [] })) };
+  return { id: uid(), title: `Plan ${n}`, note: '', meals: MEAL_NAMES.map((name) => ({ id: uid(), name, note: '', items: [] })) };
 }
 
-// The food's values per 100 g are copied into the plan, so a published plan never shifts if the library changes
+// The food's values per 100 g (and its allergens) are copied into the plan, so a published plan never shifts
 function newMealItem(food, grams) {
   const per100 = {};
   for (const k of NUTRIENT_KEYS) if (food[k] !== undefined && food[k] !== null) per100[k] = food[k];
-  return { id: uid(), food: food.id, name: food.name, g: grams, per100 };
+  return { id: uid(), food: food.id, name: food.name, g: grams, per100, al: [...(food.al || [])] };
 }
+
+/* ---------- Allergies: the 14 EU label allergens plus any foods Bruno lists for an athlete ---------- */
+
+const ALLERGENS = [
+  ['gluten', 'Gluten (wheat, rye, barley, oats)'], ['crustaceans', 'Crustaceans'], ['eggs', 'Eggs'], ['fish', 'Fish'],
+  ['peanuts', 'Peanuts'], ['soy', 'Soy'], ['milk', 'Milk (dairy)'], ['nuts', 'Tree nuts'], ['celery', 'Celery'],
+  ['mustard', 'Mustard'], ['sesame', 'Sesame'], ['sulphites', 'Sulphites'], ['lupin', 'Lupin'], ['molluscs', 'Molluscs']
+];
+const allergenLabel = (key) => (ALLERGENS.find(([k]) => k === key)?.[1] || key).replace(/ \(.*\)/, '');
+
+// What one athlete must not get: allergen keys and extra words (e.g. "kiwi, mushrooms") matched against food names
+function blockFor(client) {
+  const allergens = Array.isArray(client?.allergies) ? client.allergies : [];
+  const avoid = String(client?.avoid_foods || '').split(/[,;\n]/).map((w) => w.trim().toLowerCase()).filter((w) => w.length > 1);
+  return { allergens, avoid, any: allergens.length > 0 || avoid.length > 0 };
+}
+
+// Why a food (library food, own food or plan item) is blocked for this athlete: [] when it is fine
+function blockedReasons(food, block) {
+  if (!block?.any || !food) return [];
+  const lib = food.food ? FOOD_LIBRARY.find((f) => f.id === food.food) : null;
+  const al = new Set([...(food.al || []), ...(lib?.al || [])]);
+  const name = String(food.name || '').toLowerCase();
+  return [
+    ...block.allergens.filter((a) => al.has(a)).map(allergenLabel),
+    ...block.avoid.filter((w) => name.includes(w)).map((w) => `"${w}"`)
+  ];
+}
+const isAllowed = (food, block) => blockedReasons(food, block).length === 0;
+const mealAllowed = (meal, block) => (meal?.items || []).every((it) => isAllowed(it, block));
 
 // Adds up foods (or meals, or days). Missing micronutrients count as unknown, not zero.
 function mealTotals(items) {
@@ -461,7 +491,54 @@ function swapReference(items, target) {
 
 const mealSignature = (meal) => (meal?.items || []).map((i) => `${i.food}:${i.g}`).join('|');
 
-// Other days' meals in the same slot that fit this slot's target
+// Replaces every blocked food in a meal with the closest safe swap that keeps the meal on target.
+// Returns the names it could not replace (no safe equivalent kept the meal on target).
+// Looks in the food's own group first, then related groups (dairy -> meat, fish, eggs, tofu; wheat -> rice, potatoes...),
+// and re-fits the grams of the whole meal after each replacement so it stays on target.
+const RELATED_CATS = { dairy: ['protein', 'legumes'], protein: ['dairy', 'legumes'], carbs: ['legumes', 'fruit'], legumes: ['protein', 'carbs'],
+  fruit: ['carbs'], fats: [], veg: [], other: ['dairy', 'protein'] };
+// The usual replacements when a whole group is ruled out (milk allergy: no dairy left to swap within)
+const PREFERRED_REPLACEMENTS = {
+  dairy: ['Egg white, raw', 'Egg, whole, raw', 'Tofu, firm', 'Soy drink, unsweetened', 'Tempeh'],
+  protein: ['Tofu, firm', 'Tempeh', 'Lentils, dry', 'Chickpeas, canned, drained'],
+  other: ['Soy drink, unsweetened', 'Rice drink, unsweetened', 'Almond drink, unsweetened']
+};
+function replaceBlockedFoods(meal, target, block) {
+  const left = [];
+  for (let i = 0; i < meal.items.length; i++) {
+    const it = meal.items[i];
+    if (isAllowed(it, block)) continue;
+    const quick = foodSwapOptions(meal.items, i, target, block)[0];
+    if (quick) { meal.items = quick.items; continue; }
+    const lib = FOOD_LIBRARY.find((f) => f.id === it.food);
+    const cat = lib?.cat || it.cat || 'other';
+    const ref = swapReference(meal.items, target);
+    const old = mealTotals(meal.items);
+    let best = null;
+    const basis = SWAP_BASIS[cat] || 'kcal';
+    const amount = ((it.per100[basis] || 0) * (num(it.g) || 0)) / 100;
+    const preferred = (PREFERRED_REPLACEMENTS[cat] || []).map((n) => FOOD_LIBRARY.find((f) => f.name === n)).filter(Boolean);
+    // Search order: same group, then the usual replacements (e.g. eggs or tofu for dairy), then related groups
+    for (const group of [FOOD_LIBRARY.filter((f) => f.cat === cat), preferred, ...(RELATED_CATS[cat] || []).map((c) => FOOD_LIBRARY.filter((f) => f.cat === c))]) {
+      for (const f of group) {
+        if (NO_SWAP.test(f.name) || !isAllowed(f, block) || !(f[basis] > 0)) continue;
+        if (meal.items.some((x) => x.food === f.id)) continue;
+        const g = Math.min(600, Math.max(10, Math.round(((amount || 100) / f[basis]) * 100 / 5) * 5));
+        const copy = { ...meal, items: meal.items.map((x, n) => (n === i ? { ...newMealItem(f, g), id: x.id } : { ...x })) };
+        fitMealToTarget(copy, ref);
+        const t = mealTotals(copy.items);
+        if (!mealFit(t, ref).ok) continue;
+        const score = Math.abs(t.kcal - old.kcal) / 50 + Math.abs(t.p - old.p) / 5 + Math.abs(t.c - old.c) / 10 + Math.abs(t.f - old.f) / 5;
+        if (!best || score < best.score) best = { items: copy.items, score };
+      }
+      if (best) break;
+    }
+    if (best) meal.items = best.items; else left.push(it.name);
+  }
+  return left;
+}
+
+// Other plans' meals in the same slot that fit this slot's target
 function mealSwapOptions(days, dayIndex, mealIndex, target) {
   const current = days[dayIndex].meals[mealIndex];
   const ref = swapReference(current.items, target);
@@ -474,16 +551,16 @@ function mealSwapOptions(days, dayIndex, mealIndex, target) {
 // Equivalent foods from the same group, in the amount that keeps the main nutrient the same
 const SWAP_BASIS = { protein: 'p', dairy: 'p', legumes: 'c', carbs: 'c', fruit: 'c', fats: 'f', veg: 'kcal', other: 'kcal' };
 const NO_SWAP = /sugar|honey|maple|flour|semolina|lemon juice|garlic|butter|passata|sauerkraut|egg yolk/i;
-function foodSwapOptions(items, itemIndex, target) {
+function foodSwapOptions(items, itemIndex, target, block) {
   const it = items[itemIndex];
   const lib = FOOD_LIBRARY.find((f) => f.id === it.food);
-  if (!lib || NO_SWAP.test(lib.name)) return [];
+  if (!lib || (NO_SWAP.test(lib.name) && isAllowed(it, block))) return [];
   const basis = SWAP_BASIS[lib.cat] || 'kcal';
   const amount = ((it.per100[basis] || 0) * (num(it.g) || 0)) / 100;
   if (!amount) return [];
   const old = mealTotals(items);
   const ref = swapReference(items, target);
-  return FOOD_LIBRARY.filter((f) => f.cat === lib.cat && f.id !== lib.id && !NO_SWAP.test(f.name) && f[basis] > 0)
+  return FOOD_LIBRARY.filter((f) => f.cat === lib.cat && f.id !== lib.id && !NO_SWAP.test(f.name) && f[basis] > 0 && isAllowed(f, block))
     .map((f) => {
       const g = Math.round((amount / f[basis]) * 100 / 5) * 5;
       if (g < 5 || g > 700) return null;
@@ -883,13 +960,13 @@ function demoSeed() {
         { client_id: A, day: addDays(lastWeek, 6), chest: 104, waist_narrow: 83, waist_navel: 87, hips: 98.5, biceps: 38, thigh: 58.5 }],
       coaching_targets: [],
       coaching_meal_plans: [{ client_id: A, note: 'Weigh foods raw or dry. Every breakfast, lunch and dinner has about the same calories and macros, so you can swap them between days.', plans: [
-        meal('Day 1', [['Oats (rolled), dry', 80], ['Greek yogurt, 0% fat', 200], ['Blueberries', 150], ['Walnuts', 15]],
+        meal('Plan 1', [['Oats (rolled), dry', 80], ['Greek yogurt, 0% fat', 200], ['Blueberries', 150], ['Walnuts', 15]],
           [['Chicken breast, raw', 200], ['Rice, white (long grain), dry', 90], ['Broccoli', 200], ['Olive oil', 10]],
           [['Salmon (farmed), raw', 150], ['Potatoes, raw', 350], ['Lettuce (romaine)', 100], ['Tomato', 150]]),
-        meal('Day 2', [['Egg, whole, raw', 150], ['Egg white, raw', 100], ['Bread, whole wheat', 80], ['Tomato', 100]],
+        meal('Plan 2', [['Egg, whole, raw', 150], ['Egg white, raw', 100], ['Bread, whole wheat', 80], ['Tomato', 100]],
           [['Turkey breast, raw', 200], ['Pasta, dry', 100], ['Pepper, red', 150], ['Olive oil', 10]],
           [['Beef, lean (top round), raw', 180], ['Bulgur, dry', 70], ['Zucchini', 200], ['Banana', 120], ['Olive oil', 10]]),
-        meal('Day 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
+        meal('Plan 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
           [['Tuna, canned in water, drained', 150], ['Tortilla (wheat)', 120], ['Cucumber', 150], ['Avocado', 60]],
           [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]])] }],
       coaching_guides: []

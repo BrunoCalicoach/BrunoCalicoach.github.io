@@ -45,6 +45,7 @@ create table public.coaching_profiles (
   activity numeric(4,3) check (activity between 1.1 and 2.0),
   goal text check (goal in ('cut', 'maintain', 'gain')),
   consent_at timestamptz,
+  tour_seen_at timestamptz, -- the app tour opened once by itself; later only from the "?" button
   updated_at timestamptz not null default now()
 );
 

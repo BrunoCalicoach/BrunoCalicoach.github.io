@@ -93,6 +93,15 @@ async function startFor(clientId, { preview = false, coachView = false }) {
   if (!S.readOnly && !S.profile.consent_at) return consentGate();
   renderTabs();
   route();
+  ready();
+}
+
+// The "?" button is always there; the tour opens by itself only the first time on this account
+function ready() {
+  const help = document.getElementById('help');
+  help.classList.remove('hidden');
+  help.onclick = () => startTour();
+  if (!S.readOnly && !tourSeen()) setTimeout(() => startTour(), 400);
 }
 
 // Weight, measurements and photos are health data (GDPR): ask once before anything is stored
@@ -105,7 +114,7 @@ function consentGate() {
     const row = { user_id: S.client.user_id, consent_at: new Date().toISOString() };
     try { await Data.upsert('coaching_profiles', row); } catch (e) { go.disabled = false; return alert(e.message); }
     S.profile = { ...S.profile, ...row };
-    renderTabs(); route();
+    renderTabs(); route(); ready();
   });
   show(el('div', { class: 'stack', style: 'margin-top:20px' },
     el('h1', {}, `Welcome, ${S.client.name.split(' ')[0]}`),
@@ -307,13 +316,13 @@ function renderWorkout(weekStart, dayIndex) {
     el('div', { class: 'row nowrap' },
       el('button', { class: 'btn icon-btn', 'aria-label': 'Back to the week', onclick: () => { location.hash = 'week/' + weekStart; } }, icon('left')),
       el('div', { class: 'grow' }, el('div', { class: 'small muted' }, `${week.label || 'Week'} · ${weekRange(weekStart)}`), el('h1', {}, day.title || `Day ${dayIndex + 1}`)),
-      el('button', { class: 'btn icon-btn', 'aria-label': 'Download this day', title: 'Download for offline use', onclick: () => downloadMenu(week, day) }, icon('download'))),
+      el('button', { class: 'btn icon-btn', 'aria-label': 'Download this day', 'data-tour': 'download', title: 'Download for offline use', onclick: () => downloadMenu(week, day) }, icon('download'))),
     day.subtitle ? el('p', { class: 'soft', style: 'font-weight:600' }, day.subtitle) : null,
     day.description ? el('div', { class: 'notice pre' }, day.description) : null,
     fb ? el('div', { class: 'notice pre' }, el('b', {}, 'Feedback from Bruno: '), fb.body) : null,
     el('div', { class: 'row between small' }, el('a', { href: '#', onclick: (e) => { e.preventDefault(); rpeHelp(); } }, 'What is RPE?'), state),
     ...blocks,
-    el('div', { class: 'card stack', style: 'margin-top:24px' },
+    el('div', { class: 'card stack', style: 'margin-top:24px', 'data-tour': 'finish' },
       el('h2', {}, 'How did it go?'),
       el('div', { class: 'small soft' }, 'Overall difficulty (1 = very easy, 10 = as hard as it gets)'),
       difficulty, note, finish, doneText)));
@@ -359,7 +368,7 @@ function exerciseCard(row, log, weekStart, extraCols, persist) {
 
   return el('div', { class: 'card ex' },
     el('div', { class: 'ex-head' }, el('div', { class: 'grow' }, el('div', { class: 'ex-name' }, row.c.name)),
-      rest ? el('button', { class: 'btn small', type: 'button', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null),
+      rest ? el('button', { class: 'btn small', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null),
     chips,
     row.c.notes ? el('div', { class: 'ex-notes' }, row.c.notes) : null,
     row.c.video ? el('a', { class: 'small', href: row.c.video, target: '_blank', rel: 'noopener' }, 'Watch the video') : null,
@@ -526,7 +535,7 @@ function renderProgress() {
 
   show(el('div', { class: 'stack' },
     el('h1', {}, 'Progress'),
-    el('div', { class: 'card stack' },
+    el('div', { class: 'card stack', 'data-tour': 'weigh' },
       el('h2', {}, 'Morning weigh-in'),
       el('p', { class: 'small soft' }, 'Every morning, after the bathroom, before eating or drinking anything.'),
       el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Date', dateIn), el('label', { class: 'lab' }, 'Weight (kg)', weightIn)),
@@ -656,7 +665,7 @@ function checkinCard() {
   weekSel.addEventListener('change', draw);
   draw();
   const due = !S.checkins.find((c) => c.week_start === thisWeek) && new Date().getDay() % 6 === 0;
-  return el('details', { class: 'card', open: due },
+  return el('details', { class: 'card', 'data-tour': 'checkin', open: due },
     el('summary', { style: 'cursor:pointer' }, el('h2', { style: 'display:inline' }, 'Weekly check-in'), due ? el('span', { class: 'pill warn', style: 'margin-left:8px' }, 'Due') : null),
     el('div', { class: 'stack', style: 'margin-top:12px' }, el('label', { class: 'lab' }, 'Week', weekSel), body));
 }
@@ -746,7 +755,7 @@ function renderNutrition() {
   const macros = byBruno ? { protein: t.protein, fat: t.fat, carbs: t.carbs } : est;
   const water = Calc.water(p.sex);
 
-  const targetsCard = el('div', { class: 'card stack' },
+  const targetsCard = el('div', { class: 'card stack', 'data-tour': 'targets' },
     el('div', { class: 'row between' }, el('h2', {}, 'Daily targets'), el('span', { class: 'pill ' + (byBruno ? 'teal' : '') }, byBruno ? 'Set by Bruno' : 'Estimate')),
     el('div', { class: 'stats' },
       el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Calories'), el('div', { class: 'v' }, fmt(kcal, 0)), el('div', { class: 'tiny muted' }, 'kcal a day, ± 100')),
@@ -843,7 +852,7 @@ function renderLifestyle() {
 
   show(el('div', { class: 'stack' },
     el('h1', {}, 'Lifestyle'),
-    el('div', { class: 'card stack' },
+    el('div', { class: 'card stack', 'data-tour': 'steps' },
       el('h2', {}, 'Daily steps'),
       el('p', { class: 'small soft' }, 'Best in the evening: open your phone\'s health app (Health on iPhone, Google Fit, Samsung Health or your watch app) and copy today\'s number.'),
       el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Date', dateIn), el('label', { class: 'lab' }, 'Steps', steps)),

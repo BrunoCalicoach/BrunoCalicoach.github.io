@@ -241,6 +241,20 @@ table.sheet th.did { color: #86e0b5; padding: 8px; }
 .day-head textarea.field { grid-column: 1 / -1; min-height: 44px; font-size: 14px; }
 @media (max-width: 600px) { .day-head { grid-template-columns: 1fr; } }
 
+/* ---------- Meal plans ---------- */
+.stat .v.good { color: #86e0b5; }
+.stat .v.warn { color: #f1c77d; }
+.stat .v.bad { color: #ff8e87; }
+.food-picker { position: relative; }
+.food-results { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40; background: #1a1a1a; border: 1px solid var(--line-strong); border-radius: 12px; padding: 4px; max-height: 360px; overflow: auto; box-shadow: 0 14px 40px rgba(0,0,0,0.6); }
+.food-hit { display: flex; gap: 12px; align-items: center; width: 100%; background: none; border: 0; color: var(--text); font: inherit; font-size: 14px; text-align: left; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.food-hit:hover, .food-hit.active { background: var(--surface-hi); }
+table.meal-table td { vertical-align: middle; }
+.meal-items { margin-top: 8px; }
+.meal-items li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.meal-items li:last-child { border-bottom: 0; }
+.meal-items .g { color: var(--text-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 /* ---------- First-launch tour ---------- */
 .help-btn { width: 36px; height: 36px; border-radius: 50%; font-weight: 800; font-size: 16px; flex: none; }
 .tour-block { position: fixed; inset: 0; z-index: 80; }

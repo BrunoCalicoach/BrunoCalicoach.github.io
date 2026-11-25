@@ -392,8 +392,8 @@ function renderNutrition(body) {
   const reset = el('button', { class: 'btn ghost' }, 'Use the estimate');
   reset.addEventListener('click', async () => { await Data.remove('coaching_targets', { client_id: C.current }); C.d.targets = null; render(); });
 
-  const meals = C.d.meals || { client_id: C.current, plans: [], note: '' };
-  while (meals.plans.length < 3) meals.plans.push({ title: `Plan ${meals.plans.length + 1}`, rows: [1, 2, 3, 4].map(() => { const r = emptyRow(); return r; }), note: '' });
+  const meals = C.d.meals ? clone(C.d.meals) : { client_id: C.current, plans: [], note: '' };
+  const legacy = isLegacyMealPlan(meals.plans) ? clone(meals.plans) : null;
   const mealState = el('span', { class: 'save-state' });
   const saveMeals = debounce(async () => {
     try { await Data.upsert('coaching_meal_plans', { client_id: C.current, plans: meals.plans, note: meals.note || null }); C.d.meals = meals; mealState.textContent = 'Saved, live for the athlete'; mealState.className = 'save-state live'; }
@@ -403,20 +403,19 @@ function renderNutrition(body) {
   const mealNote = el('textarea', { class: 'field', style: 'min-height:50px', value: meals.note || '', placeholder: 'Note above the meal plans, e.g. "Almonds, hazelnuts and cashews can be swapped"' });
   mealNote.addEventListener('input', () => { meals.note = mealNote.value; mealChanged(); });
 
-  const planBlocks = meals.plans.map((plan) => {
-    const title = el('input', { class: 'field', style: 'max-width:260px;font-weight:700', value: plan.title || '' });
-    title.addEventListener('input', () => { plan.title = title.value; mealChanged(); });
-    const totals = el('p', { class: 'small soft' });
-    const sum = () => {
-      const s = (k) => plan.rows.reduce((a, r) => a + (num(r.c[k]) || 0), 0);
-      totals.textContent = `Total: ${fmt(s('kcal'), 0)} kcal · P ${fmt(s('protein'), 0)} g · F ${fmt(s('fat'), 0)} g · C ${fmt(s('carbs'), 0)} g`;
-    };
-    sum();
-    const sheet = createSheet({ columns: MEAL_COLS, rows: plan.rows, editableColumns: false, onChange: () => { sum(); mealChanged(); } });
-    const pnote = el('input', { class: 'field', value: plan.note || '', placeholder: 'Note for this plan (optional)' });
-    pnote.addEventListener('input', () => { plan.note = pnote.value; mealChanged(); });
-    return el('div', { class: 'card stack' }, title, sheet.node, totals, pnote);
-  });
+  // Targets the plan is checked against: Bruno's numbers if set, otherwise the app's estimate
+  const planTarget = C.d.targets?.kcal ? { kcal: C.d.targets.kcal, protein: C.d.targets.protein, fat: C.d.targets.fat, carbs: C.d.targets.carbs }
+    : est ? { kcal: est.kcal, protein: est.protein, fat: est.fat, carbs: est.carbs } : null;
+  const editorHost = el('div', {}, el('p', { class: 'muted' }, 'Loading foods…'));
+  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged)));
+  const planBlocks = [
+    legacy ? el('div', { class: 'notice warn' }, 'This athlete had an older typed-in meal plan. It is replaced as soon as you add a food here.') : null,
+    el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => ownFoodDialog() }, '+ Add your own food (from a label)'),
+      el('span', { class: 'small muted' }, `Food library: ${FOOD_LIBRARY.length} foods from USDA FoodData Central, values per 100 g raw or dry weight.`)),
+    el('p', { class: 'small soft' }, planTarget
+      ? `Checked against ${C.d.targets?.kcal ? 'your targets' : 'the estimated targets'}: ${fmt(planTarget.kcal, 0)} kcal, protein ${fmt(planTarget.protein, 0)} g min, carbs ${fmt(planTarget.carbs, 0)} g, fat ${fmt(planTarget.fat, 0)} g. Green = within 5%.`
+      : 'No targets yet: the athlete has not entered their details and you have not set targets above.'),
+    editorHost];
 
   body.replaceChildren(el('div', { class: 'stack-lg' },
     el('div', { class: 'card stack' },
@@ -427,7 +426,7 @@ function renderNutrition(body) {
       el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Calories (kcal)', kcal), el('label', { class: 'lab' }, 'Protein min (g)', protein),
         el('label', { class: 'lab' }, 'Fat min (g)', fat), el('label', { class: 'lab' }, 'Carbs (g)', carbs)),
       note, el('div', { class: 'row' }, save, C.d.targets ? reset : null), msg),
-    el('div', { class: 'row between' }, el('h2', {}, 'Meal plans'), mealState),
+    el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), mealState),
     c.tier !== 'pro' ? el('div', { class: 'notice warn' }, `${c.name} is on REGULAR, so they cannot see meal plans. Switch them to PRO in Settings to show these.`) : null,
     mealNote, ...planBlocks));
 }

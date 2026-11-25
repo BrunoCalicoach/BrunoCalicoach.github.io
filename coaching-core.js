@@ -110,7 +110,7 @@ const KEYS = {
   coaching_weeks: ['client_id', 'week_start'], coaching_logs: ['client_id', 'week_start', 'day_index'],
   coaching_feedback: ['client_id', 'week_start', 'day_index'], coaching_checkins: ['client_id', 'week_start'],
   coaching_daily: ['client_id', 'day'], coaching_measurements: ['client_id', 'day'], coaching_targets: ['client_id'],
-  coaching_meal_plans: ['client_id'], coaching_guides: ['key']
+  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id']
 };
 
 class OfflineError extends Error {}
@@ -168,7 +168,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v1';
+const DEMO_KEY = 'coaching-demo-db-v2';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -387,6 +387,46 @@ function restSeconds(text) {
 }
 
 function exerciseRows(day) { return (day?.rows || []).filter((r) => r.kind !== 'section' && String(r.c.name || '').trim()); }
+
+/* ---------- Meal plans: days of 3 meals, foods with grams ---------- */
+
+const NUTRIENT_KEYS = ['kcal', 'p', 'c', 'f', 'fib', 'sug', 'sat', 'na', 'k', 'ca', 'fe', 'mg', 'zn', 'vc', 'vd', 'b12', 'va', 'fol'];
+const MICROS = [
+  ['fib', 'Fibre', 'g'], ['sug', 'Sugars', 'g'], ['sat', 'Saturated fat', 'g'], ['na', 'Sodium', 'mg'], ['k', 'Potassium', 'mg'],
+  ['ca', 'Calcium', 'mg'], ['fe', 'Iron', 'mg'], ['mg', 'Magnesium', 'mg'], ['zn', 'Zinc', 'mg'], ['vc', 'Vitamin C', 'mg'],
+  ['vd', 'Vitamin D', 'µg'], ['b12', 'Vitamin B12', 'µg'], ['va', 'Vitamin A', 'µg'], ['fol', 'Folate', 'µg']
+];
+const MEAL_NAMES = ['Breakfast', 'Lunch', 'Dinner'];
+
+function emptyMealDay(n) {
+  return { id: uid(), title: `Day ${n}`, note: '', meals: MEAL_NAMES.map((name) => ({ id: uid(), name, note: '', items: [] })) };
+}
+
+// The food's values per 100 g are copied into the plan, so a published plan never shifts if the library changes
+function newMealItem(food, grams) {
+  const per100 = {};
+  for (const k of NUTRIENT_KEYS) if (food[k] !== undefined && food[k] !== null) per100[k] = food[k];
+  return { id: uid(), food: food.id, name: food.name, g: grams, per100 };
+}
+
+// Adds up foods (or meals, or days). Missing micronutrients count as unknown, not zero.
+function mealTotals(items) {
+  const t = { known: {} };
+  for (const k of NUTRIENT_KEYS) t[k] = 0;
+  for (const it of items) {
+    const g = num(it.g) || 0;
+    for (const k of NUTRIENT_KEYS) {
+      if (it.per100?.[k] === undefined) { if (g) t.known[k] = false; continue; }
+      t[k] += (it.per100[k] * g) / 100;
+      if (t.known[k] === undefined) t.known[k] = true;
+    }
+  }
+  return t;
+}
+const dayItems = (day) => day.meals.flatMap((m) => m.items);
+
+// Plans saved before the food library (free-text rows) are shown as they were
+function isLegacyMealPlan(plans) { return Array.isArray(plans) && plans.some((p) => p && Array.isArray(p.rows)); }
 
 /* ---------- Calculations ---------- */
 
@@ -712,7 +752,13 @@ function demoSeed() {
     const n = setCount(r);
     lastLog.entries[r.id] = { sets: Array.from({ length: n }, (_, s) => ({ reps: String([5, 9, 20, 15][i] - (i === 2 ? s * 4 : 0)), weight: ['42.5', '20', '', ''][i], rpe: String(8 + (s % 2) * 0.5) })) };
   });
-  const meal = (title, foods, kcal, p, f, c) => ({ id: uid(), kind: 'ex', c: { meal: title, foods, kcal, protein: p, fat: f, carbs: c } });
+  const items = (list) => list.map(([name, g]) => newMealItem(FOOD_LIBRARY.find((f) => f.name === name), g));
+  const meal = (title, b, l, d) => {
+    const day = emptyMealDay(1);
+    day.title = title;
+    [b, l, d].forEach((list, i) => { day.meals[i].items = items(list); });
+    return day;
+  };
   return {
     tables: {
       coaching_clients: [
@@ -737,10 +783,16 @@ function demoSeed() {
         { client_id: A, day: addDays(twoAgo, 6), chest: 104, waist_narrow: 84, waist_navel: 88, hips: 99, biceps: 38, thigh: 59 },
         { client_id: A, day: addDays(lastWeek, 6), chest: 104, waist_narrow: 83, waist_navel: 87, hips: 98.5, biceps: 38, thigh: 58.5 }],
       coaching_targets: [],
-      coaching_meal_plans: [{ client_id: A, note: 'All three plans have about the same calories. Pick whichever suits your day.', plans: [
-        { title: 'Plan 1', rows: [meal('Breakfast', 'Oats 80g, whey 30g, blueberries 150g', 520, 35, 9, 72), meal('Lunch', 'Chicken breast 200g, rice 90g (dry), salad', 680, 55, 10, 85), meal('Snack', 'Skyr 250g, banana 100g', 260, 28, 1, 33), meal('Dinner', 'Salmon 150g, potatoes 300g, broccoli 200g', 690, 42, 22, 68)] },
-        { title: 'Plan 2', rows: [meal('Breakfast', 'Eggs 3, toast 2 slices, tomato', 480, 26, 20, 44), meal('Lunch', 'Turkey 180g, pasta 100g (dry), vegetables', 720, 56, 9, 95), meal('Snack', 'Protein pudding, almonds 20g', 300, 24, 14, 18), meal('Dinner', 'Lean beef 180g, bulgur 80g, peppers', 650, 48, 16, 70)] },
-        { title: 'Plan 3', rows: [meal('Breakfast', 'Protein pancakes (oats 70g, egg whites 200g, whey 20g)', 540, 45, 7, 66), meal('Lunch', 'Tuna 2 cans, wraps 2, vegetables', 640, 58, 12, 70), meal('Snack', 'Kefir 400ml, apple', 300, 14, 6, 44), meal('Dinner', 'Chicken 200g, gnocchi 250g, salad', 690, 52, 9, 90)] }] }],
+      coaching_meal_plans: [{ client_id: A, note: 'Weigh foods raw or dry. Swap whole days as you like: every day has about the same calories and macros.', plans: [
+        meal('Day 1', [['Oats (rolled), dry', 80], ['Greek yogurt, 0% fat', 200], ['Blueberries', 150], ['Walnuts', 15]],
+          [['Chicken breast, raw', 200], ['Rice, white, dry', 90], ['Broccoli', 200], ['Olive oil', 10]],
+          [['Salmon (farmed), raw', 150], ['Potatoes, raw', 350], ['Lettuce (romaine)', 100], ['Tomato', 150]]),
+        meal('Day 2', [['Egg, whole, raw', 150], ['Egg white, raw', 100], ['Bread, whole wheat', 80], ['Tomato', 100]],
+          [['Turkey breast, raw', 200], ['Pasta, dry', 100], ['Pepper, red', 150], ['Olive oil', 10]],
+          [['Beef, lean (top round), raw', 180], ['Bulgur, dry', 70], ['Zucchini', 200], ['Banana', 120]]),
+        meal('Day 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
+          [['Tuna, canned in water, drained', 150], ['Tortilla (wheat)', 120], ['Cucumber', 150], ['Avocado', 60]],
+          [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]])] }],
       coaching_guides: []
     },
     files: {}

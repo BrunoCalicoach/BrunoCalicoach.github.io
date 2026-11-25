@@ -168,7 +168,18 @@ create table public.coaching_targets (
   updated_at timestamptz not null default now()
 );
 
--- PRO only: the 3 interchangeable meal plans
+-- Bruno's own foods (branded products from the label), next to the built-in USDA library in coaching-foods.js
+create table public.coaching_foods (
+  id text primary key check (char_length(id) <= 40),
+  name text not null check (char_length(name) between 1 and 120),
+  cat text not null default 'other' check (char_length(cat) <= 20),
+  per100 jsonb not null check (jsonb_typeof(per100) = 'object' and pg_column_size(per100) < 4000),
+  note text check (char_length(note) <= 300),
+  updated_at timestamptz not null default now()
+);
+
+-- PRO only: the meal plan (days of 3 meals, each food with grams and its values per 100 g copied in,
+-- so a published plan never changes when the food library does)
 create table public.coaching_meal_plans (
   client_id uuid primary key references public.coaching_clients (user_id) on delete cascade,
   plans jsonb not null default '[]' check (jsonb_typeof(plans) = 'array' and pg_column_size(plans) < 200000),
@@ -198,14 +209,15 @@ alter table public.coaching_daily enable row level security;
 alter table public.coaching_measurements enable row level security;
 alter table public.coaching_targets enable row level security;
 alter table public.coaching_meal_plans enable row level security;
+alter table public.coaching_foods enable row level security;
 alter table public.coaching_guides enable row level security;
 
 revoke all on public.coaching_clients, public.coaching_profiles, public.coaching_drafts, public.coaching_weeks,
   public.coaching_logs, public.coaching_feedback, public.coaching_checkins, public.coaching_daily,
-  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides from anon;
+  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods from anon;
 grant select, insert, update, delete on public.coaching_clients, public.coaching_profiles, public.coaching_drafts,
   public.coaching_weeks, public.coaching_logs, public.coaching_feedback, public.coaching_checkins, public.coaching_daily,
-  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides to authenticated;
+  public.coaching_measurements, public.coaching_targets, public.coaching_meal_plans, public.coaching_guides, public.coaching_foods to authenticated;
 grant execute on function public.publish_week(uuid, date), public.unpublish_week(uuid, date),
   public.coach_add_client(text, text, text), public.is_coach(), public.is_client(), public.is_pro(uuid) to authenticated;
 revoke execute on function public.publish_week(uuid, date), public.unpublish_week(uuid, date),
@@ -224,6 +236,7 @@ create policy "Coach reads measurements" on public.coaching_measurements for sel
 create policy "Coach manages targets" on public.coaching_targets for all to authenticated using (public.is_coach()) with check (public.is_coach());
 create policy "Coach manages meal plans" on public.coaching_meal_plans for all to authenticated using (public.is_coach()) with check (public.is_coach());
 create policy "Coach manages guides" on public.coaching_guides for all to authenticated using (public.is_coach()) with check (public.is_coach());
+create policy "Coach manages foods" on public.coaching_foods for all to authenticated using (public.is_coach()) with check (public.is_coach());
 
 -- Athletes: their own rows only
 create policy "Athlete reads own client row" on public.coaching_clients for select to authenticated

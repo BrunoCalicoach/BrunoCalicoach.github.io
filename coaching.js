@@ -784,10 +784,11 @@ function renderNutrition() {
   let mealsSection;
   if (isPro()) {
     const plans = S.meals?.plans || [];
-    mealsSection = plans.length ? mealPlansCard(plans, S.meals.note) : el('div', { class: 'card' }, el('h2', {}, 'Meal plans'), el('p', { class: 'soft', style: 'margin-top:8px' }, 'Bruno is preparing your 3 meal plans. They appear here when ready.'));
+    const hasFood = isLegacyMealPlan(plans) || plans.some((d) => d.meals?.some((m) => m.items.length));
+    mealsSection = hasFood ? mealPlansCard(plans, S.meals.note) : el('div', { class: 'card' }, el('h2', {}, 'Meal plan'), el('p', { class: 'soft', style: 'margin-top:8px' }, 'Bruno is preparing your meal plan. It appears here when ready.'));
   } else {
     mealsSection = el('div', { class: 'card lock' }, icon('lock'), el('h2', { style: 'margin-top:8px' }, 'Personal meal plans'),
-      el('p', { class: 'soft', style: 'margin-top:8px' }, 'Coaching PRO includes 3 interchangeable meal plans built around your calories, plus food lists and supplement advice.'),
+      el('p', { class: 'soft', style: 'margin-top:8px' }, 'Coaching PRO includes a personal meal plan built around your calories and macros, plus food lists and supplement advice.'),
       el('a', { class: 'btn', style: 'margin-top:14px', href: 'pro.html' }, 'About Coaching PRO'));
   }
 
@@ -801,6 +802,38 @@ const MEAL_COLUMNS = [
 ];
 
 function mealPlansCard(plans, note) {
+  return isLegacyMealPlan(plans) ? legacyMealPlansCard(plans, note) : mealDaysCard(plans, note);
+}
+
+// Days of 3 meals with foods and grams, totals per meal and per day
+function mealDaysCard(days, note) {
+  let active = 0;
+  const seg = el('div', { class: 'seg' });
+  const body = el('div', { class: 'stack', style: 'margin-top:12px' });
+  const line = (t) => `${fmt(t.kcal, 0)} kcal · P ${fmt(t.p, 0)} g · C ${fmt(t.c, 0)} g · F ${fmt(t.f, 0)} g`;
+  function draw() {
+    seg.replaceChildren(...days.map((d, i) => el('button', { type: 'button', class: i === active ? 'active' : '', onclick: () => { active = i; draw(); } }, d.title || `Day ${i + 1}`)));
+    const day = days[active];
+    const total = mealTotals(dayItems(day));
+    body.replaceChildren(
+      ...day.meals.filter((m) => m.items.length).map((m) => el('div', { class: 'card alt tight' },
+        el('div', { class: 'row between nowrap' }, el('b', {}, m.name), el('span', { class: 'pill' }, `${fmt(mealTotals(m.items).kcal, 0)} kcal`)),
+        el('ul', { class: 'meal-items', style: 'list-style:none;padding:0;margin:8px 0 0' },
+          ...m.items.map((it) => el('li', {}, el('span', {}, it.name), el('span', { class: 'g' }, `${fmt(num(it.g), 0)} g`)))),
+        el('p', { class: 'tiny muted', style: 'margin-top:6px' }, line(mealTotals(m.items))),
+        m.note ? el('p', { class: 'small soft pre', style: 'margin-top:6px' }, m.note) : null)),
+      el('div', { class: 'row between small', style: 'font-weight:700' }, el('span', {}, 'Day total'), el('span', {}, line(total))),
+      day.note ? el('p', { class: 'small soft pre' }, day.note) : null,
+      el('p', { class: 'tiny muted' }, 'Weights are raw or dry, before cooking. Values: USDA FoodData Central.'));
+  }
+  draw();
+  return el('div', { class: 'card' },
+    el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), el('span', { class: 'pill pro' }, 'PRO')),
+    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Every day has about the same calories and macros, so you can swap days as you like.'),
+    seg, body);
+}
+
+function legacyMealPlansCard(plans, note) {
   let active = 0;
   const seg = el('div', { class: 'seg' });
   const body = el('div', { class: 'stack', style: 'margin-top:12px' });

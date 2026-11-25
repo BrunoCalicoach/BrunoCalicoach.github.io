@@ -124,6 +124,7 @@ function consentGate() {
       el('p', { class: 'soft' }, 'Only you and Bruno can see them. They are used only for your coaching, and you can ask Bruno to delete them at any time.'),
       el('label', { class: 'row nowrap', style: 'align-items:flex-start;gap:12px;font-weight:600', for: 'consent' }, box,
         el('span', {}, 'I agree that my health and training data is stored for my coaching.')),
+      el('p', { class: 'small soft' }, 'Under 18? A parent or legal guardian must agree to your coaching and to this before you continue.'),
       el('p', { class: 'small' }, el('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'Read the privacy policy')),
       go)));
 }

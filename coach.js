@@ -56,14 +56,19 @@ const client = () => C.clients.find((c) => c.user_id === C.current);
 
 function render() {
   remember();
-  const side = el('aside', { class: 'side card tight' },
-    el('button', { class: 'ath' + (C.view === 'dashboard' ? ' active' : ''), onclick: () => { C.view = 'dashboard'; render(); } }, 'Dashboard'),
+  // On phones the menu folds into one button that shows where you are; picking an item closes it again
+  const where = C.view === 'dashboard' ? 'Dashboard' : C.view === 'guides' ? 'Guide texts' : (client()?.name || 'Athlete');
+  const toggle = el('button', { class: 'side-toggle', type: 'button', 'aria-expanded': String(!!C.menuOpen), onclick: () => { C.menuOpen = !C.menuOpen; render(); } },
+    el('span', { class: 'side-toggle-icon', 'aria-hidden': 'true' }, C.menuOpen ? '✕' : '☰'), el('span', { class: 'grow' }, where), el('span', { class: 'small muted' }, 'Menu'));
+  const pick = (fn) => () => { C.menuOpen = false; fn(); };
+  const side = el('aside', { class: 'side card tight' + (C.menuOpen ? ' open' : '') }, toggle, el('div', { class: 'side-list' },
+    el('button', { class: 'ath' + (C.view === 'dashboard' ? ' active' : ''), onclick: pick(() => { C.view = 'dashboard'; render(); }) }, 'Dashboard'),
     el('div', { class: 'section-title', style: 'margin:14px 12px 6px' }, 'Athletes'),
     ...C.clients.map((c) => el('button', { class: 'ath' + (C.view === 'athlete' && C.current === c.user_id ? ' active' : ''), style: c.active ? '' : 'opacity:.5',
-      onclick: () => openAthlete(c.user_id) }, el('span', { class: 'grow' }, c.name), el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase()))),
-    el('button', { class: 'ath', onclick: addAthlete }, '+ Add athlete'),
+      onclick: pick(() => openAthlete(c.user_id)) }, el('span', { class: 'grow' }, c.name), el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase()))),
+    el('button', { class: 'ath', onclick: pick(addAthlete) }, '+ Add athlete'),
     el('div', { class: 'section-title', style: 'margin:14px 12px 6px' }, 'Content'),
-    el('button', { class: 'ath' + (C.view === 'guides' ? ' active' : ''), onclick: () => { C.view = 'guides'; render(); } }, 'Guide texts'));
+    el('button', { class: 'ath' + (C.view === 'guides' ? ' active' : ''), onclick: pick(() => { C.view = 'guides'; render(); }) }, 'Guide texts')));
   const content = el('section', { class: 'grow', style: 'min-width:0' }, el('p', { class: 'muted' }, 'Loading…'));
   app.replaceChildren(el('div', { class: 'coach-layout' }, side, content));
   if (C.view === 'dashboard') renderDashboard(content);

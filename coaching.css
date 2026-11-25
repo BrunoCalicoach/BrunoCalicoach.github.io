@@ -201,8 +201,17 @@ table.data td.wrap { white-space: pre-wrap; min-width: 180px; }
 /* ---------- Coach layout ---------- */
 .coach main { padding: 16px 16px 60px; }
 .coach-layout { display: grid; gap: 16px; grid-template-columns: 230px minmax(0, 1fr); align-items: start; }
-@media (max-width: 900px) { .coach-layout { grid-template-columns: minmax(0, 1fr); } }
 .side { position: sticky; top: 70px; }
+.side-toggle { display: none; }
+/* Phones and narrow windows: the menu no longer floats over the page; it folds into one button */
+@media (max-width: 900px) {
+  .coach-layout { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; padding: 6px; }
+  .side-toggle { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; color: var(--text); font: inherit; font-weight: 700; padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+  .side-toggle-icon { font-size: 18px; width: 20px; text-align: center; color: var(--accent-soft); }
+  .side .side-list { display: none; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+  .side.open .side-list { display: block; }
+}
 .side button.ath { display: flex; width: 100%; align-items: center; gap: 8px; text-align: left; background: none; border: 0; color: var(--text-soft); font: inherit; font-weight: 600; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
 .side button.ath:hover { background: var(--surface-alt); }
 .side button.ath.active { background: rgba(0,128,128,0.2); color: var(--text); }

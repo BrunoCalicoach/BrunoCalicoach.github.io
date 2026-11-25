@@ -626,8 +626,18 @@ const Calc = {
     if (!sex || !weight || !height || !age) return null;
     return 10 * weight + 6.25 * height - 5 * age + (sex === 'male' ? 5 : -161);
   },
+  // A birth date that gives an impossible age (left on this year in a phone's date picker, a typo) means no estimate
+  ageProblem(birth) {
+    const age = this.age(birth);
+    if (age === null || !Number.isFinite(age)) return 'Please enter your date of birth.';
+    if (age < 0) return 'Your date of birth is in the future. Please check the year.';
+    if (age < 10) return `Your date of birth (${birth ? niceDate(birth, { day: 'numeric', month: 'short', year: 'numeric' }) : ''}) gives an age of ${Math.max(age, 0)}. Please check the year.`;
+    if (age > 100) return `Your date of birth gives an age of ${age}. Please check the year.`;
+    return '';
+  },
   targets(profile, weight) {
     const age = this.age(profile?.birth_date);
+    if (this.ageProblem(profile?.birth_date)) return null;
     const bmr = this.bmr({ sex: profile?.sex, weight, height: num(profile?.height_cm), age });
     if (!bmr || !profile?.activity) return null;
     const tdee = bmr * Number(profile.activity);

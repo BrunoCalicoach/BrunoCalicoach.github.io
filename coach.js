@@ -358,8 +358,9 @@ function renderProgress(body) {
           el('td', {}, w.balance === null ? '–' : (w.balance > 0 ? '+' : '') + fmt(w.balance, 0) + ' kcal/day'),
           el('td', {}, String(w.weights.length)), el('td', {}, w.avgSteps ? fmt(w.avgSteps, 0) : '–'))))))),
     el('div', { class: 'card stack' }, el('h2', {}, 'Starting details and estimate'),
+      profile && !est && profile.birth_date ? el('div', { class: 'notice warn' }, `Details look wrong, so no estimate: ${Calc.ageProblem(profile.birth_date) || 'check height, weight and activity.'} Entered: ${profile.sex || '?'}, born ${profile.birth_date}, ${profile.height_cm ?? '?'} cm, start ${profile.start_weight ?? '?'} kg, activity ${profile.activity ?? '?'}, goal ${GOALS[profile.goal] || '?'}. The athlete is asked to fix them in the app.`) : null,
       profile && est ? el('p', { class: 'soft' }, `${profile.sex}, age ${est.age}, ${profile.height_cm} cm, start ${profile.start_weight} kg, activity ${profile.activity}, goal: ${GOALS[profile.goal]}. BMR ${fmt(est.bmr, 0)} · TDEE ${fmt(est.tdee, 0)} · target ${fmt(est.kcal, 0)} kcal · P ${est.protein} / F ${est.fat} / C ${est.carbs} g`)
-        : el('p', { class: 'muted' }, 'The athlete has not filled in their starting details yet.')),
+        : profile?.birth_date ? null : el('p', { class: 'muted' }, 'The athlete has not filled in their starting details yet.')),
     el('div', { class: 'card stack' }, el('h2', {}, 'Measurements (cm)'),
       measurements.length ? el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
         el('thead', {}, el('tr', {}, ...['Date', 'Chest', 'Narrowest waist', 'Waist (navel)', 'Hips', 'Biceps', 'Thigh'].map((h) => el('th', {}, h)))),

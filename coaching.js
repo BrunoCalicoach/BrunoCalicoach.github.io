@@ -152,11 +152,21 @@ function route() {
   const tab = view === 'workout' || view === 'week' || !view ? 'training' : view;
   tabsNav.querySelectorAll('button').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
   stopTimer();
-  if (view === 'workout') return renderWorkout(a, Number(b));
-  if (view === 'progress') return renderProgress();
-  if (view === 'nutrition') return renderNutrition();
-  if (view === 'lifestyle') return renderLifestyle();
-  return renderTraining(view === 'week' ? a : null);
+  // Safety net: if a page fails to draw, say so (with a way back) instead of leaving "Loading…" on screen
+  try {
+    if (view === 'workout') return renderWorkout(a, Number(b));
+    if (view === 'progress') return renderProgress();
+    if (view === 'nutrition') return renderNutrition();
+    if (view === 'lifestyle') return renderLifestyle();
+    return renderTraining(view === 'week' ? a : null);
+  } catch (error) {
+    console.error(error);
+    show(el('div', { class: 'card stack', style: 'margin-top:20px' },
+      el('h2', {}, 'This page could not open'),
+      el('p', { class: 'soft' }, 'Sorry, something went wrong. Your saved data is safe. Please tell Bruno, and include this message:'),
+      el('p', { class: 'small muted pre' }, String(error?.message || error)),
+      el('button', { class: 'btn', onclick: () => { location.hash = 'training'; } }, 'Back to training')));
+  }
 }
 
 /* ---------- Helpers ---------- */
@@ -728,6 +738,8 @@ function profileForm(onSaved) {
       activity: num(activity.value), goal: goal.value || null };
     if (!profileComplete(row)) { msg.className = 'msg err'; msg.textContent = 'Please fill in every field.'; return; }
     if (row.height_cm < 100 || row.height_cm > 250 || row.start_weight < 30 || row.start_weight > 300) { msg.className = 'msg err'; msg.textContent = 'Please check height (cm) and weight (kg).'; return; }
+    const ageMsg = Calc.ageProblem(row.birth_date);
+    if (ageMsg) { msg.className = 'msg err'; msg.textContent = ageMsg; return; }
     await saveRow('coaching_profiles', row);
     S.profile = { ...S.profile, ...row };
     if (!S.daily.some((d) => num(d.weight))) await upsertDaily(today(), { weight: row.start_weight });
@@ -752,6 +764,13 @@ function renderNutrition() {
   }
   const weight = Calc.latestWeight(S.daily, p);
   const est = Calc.targets(p, weight);
+  if (!est) {
+    // Saved details that can't give an estimate (e.g. a birth date in this year): ask to fix them instead of failing
+    return show(el('div', { class: 'stack' }, el('h1', {}, 'Nutrition'),
+      el('div', { class: 'card stack' }, el('h2', {}, 'Please check your details'),
+        el('p', { class: 'small soft' }, Calc.ageProblem(p.birth_date) || 'Something in your starting details looks unusual, so your calorie needs can\'t be calculated yet.'),
+        profileForm(renderNutrition))));
+  }
   const t = S.targets;
   const byBruno = t && t.kcal;
   const kcal = byBruno ? t.kcal : est.kcal;

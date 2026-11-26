@@ -155,11 +155,11 @@ function createSheet({ columns, rows, onChange, editableColumns = true, sections
   function outside(e) { if (!e.target.closest('#sheet-menu')) closeMenu(); }
   function closeMenu() { document.getElementById('sheet-menu')?.remove(); document.removeEventListener('mousedown', outside); }
   function addColumn(at = state.columns.length) {
-    const label = prompt('Name of the new column (for example Tempo, Video, Distance):', 'Tempo');
-    if (!label) return;
-    remember();
-    state.columns.splice(at, 0, { key: 'x_' + uid(), label: label.trim(), width: 120 });
-    render(); changed();
+    askText('Add a column', 'Name of the new column (for example Tempo, Video, Distance)', 'Tempo', (label) => {
+      remember();
+      state.columns.splice(at, 0, { key: 'x_' + uid(), label, width: 120 });
+      render(); changed();
+    }, { okLabel: 'Add column' });
   }
 
   function onKey(e, r, c) {

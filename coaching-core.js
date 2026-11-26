@@ -117,6 +117,15 @@ function modal(title, ...content) {
   return { close, box };
 }
 
+// Asks for one line of text in the app's own window (browser prompt() boxes are blocked in some apps and look out of place)
+function askText(title, label, value, onOk, { placeholder = '', allowEmpty = false, okLabel = 'Save' } = {}) {
+  const input = el('input', { class: 'field', value: value || '', placeholder });
+  const ok = () => { const v = input.value.trim(); if (!v && !allowEmpty) { input.focus(); return; } m.close(); onOk(v); };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
+  const m = modal(title, el('label', { class: 'lab' }, label, input), el('button', { class: 'btn primary', type: 'button', onclick: ok }, okLabel));
+  setTimeout(() => { input.focus(); input.select(); }, 30);
+}
+
 /* ---------- Dates (weeks start on Monday) ---------- */
 
 function ymd(date) {

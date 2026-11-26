@@ -123,7 +123,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     const split = mealSplit(meals);
 
     const planMenu = el('button', { class: 'kebab', type: 'button', 'aria-label': 'Plan options', onclick: (e) => popMenu(e.currentTarget, [
-      ['Rename this plan', () => { const n = prompt('Plan name', day.title); if (n && n.trim()) { day.title = n.trim(); onChange(); draw(); } }],
+      ['Rename this plan', () => askText('Rename plan', 'Plan name', day.title, (n) => { day.title = n; onChange(); draw(); })],
       ['Add an empty plan', () => { meals.plans.push(emptyMealDay(meals.plans.length + 1)); active = meals.plans.length - 1; onChange(); draw(); }],
       ['Duplicate this plan', () => {
         const copy = clone(day); copy.id = uid(); copy.title = `Plan ${meals.plans.length + 1}`;
@@ -258,7 +258,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     const title = el('h3', {}, meal.name);
     const addLabel = el('span', {}, `Add food to ${meal.name}`);
     const menu = el('button', { class: 'kebab', type: 'button', 'aria-label': `Options for ${meal.name}`, onclick: (e) => popMenu(e.currentTarget, [
-      ['Rename', () => { const n = prompt('Meal name', meal.name); if (n && n.trim()) { meal.name = n.trim(); title.textContent = meal.name; addLabel.textContent = `Add food to ${meal.name}`; changed(); } }],
+      ['Rename', () => askText('Rename meal', 'Meal name', meal.name, (n) => { meal.name = n; title.textContent = meal.name; addLabel.textContent = `Add food to ${meal.name}`; changed(); })],
       target && meal.items.length ? ['Fit to target (adjust grams)', () => {
         const ok = fitMealToTarget(meal, target);
         drawRows(); update(); changed();
@@ -269,7 +269,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         drawRows(); update(); changed();
         if (left.length) alert(`No safe swap kept the meal on target for: ${left.join(', ')}. Change it by hand.`);
       }] : null,
-      ['Note for this meal', () => { const n = prompt('Note for this meal (preparation, swaps)', meal.note || ''); if (n !== null) { meal.note = n.trim(); changed(); drawNote(); } }],
+      ['Note for this meal', () => askText('Note for this meal', 'Preparation, swaps… (leave empty to remove)', meal.note || '', (n) => { meal.note = n; changed(); drawNote(); }, { allowEmpty: true })],
       meal.items.length ? ['Remove all foods', () => { if (confirm(`Remove every food from ${meal.name}?`)) { meal.items = []; drawRows(); update(); changed(); } }, true] : null
     ]) }, '⋮');
     const noteLine = el('p', { class: 'small soft pre', style: 'margin-top:8px' });

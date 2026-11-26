@@ -519,9 +519,8 @@ function renderNutrition(body) {
 
 function renderSettings(body) {
   const c = client();
+  const saved = () => JSON.stringify({ name: c.name, tier: c.tier, active: !!c.active, start_date: c.start_date || '', allergies: [...(c.allergies || [])].sort(), avoid_foods: c.avoid_foods || '' });
   const name = el('input', { class: 'field', value: c.name });
-  const tier = el('select', { class: 'select field' }, el('option', { value: 'regular', selected: c.tier === 'regular' }, 'REGULAR'), el('option', { value: 'pro', selected: c.tier === 'pro' }, 'PRO'));
-  const active = el('select', { class: 'select field' }, el('option', { value: '1', selected: c.active }, 'Active'), el('option', { value: '0', selected: !c.active }, 'Inactive (no access)'));
   const startDate = el('input', { class: 'field', type: 'date', value: c.start_date || '' });
   const current = new Set(c.allergies || []);
   const boxes = ALLERGENS.map(([k, label]) => {
@@ -529,25 +528,76 @@ function renderSettings(body) {
     return { k, box, node: el('label', { class: 'allergen-chip' }, box, label) };
   });
   const avoid = el('input', { class: 'field', value: c.avoid_foods || '', placeholder: 'e.g. kiwi, mushrooms, pork' });
-  const msg = el('p', { class: 'msg' });
-  const save = el('button', { class: 'btn primary' }, 'Save');
+  const avoidChips = el('div', { class: 'allergen-chips' });
+
+  // Coaching plan: two option cards instead of a dropdown, so it is clear what each one includes
+  let tier = c.tier;
+  const plans = [
+    ['regular', 'REGULAR', ['Weekly training plan and logging', 'Calorie and macro targets', 'Progress, check-ins, water and steps']],
+    ['pro', 'PRO', ['Everything in REGULAR', 'Personal meal plans with swaps', 'Shopping list, food lists and supplement texts']]
+  ];
+  const planBox = el('div', { class: 'plan-options', role: 'radiogroup', 'aria-label': 'Coaching plan' });
+  const drawPlans = () => planBox.replaceChildren(...plans.map(([k, label, perks]) => el('button', {
+    type: 'button', role: 'radio', 'aria-checked': String(tier === k), class: `plan-option${tier === k ? ' active' : ''}${k === 'pro' ? ' pro' : ''}`,
+    onclick: () => { tier = k; drawPlans(); changed(); }
+  }, el('div', { class: 'row between nowrap' }, el('b', {}, label), el('span', { class: 'plan-radio', 'aria-hidden': 'true' })),
+    el('ul', {}, ...perks.map((p) => el('li', {}, p))))));
+  drawPlans();
+
+  // Access: a switch with a plain explanation of what it does
+  const active = el('input', { type: 'checkbox', checked: !!c.active, role: 'switch' });
+  const accessText = el('span', { class: 'small soft' });
+  const drawAccess = () => { accessText.textContent = active.checked ? 'Can log in and save workouts, weigh-ins and check-ins.' : 'Cannot save anything any more. Their data stays, and you can switch them back on at any time.'; };
+  drawAccess();
+
+  // Save bar: shows whether anything changed, stays in view at the bottom while you scroll
+  const state = el('span', { class: 'small muted' });
+  const save = el('button', { class: 'btn primary', type: 'button' }, 'Save changes');
+  const undo = el('button', { class: 'btn ghost', type: 'button', onclick: () => renderSettings(body) }, 'Discard');
+  const values = () => ({ user_id: c.user_id, name: name.value.trim() || c.name, tier, active: active.checked, start_date: startDate.value || c.start_date,
+    allergies: boxes.filter((b) => b.box.checked).map((b) => b.k), avoid_foods: avoid.value.trim() || null });
+  function changed() {
+    const v = values();
+    const dirty = JSON.stringify({ name: v.name, tier: v.tier, active: v.active, start_date: v.start_date || '', allergies: [...v.allergies].sort(), avoid_foods: v.avoid_foods || '' }) !== saved();
+    save.disabled = !dirty; undo.classList.toggle('hidden', !dirty);
+    state.className = 'small ' + (dirty ? 'accent-warn' : 'muted');
+    state.textContent = dirty ? 'Unsaved changes' : 'All changes saved';
+    const words = avoid.value.split(',').map((w) => w.trim()).filter(Boolean);
+    avoidChips.replaceChildren(...words.map((w) => el('span', { class: 'allergen-chip avoid' }, w)));
+    allergyCount.textContent = v.allergies.length + words.length ? `${v.allergies.length + words.length} to avoid` : 'None';
+    allergyCount.className = 'pill ' + (v.allergies.length + words.length ? 'bad' : '');
+  }
+  const allergyCount = el('span', { class: 'pill' });
+  [name, startDate, avoid].forEach((i) => i.addEventListener('input', changed));
+  boxes.forEach((b) => b.box.addEventListener('change', changed));
+  active.addEventListener('change', () => { drawAccess(); changed(); });
   save.addEventListener('click', async () => {
-    const row = { user_id: c.user_id, name: name.value.trim() || c.name, tier: tier.value, active: active.value === '1', start_date: startDate.value || c.start_date,
-      allergies: boxes.filter((b) => b.box.checked).map((b) => b.k), avoid_foods: avoid.value.trim() || null };
-    try { await Data.upsert('coaching_clients', row); Object.assign(c, row); render(); } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
+    save.disabled = true; state.textContent = 'Saving…';
+    const row = values();
+    try { await Data.upsert('coaching_clients', row); Object.assign(c, row); toast('Settings saved'); render(); }
+    catch (e) { state.className = 'small msg err'; state.textContent = 'Not saved: ' + e.message; save.disabled = false; }
   });
-  body.replaceChildren(el('div', { class: 'stack', style: 'max-width:620px' },
-    el('div', { class: 'card stack' }, cardHead('users', 'Athlete', el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase())),
-      el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching plan', tier),
-        el('label', { class: 'lab' }, 'Access', active), el('label', { class: 'lab' }, 'Start date', startDate)),
-      el('p', { class: 'small muted' }, 'PRO unlocks meal plans, food lists and supplement texts for this athlete. Inactive athletes can no longer save anything; their data stays.')),
+
+  const weeksIn = c.start_date ? Math.floor((parseDay(today()) - parseDay(c.start_date)) / (7 * 86400000)) + 1 : null;
+  body.replaceChildren(el('div', { class: 'settings-grid' },
+    el('div', { class: 'stack' },
+      el('div', { class: 'card stack' }, cardHead('users', 'Athlete', weeksIn > 0 ? el('span', { class: 'small muted' }, `Week ${weeksIn} of coaching`) : null),
+        el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching start', startDate))),
+      el('div', { class: 'card stack' }, cardHead('clipboard', 'Coaching plan'), planBox),
+      el('div', { class: 'card stack' }, cardHead('lock', 'Access'),
+        el('label', { class: 'switch-row' }, active, el('span', { class: 'switch', 'aria-hidden': 'true' }),
+          el('span', { class: 'grow' }, el('b', { style: 'display:block' }, 'Active'), accessText)))),
     el('div', { class: 'card stack' },
-      cardHead('leaf', 'Allergies and foods to avoid', current.size ? el('span', { class: 'pill bad' }, `${current.size} allergen${current.size === 1 ? '' : 's'}`) : null),
+      cardHead('leaf', 'Allergies and foods to avoid', allergyCount),
       el('p', { class: 'small soft' }, 'Foods containing these are hidden from your food search and from every swap the athlete is offered. Meals that still contain one are flagged in the meal plan with a button to replace them.'),
+      el('h3', {}, 'Allergens'),
       el('div', { class: 'allergen-chips' }, ...boxes.map((b) => b.node)),
-      el('label', { class: 'lab' }, 'Other foods to avoid (words in the food name, separated by commas)', avoid),
+      el('h3', { style: 'margin-top:4px' }, 'Other foods to avoid'),
+      el('label', { class: 'lab' }, 'Words in the food name, separated by commas', avoid),
+      avoidChips,
       el('p', { class: 'tiny muted' }, 'Allergens follow the 14 the EU requires on food labels. For your own foods, tick their allergens when you add them. Always double-check product labels.')),
-    save, msg));
+    el('div', { class: 'save-bar' }, state, el('div', { class: 'grow' }), undo, save)));
+  changed();
 }
 
 function addAthlete() {

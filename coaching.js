@@ -778,11 +778,8 @@ function renderNutrition() {
 
   const targetsCard = el('div', { class: 'card stack', 'data-tour': 'targets' },
     el('div', { class: 'row between' }, el('h2', {}, 'Daily targets'), el('span', { class: 'pill ' + (byBruno ? 'teal' : '') }, byBruno ? 'Set by Bruno' : 'Estimate')),
-    el('div', { class: 'stats' },
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Calories'), el('div', { class: 'v' }, fmt(kcal, 0)), el('div', { class: 'tiny muted' }, 'kcal a day, ± 100')),
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Protein'), el('div', { class: 'v' }, macros.protein ? fmt(macros.protein, 0) + ' g' : '–'), el('div', { class: 'tiny muted' }, 'minimum')),
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Fat'), el('div', { class: 'v' }, macros.fat ? fmt(macros.fat, 0) + ' g' : '–'), el('div', { class: 'tiny muted' }, 'minimum')),
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Carbohydrates'), el('div', { class: 'v' }, macros.carbs ? fmt(macros.carbs, 0) + ' g' : '–'), el('div', { class: 'tiny muted' }, 'about'))),
+    targetSummary({ kcal, protein: macros.protein, carbs: macros.carbs, fat: macros.fat }),
+    el('p', { class: 'tiny muted', style: 'text-align:center' }, 'Calories ± 100 kcal a day'),
     byBruno && t.note ? el('p', { class: 'small soft pre' }, t.note) : null,
     el('p', { class: 'small soft' }, 'Not every day will be perfect: aim to stay close to these numbers on most days. Food labels and apps vary, so check your own products.'),
     el('details', {}, el('summary', { class: 'small', style: 'cursor:pointer;color:var(--accent-soft)' }, 'How this is calculated'),
@@ -917,30 +914,45 @@ function mealDaysCard(days, note, dayTarget) {
     const day = days[active];
     const meals = day.meals.map((_, mi) => effectiveMeal(day, mi));
     const total = mealTotals(meals.flatMap((m) => m.items));
+    // Same look as Bruno's editor: the plan's calorie ring, then one numbered card per meal.
+    // Tapping a food opens its swap options; each meal keeps its "Swap" and "Back to Bruno's meal" buttons.
     body.replaceChildren(
-      ...meals.map((m, mi) => m.items.length ? el('div', { class: 'card alt tight' },
-        el('div', { class: 'row between nowrap' }, el('b', {}, m.name),
-          el('div', { class: 'row nowrap', style: 'gap:6px' }, m.choice ? el('span', { class: 'pill teal' }, 'Your swap') : null,
-            el('span', { class: 'pill' }, `${fmt(mealTotals(m.items).kcal, 0)} kcal`))),
-        m.choice?.from ? el('p', { class: 'tiny muted', style: 'margin-top:2px' }, `Using ${m.choice.from}`) : null,
-        el('ul', { class: 'meal-items', style: 'list-style:none;padding:0;margin:8px 0 0' },
-          ...m.items.map((it, ii) => el('li', {},
-            canSwap ? el('button', { class: 'food-swap-link', type: 'button', title: 'Swap this food', onclick: () => swapFoodDialog(day, mi, ii) }, it.name, el('span', { class: 'swap-icon', 'aria-hidden': 'true' }, ' ⇄')) : el('span', {}, it.name),
-            el('span', { class: 'g' }, `${fmt(num(it.g), 0)} g`)))),
-        el('p', { class: 'tiny muted', style: 'margin-top:6px' }, line(mealTotals(m.items))),
-        m.note && !m.choice ? el('p', { class: 'small soft pre', style: 'margin-top:6px' }, m.note) : null,
-        canSwap ? el('div', { class: 'row', style: 'margin-top:8px' },
-          el('button', { class: 'btn small', type: 'button', onclick: () => swapMealDialog(day, mi) }, `Swap ${m.name.toLowerCase()}`),
-          m.choice ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setChoice(day, mi, null) }, 'Back to Bruno\'s meal') : null) : null) : null),
-      el('div', { class: 'row between small', style: 'font-weight:700' }, el('span', {}, 'Total for the day'), el('span', {}, line(total))),
+      el('div', { class: 'card tight' }, macroSummary(total, dayTarget ? { kcal: dayTarget.kcal, protein: dayTarget.protein, carbs: dayTarget.carbs, fat: dayTarget.fat } : null)),
+      ...meals.map((m, mi) => {
+        if (!m.items.length) return null;
+        const t = mealTotals(m.items);
+        const target = mealTargetFor(dayTarget, split[mi]);
+        return el('div', { class: 'card meal-card' },
+          el('div', { class: 'meal-head' },
+            el('span', { class: 'meal-num' }, String(mi + 1).padStart(2, '0')),
+            mealIcon(mi), el('h3', {}, m.name),
+            el('div', { class: 'meal-stats' }, el('span', { class: 'meal-kcal' }, `${fmt(t.kcal, 0)} kcal`), macroDonut(t, 30))),
+          m.choice ? el('div', { class: 'row small', style: 'margin:-4px 0 6px' }, el('span', { class: 'pill teal' }, 'Your swap'),
+            m.choice.from ? el('span', { class: 'muted' }, `Using ${m.choice.from}`) : null) : null,
+          el('ul', { class: 'meal-items' }, ...m.items.map((it, ii) => {
+            const ft = mealTotals([it]);
+            return el('li', { class: 'food-row' + (canSwap ? '' : ' static'), role: canSwap ? 'button' : null, tabindex: canSwap ? 0 : null,
+              title: canSwap ? 'Tap to swap this food' : null,
+              onclick: canSwap ? () => swapFoodDialog(day, mi, ii) : null,
+              onkeydown: canSwap ? (e) => { if (e.key === 'Enter') swapFoodDialog(day, mi, ii); } : null },
+              el('span', { class: 'gram-chip' }, `${fmt(num(it.g), 0)} g`),
+              el('div', { class: 'info' }, el('div', { class: 'fname' }, it.name, canSwap ? el('span', { class: 'swap-icon', 'aria-hidden': 'true' }, ' ⇄') : null), macroMiniBar(ft)),
+              el('div', { class: 'fkcal' }, fmt(ft.kcal, 0)));
+          })),
+          m.note && !m.choice ? el('p', { class: 'small soft pre', style: 'margin-top:8px' }, m.note) : null,
+          macroCounters(t, target),
+          canSwap ? el('div', { class: 'row', style: 'margin-top:10px' },
+            el('button', { class: 'btn small', type: 'button', onclick: () => swapMealDialog(day, mi) }, `⇄ Swap ${m.name.toLowerCase()}`),
+            m.choice ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setChoice(day, mi, null) }, 'Back to Bruno\'s meal') : null) : null);
+      }),
       day.note ? el('p', { class: 'small soft pre' }, day.note) : null,
-      el('p', { class: 'tiny muted' }, 'Weights are raw or dry, before cooking. Tap a food to swap it. Values: USDA FoodData Central.'));
+      el('p', { class: 'tiny muted' }, `Total for the day: ${line(total)}. Weights are raw or dry, before cooking. ${canSwap ? 'Tap a food to swap it. ' : ''}Values: USDA FoodData Central.`));
   }
   draw();
-  return el('div', { class: 'card' },
+  return el('div', { class: 'stack' },
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), el('span', { class: 'pill pro' }, 'PRO')),
-    el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'Swap any meal for the same meal in another plan, or swap single foods: your calories and macros stay on target.'),
-    block.any ? el('p', { class: 'tiny muted', style: 'margin:-6px 0 12px' }, `Swaps never include: ${[...block.allergens.map(allergenLabel), ...block.avoid].join(', ')}.`) : null,
+    el('p', { class: 'small soft' }, note || 'Swap any meal for the same meal in another plan, or swap single foods: your calories and macros stay on target.'),
+    block.any ? el('p', { class: 'tiny muted' }, `Swaps never include: ${[...block.allergens.map(allergenLabel), ...block.avoid].join(', ')}.`) : null,
     seg, body);
 }
 

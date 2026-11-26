@@ -426,3 +426,5 @@ table.meal-table td { vertical-align: middle; }
 .add-food .plus { width: 22px; height: 22px; font-size: 16px; }
 .meal-card .mcounters { margin-top: 12px; }
 .seg button.active { box-shadow: 0 0 0 1px rgba(77,184,184,0.35), 0 4px 16px rgba(0,128,128,0.35); }
+.food-row.static { cursor: default; }
+.food-row .swap-icon { color: var(--accent-soft); font-size: 13px; }

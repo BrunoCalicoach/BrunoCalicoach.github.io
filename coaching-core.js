@@ -613,6 +613,20 @@ function isLegacyMealPlan(plans) { return Array.isArray(plans) && plans.some((p)
 
 /* ---------- Macro summary: a calorie ring with the three macros beside it ---------- */
 
+// The day's targets on their own (athletes without a meal plan): a full ring and the three macro targets
+function targetSummary(target) {
+  const R = 52, CIRC = 2 * Math.PI * R;
+  const ring = el('div', { class: 'kring', html:
+    `<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="fill" stroke-dasharray="${CIRC.toFixed(1)} 0"/></svg>` },
+    el('div', { class: 'kring-text' }, el('b', {}, fmt(num(target.kcal), 0)), el('span', {}, 'kcal a day')));
+  const row = (key, label, value, note) => el('div', { class: 'mrow' },
+    el('div', { class: 'mrow-top' }, el('span', { class: `mlabel ${key}` }, label), el('span', { class: `mval ${key}` }, value ? `${fmt(num(value), 0)} g` : '–')),
+    el('div', { class: `mbar ${key}` }, el('span', { style: 'width:100%' })),
+    el('div', { class: 'tiny muted', style: 'margin-top:3px' }, note));
+  return el('div', { class: 'msummary' }, ring, el('div', { class: 'mrows' },
+    row('carb', 'Carbs', target.carbs, 'about'), row('prot', 'Protein', target.protein, 'minimum'), row('fat', 'Fat', target.fat, 'minimum')));
+}
+
 // totals: { kcal, p, c, f }; target: { kcal, protein, carbs, fat } or null
 function macroSummary(totals, target) {
   const bar = (key, value, goal) => {

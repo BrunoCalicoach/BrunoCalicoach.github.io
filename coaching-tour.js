@@ -36,7 +36,7 @@ function tourSteps() {
   steps.push(
     { go: 'progress', target: '[data-tour="weigh"] .form-grid', title: 'Weigh in every morning', text: 'After the bathroom, before eating or drinking. The app works out your weekly average and your estimated calorie deficit or surplus.' },
     { go: 'progress', target: '[data-tour="checkin"]', title: 'Weekly check-in', text: 'At the end of each week, rate your week and leave questions for Bruno. Body measurements and progress photos are on this page too.' },
-    { go: 'nutrition', target: '[data-tour="targets"] .stats', title: 'Nutrition', text: isPro()
+    { go: 'nutrition', target: '[data-tour="targets"] .msummary', title: 'Nutrition', text: isPro()
       ? 'Your daily calories and macros, your meal plan and your water target.'
       : 'Your daily calories and macros, calculated from your details and goal, plus your water target.' },
     { go: 'lifestyle', target: '[data-tour="steps"] .form-grid', title: 'Steps and habits', text: 'Copy your daily steps from your phone\'s health app, and read the tips on activity, sleep and healthy habits.' },

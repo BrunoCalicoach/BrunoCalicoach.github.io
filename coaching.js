@@ -93,7 +93,14 @@ async function startFor(clientId, { preview = false, coachView = false, email = 
   } catch (error) { return fatal(error); }
   if (!S.client) return fatal(new Error('No coaching account found.'));
   if (S.readOnly) {
-    document.body.prepend(el('div', { class: 'demo-bar' }, `${S.preview ? 'Preview of the draft plan' : 'Coach view'} for ${S.client.name}. Nothing here can be changed.`));
+    // Bruno looking at an athlete's app: one notice with a way back to the coach page (never "Log out", which would log Bruno out)
+    document.getElementById('preview-bar')?.remove();
+    signOutButton.classList.add('hidden');
+    const week = (location.hash.match(/week\/(\d{4}-\d{2}-\d{2})/) || [])[1] || '';
+    const back = `coach.html${DEMO ? '?demo' : ''}#a=${encodeURIComponent(clientId)}&t=${S.preview ? 'plan' : 'overview'}${week ? `&w=${week}` : ''}`;
+    document.body.prepend(el('div', { class: 'demo-bar', id: 'preview-bar' },
+      el('a', { href: back, class: 'preview-back' }, '← Back to coach page'),
+      el('span', {}, ` ${S.preview ? 'Preview of the draft plan' : 'Coach view'} for ${S.client.name}. Nothing here can be changed.`)));
   }
   registerWorker();
   if (!S.readOnly && !S.profile.consent_at) return consentGate();

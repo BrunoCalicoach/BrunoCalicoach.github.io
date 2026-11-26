@@ -368,7 +368,7 @@ function renderPlan(body) {
 
   body.replaceChildren(weekBar, weekLinks,
     el('div', { class: 'row', style: 'margin:4px 0 12px' }, publish,
-      el('a', { class: 'btn', href: previewUrl, target: '_blank', rel: 'noopener' }, 'Preview as athlete'),
+      el('a', { class: 'btn', href: previewUrl }, 'Preview as athlete'),
       published ? el('button', { class: 'btn ghost', onclick: async () => {
         if (!confirm('Hide this week from the athlete again? The draft stays here.')) return;
         await Data.rpc('unpublish_week', { p_client: C.current, p_week: C.week });

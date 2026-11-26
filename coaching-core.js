@@ -1203,12 +1203,15 @@ function authView(container, { title = 'Log in', intro = '' } = {}) {
 // Calls onUser(user) whenever someone is logged in, or onLoggedOut()
 function watchAuth(onUser, onLoggedOut) {
   if (DEMO) return;
-  let last = null;
+  let last = null, shownLoggedOut = false;
   supa.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') { recovering = true; onLoggedOut(); return; }
     const user = session?.user || null;
     if (recovering) { onLoggedOut(); return; }
-    if ((user?.id || null) === last && event !== 'INITIAL_SESSION') return;
+    // Same person as before (token refresh, or SIGNED_IN followed by INITIAL_SESSION): do not start the app again.
+    // Only the very first report of "nobody logged in" still goes through, to show the login screen.
+    if ((user?.id || null) === last && (last !== null || event !== 'INITIAL_SESSION' || shownLoggedOut)) return;
+    if (!user) shownLoggedOut = true;
     last = user?.id || null;
     setTimeout(() => (user ? onUser(user) : onLoggedOut()), 0);
   });

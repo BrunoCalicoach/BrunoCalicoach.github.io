@@ -69,7 +69,7 @@ async function startFor(clientId, { preview = false, coachView = false }) {
   try {
     await Data.flush();
     const id = { client_id: clientId };
-    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides, choices] = await Promise.all([
+    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides, choices, athleteFoods] = await Promise.all([
       Data.select('coaching_clients', { user_id: clientId }),
       Data.select('coaching_profiles', { user_id: clientId }),
       Data.select(preview ? 'coaching_drafts' : 'coaching_weeks', id, ['week_start']),
@@ -81,10 +81,11 @@ async function startFor(clientId, { preview = false, coachView = false }) {
       Data.select('coaching_targets', id),
       Data.select('coaching_meal_plans', id).catch(() => []),
       loadGuides(),
-      Data.select('coaching_meal_choices', id).catch(() => [])
+      Data.select('coaching_meal_choices', id).catch(() => []),
+      Data.select('coaching_athlete_foods', id, ['name']).catch(() => [])
     ]);
     Object.assign(S, { client: client[0], profile: profile[0] || { user_id: clientId }, weeks, logs, feedback, daily, measurements, checkins,
-      targets: targets[0] || null, meals: meals[0] || null, guides, choices: choices[0]?.choices || {} });
+      targets: targets[0] || null, meals: meals[0] || null, guides, choices: choices[0]?.choices || {}, athleteFoods });
   } catch (error) { return fatal(error); }
   if (!S.client) return fatal(new Error('No coaching account found.'));
   if (S.readOnly) {
@@ -833,8 +834,57 @@ function renderNutrition() {
       el('a', { class: 'btn', style: 'margin-top:14px', href: 'pro.html' }, 'About Coaching PRO'));
   }
 
-  show(el('div', { class: 'stack' }, el('h1', {}, 'Nutrition'), targetsCard, mealsSection, waterCard,
+  show(el('div', { class: 'stack' }, el('h1', {}, 'Nutrition'), targetsCard, mealsSection, isPro() ? homeFoodsCard() : null, waterCard,
     guideCard('nutrition_basics'), isPro() ? guideCard('food_lists') : null, isPro() ? guideCard('supplements') : null));
+}
+
+/* ---------- Foods the athlete has at home (PRO): scanned or typed in, so Bruno can use them in the meal plan ---------- */
+
+function athleteFoodStore() {
+  return {
+    prefix: 'ath',
+    foods: () => S.athleteFoods.map((r) => ({ id: r.id, name: r.name, ...r.per100 })),
+    found: 'You already added this food',
+    intro: `Values per 100 g (or 100 ml) from the nutrition label. Bruno sees the foods you add and can use them in your meal plan.`,
+    async save(row) {
+      const full = { client_id: S.client.user_id, ...row };
+      await saveRow('coaching_athlete_foods', full);
+      S.athleteFoods = [...S.athleteFoods.filter((f) => f.id !== row.id), full].sort((a, b) => a.name.localeCompare(b.name));
+      return { id: row.id, name: row.name, justSaved: true };
+    }
+  };
+}
+
+function homeFoodsCard() {
+  const store = athleteFoodStore();
+  const list = el('div', { class: 'stack', style: 'gap:0' });
+  const msg = el('p', { class: 'msg' });
+  const drawList = () => {
+    list.replaceChildren(...(S.athleteFoods.length ? S.athleteFoods.map((f) => {
+      const per = { kcal: f.per100?.kcal || 0, p: f.per100?.p || 0, c: f.per100?.c || 0, f: f.per100?.f || 0 };
+      return el('div', { class: 'home-food' },
+        el('div', { class: 'grow' }, el('div', { class: 'fname' }, f.name),
+          el('div', { class: 'tiny muted' }, `${fmt(per.kcal, 0)} kcal per 100 g`), coloredMacros(per)),
+        S.readOnly ? null : el('button', { class: 'btn small ghost danger', type: 'button', onclick: async () => {
+          if (!confirm(`Remove ${f.name}?`)) return;
+          try { await Data.remove('coaching_athlete_foods', { client_id: S.client.user_id, id: f.id }); S.athleteFoods = S.athleteFoods.filter((x) => x.id !== f.id); drawList(); }
+          catch (e) { msg.className = 'msg err'; msg.textContent = navigator.onLine ? 'Not removed: ' + e.message : 'Removing works only online.'; }
+        } }, 'Remove'));
+    }) : [el('p', { class: 'small muted' }, 'Nothing added yet.')]));
+  };
+  drawList();
+  const added = (food) => { drawList(); if (food?.justSaved) toast(`Added ${food.name}. Bruno can use it in your plan now.`); };
+  const count = S.athleteFoods.length;
+  return el('details', { class: 'card', 'data-tour': 'home-foods' },
+    el('summary', { style: 'cursor:pointer' },
+      el('b', {}, 'Foods you have at home'), count ? el('span', { class: 'pill', style: 'margin-left:8px' }, String(count)) : null,
+      el('div', { class: 'small muted', style: 'margin-top:2px;font-weight:400' }, 'Local brands Bruno can use in your meal plan')),
+    el('div', { class: 'stack', style: 'margin-top:12px' },
+      el('p', { class: 'small soft' }, 'Have a product that isn\'t in the plan, like a local yogurt or protein bar? Scan its barcode or type the values from the label. Bruno sees it straight away when he updates your meal plan.'),
+      S.readOnly ? null : el('div', { class: 'row' },
+        el('button', { class: 'btn small primary', type: 'button', onclick: () => scanBarcode(added, store) }, barcodeIcon(), 'Scan a barcode'),
+        el('button', { class: 'btn small', type: 'button', onclick: () => ownFoodDialog(added, {}, store) }, '+ Enter from label')),
+      msg, list));
 }
 
 const MEAL_COLUMNS = [

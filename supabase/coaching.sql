@@ -281,6 +281,32 @@ create policy "PRO athlete manages own meal choices" on public.coaching_meal_cho
 create policy "Athletes read guides" on public.coaching_guides for select to authenticated
   using (public.is_client() and (not pro_only or public.is_pro((select auth.uid()))));
 
+-- ---------- Foods PRO athletes add themselves (scanned or from a label) ----------
+create table if not exists public.coaching_athlete_foods (
+  client_id uuid not null references public.coaching_clients (user_id) on delete cascade,
+  id text not null check (char_length(id) <= 40),
+  name text not null check (char_length(name) between 1 and 120),
+  cat text not null default 'other' check (char_length(cat) <= 20),
+  per100 jsonb not null check (jsonb_typeof(per100) = 'object' and pg_column_size(per100) < 4000),
+  allergens text[] not null default '{}',
+  note text check (char_length(note) <= 300),
+  updated_at timestamptz not null default now(),
+  primary key (client_id, id)
+);
+
+alter table public.coaching_athlete_foods enable row level security;
+revoke all on public.coaching_athlete_foods from anon;
+grant select, insert, update, delete on public.coaching_athlete_foods to authenticated;
+
+-- Bruno sees (and can tidy up) every athlete's foods
+create policy "Coach manages athlete foods" on public.coaching_athlete_foods for all to authenticated
+  using (public.is_coach()) with check (public.is_coach());
+
+-- A PRO athlete adds, changes and removes only their own foods
+create policy "PRO athlete manages own foods" on public.coaching_athlete_foods for all to authenticated
+  using ((select auth.uid()) = client_id)
+  with check ((select auth.uid()) = client_id and public.is_pro(client_id));
+
 -- ---------- Progress photos (private storage, 3 MB max per photo) ----------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('coaching-photos', 'coaching-photos', false, 3145728, array['image/jpeg', 'image/webp'])

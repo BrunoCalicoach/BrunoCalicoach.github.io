@@ -58,7 +58,8 @@ function popMenu(anchor, items) {
 
 // meals: { plans: [plans of 3 meals], note, split }, target: { kcal, protein, fat, carbs } or null, onChange(): save,
 // block: this athlete's allergies (see blockFor)
-function mealPlanEditor(meals, target, onChange, block) {
+// athlete: { name, foods } - the foods this athlete added at home (Athlete's foods tab)
+function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athlete', foods: [] }) {
   if (!Array.isArray(meals.plans) || isLegacyMealPlan(meals.plans) || !meals.plans.length) meals.plans = [emptyMealDay(1)];
   let active = 0;
   const node = el('div', { class: 'stack' });
@@ -182,7 +183,7 @@ function mealPlanEditor(meals, target, onChange, block) {
         const t = mealTotals([it]);
         const why = blockedReasons(it, block);
         const own = OWN_FOODS.find((f) => f.id === it.food);
-        const source = it.food?.startsWith('usda:') ? '' : (own?.note && !/^Open Food Facts/.test(own.note) ? own.note : '');
+        const source = it.food?.startsWith('usda:') ? '' : it.food?.startsWith('ath:') ? `Added by ${athlete.name.split(' ')[0]}` : (own?.note && !/^Open Food Facts/.test(own.note) ? own.note : '');
         const chip = el('span', { class: 'gram-chip' }, `${fmt(num(it.g), 0)} g`);
         const kcal = el('div', { class: 'fkcal' }, fmt(t.kcal, 0));
         const bar = el('div', {}, macroMiniBar(t));
@@ -243,7 +244,7 @@ function mealPlanEditor(meals, target, onChange, block) {
     const drawNote = () => { noteLine.textContent = meal.note || ''; noteLine.classList.toggle('hidden', !meal.note); };
     drawNote();
 
-    const add = el('button', { class: 'add-food', type: 'button', onclick: () => openFoodSheet(meal, block, recentFoods(), () => { drawRows(); update(); changed(); }) },
+    const add = el('button', { class: 'add-food', type: 'button', onclick: () => openFoodSheet(meal, block, recentFoods(), athlete, () => { drawRows(); update(); changed(); }) },
       el('span', { class: 'plus', 'aria-hidden': 'true' }, '+'), addLabel);
 
     card.append(
@@ -260,7 +261,7 @@ function mealPlanEditor(meals, target, onChange, block) {
 
 /* ---------- Full-screen "Add food" window ---------- */
 
-function openFoodSheet(meal, block, recent, onAdded) {
+function openFoodSheet(meal, block, recent, athlete, onAdded) {
   let tab = 'mine';
   let open = null; // id of the food whose amount panel is open
   const hidden = { count: 0 };
@@ -286,7 +287,7 @@ function openFoodSheet(meal, block, recent, onAdded) {
     const per = { kcal: food.kcal || 0, p: food.p || 0, c: food.c || 0, f: food.f || 0 };
     const btn = el('button', { class: 'food-pick', type: 'button', onclick: () => { open = open === food.id ? null : food.id; draw(); } },
       el('div', { class: 'top' }, el('b', {}, food.name, food.own ? el('span', { class: 'pill teal', style: 'margin-left:6px' }, 'Own') : null), el('span', { class: 'k' }, `${fmt(per.kcal, 0)} kcal`)),
-      el('div', { class: 'sub' }, el('span', {}, food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g'), coloredMacros(per)));
+      el('div', { class: 'sub' }, el('span', {}, food.athlete ? `Added by ${athlete.name.split(' ')[0]}` : food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g'), coloredMacros(per)));
     if (open !== food.id) return [btn];
     const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: String(defaultG || 100), 'aria-label': `Grams of ${food.name}` });
     const preview = el('div', { class: 'small' });
@@ -313,14 +314,17 @@ function openFoodSheet(meal, block, recent, onAdded) {
   }
 
   function draw() {
-    tabs.replaceChildren(...[['mine', 'My foods'], ['library', 'Food library'], ['recipes', 'Recipes']].map(([k, l]) =>
+    tabs.replaceChildren(...[['mine', 'My foods'], ['library', 'Food library'], ['athlete', `${athlete.name.split(' ')[0]}'s foods`]].map(([k, l]) =>
       el('button', { type: 'button', class: tab === k ? 'active' : '', onclick: () => { tab = k; open = null; draw(); } }, l)));
     const q = search.value.trim();
     const out = [];
-    if (tab === 'recipes') {
-      out.push(el('div', { class: 'card', style: 'margin-top:14px;text-align:center' },
-        el('h3', {}, 'Recipes are coming soon'),
-        el('p', { class: 'small soft', style: 'margin-top:6px' }, 'Save a group of ingredients once (e.g. "Protein oats") and add them to a meal in one go.')));
+    if (tab === 'athlete') {
+      // Foods the athlete scanned or typed in at home (local brands); they appear here as soon as they are saved
+      const theirs = searchFoods(q, block, hidden, athlete.foods, 200);
+      out.push(el('div', { class: 'sheet-section' }, `Added by ${athlete.name}`));
+      if (theirs.length) theirs.forEach((f) => out.push(...row(f)));
+      else out.push(el('p', { class: 'small muted', style: 'padding:4px' }, athlete.foods.length ? 'No match.'
+        : `${athlete.name.split(' ')[0]} hasn't added any foods yet. PRO athletes can scan or type in foods they have at home from their Nutrition tab, and they show up here.`));
     } else if (tab === 'mine') {
       const recents = recent.filter((r) => isAllowed(r.food, block) && (!q || r.food.name.toLowerCase().includes(q.toLowerCase()))).slice(0, 8);
       if (recents.length) { out.push(el('div', { class: 'sheet-section' }, 'Recent')); recents.forEach((r) => out.push(...row(r.food, r.g))); }
@@ -337,7 +341,7 @@ function openFoodSheet(meal, block, recent, onAdded) {
       lib.forEach((f) => out.push(...row(f)));
       if (!lib.length) out.push(el('p', { class: 'small muted', style: 'padding:4px' }, 'Nothing found. Try another word, or scan the product\'s barcode.'));
     }
-    if (hidden.count && tab !== 'recipes') out.push(el('p', { class: 'tiny muted', style: 'padding:8px 4px' }, `${hidden.count} food${hidden.count > 1 ? 's' : ''} hidden because of this athlete's allergies.`));
+    if (hidden.count) out.push(el('p', { class: 'tiny muted', style: 'padding:8px 4px' }, `${hidden.count} food${hidden.count > 1 ? 's' : ''} hidden because of this athlete's allergies.`));
     body.replaceChildren(...out);
   }
 
@@ -369,7 +373,16 @@ function loadScanner() {
 
 // Opens the camera (or a field to type the number). A known own food is used straight away; a new product is
 // looked up in Open Food Facts and opened in "Add your own food" with its label values filled in for checking.
-function scanBarcode(onFood) {
+// Where a scanned or typed food is saved: Bruno's own foods (default) or one athlete's foods (see coaching.js)
+const COACH_FOOD_STORE = {
+  prefix: 'own',
+  foods: () => OWN_FOODS,
+  found: 'Found in your foods',
+  intro: 'Values per 100 g (or 100 ml) from the nutrition label. Your foods appear first in the search.',
+  async save(row) { await Data.upsert('coaching_foods', row); await loadOwnFoods(); return OWN_FOODS.find((f) => f.id === row.id); }
+};
+
+function scanBarcode(onFood, store = COACH_FOOD_STORE) {
   const box = el('div', { class: 'scan-box', id: 'scan-box' });
   const manual = el('input', { class: 'field', inputMode: 'numeric', placeholder: 'Or type the barcode number' });
   const msg = el('p', { class: 'msg' });
@@ -390,19 +403,19 @@ function scanBarcode(onFood) {
     if (code.length < 8) { msg.className = 'msg err'; msg.textContent = 'That doesn\'t look like a barcode (8 to 14 digits).'; return; }
     done = true;
     await stop();
-    const known = OWN_FOODS.find((f) => f.id === `own:bc:${code}`);
-    if (known) { m.close(); toast(`Found in your foods: ${known.name}`); onFood(known); return; }
+    const known = store.foods().find((f) => f.id === `${store.prefix}:bc:${code}`);
+    if (known) { m.close(); toast(`${store.found}: ${known.name}`); onFood(known); return; }
     msg.className = 'msg'; msg.textContent = `Looking up ${code}…`;
     try {
       const prefill = await lookupBarcode(code);
       m.close();
-      ownFoodDialog((food) => onFood(food), prefill);
+      ownFoodDialog((food) => onFood(food), prefill, store);
     } catch (e) {
       done = false;
       msg.className = 'msg err';
       msg.textContent = e.message;
       if (/not found/i.test(e.message)) {
-        msg.append(' ', el('button', { class: 'btn small', type: 'button', onclick: () => { m.close(); ownFoodDialog((food) => onFood(food), { barcode: code }); } }, 'Enter it from the label'));
+        msg.append(' ', el('button', { class: 'btn small', type: 'button', onclick: () => { m.close(); ownFoodDialog((food) => onFood(food), { barcode: code }, store); } }, 'Enter it from the label'));
       }
     }
   }
@@ -471,7 +484,7 @@ function athleteSwaps() {
 
 // Bruno's own food from a label (or a scanned product): values per 100 g, with a check that calories fit the macros.
 // prefill: { name, per100, allergens, note, barcode } from a barcode lookup. onSaved(food) gets the new food.
-function ownFoodDialog(onSaved, prefill = {}) {
+function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
   const name = el('input', { class: 'field', placeholder: 'e.g. Zbregov protein shake (brand, product)', value: prefill.name || '' });
   const cat = el('select', { class: 'select field' }, ...Object.entries(FOOD_CATS).map(([k, l]) => el('option', { value: k }, l)));
   const fields = [['kcal', 'Calories (kcal)'], ['p', 'Protein (g)'], ['c', 'Carbohydrates (g)'], ['f', 'Fat (g)'], ['fib', 'Fibre (g)'], ['sug', 'Sugars (g)'], ['sat', 'Saturated fat (g)'], ['na', 'Sodium (mg) = salt g × 400']];
@@ -483,7 +496,7 @@ function ownFoodDialog(onSaved, prefill = {}) {
   const save = el('button', { class: 'btn primary' }, 'Save food');
   const m = modal(prefill.barcode ? 'New product' : 'Add your own food',
     prefill.per100 ? el('div', { class: 'notice' }, `Found in Open Food Facts (barcode ${prefill.barcode}). This is crowd-sourced label data: check it against the pack before saving.`)
-      : el('p', { class: 'small soft' }, 'Values per 100 g (or 100 ml) from the nutrition label. Your foods appear first in the search.'),
+      : el('p', { class: 'small soft' }, store.intro),
     el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Group', cat),
     el('div', { class: 'form-grid' }, ...fields.map(([k, l]) => el('label', { class: 'lab' }, l, inputs[k]))),
     el('div', {}, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, 'Allergens (bold on the label, including "may contain")'),
@@ -503,13 +516,12 @@ function ownFoodDialog(onSaved, prefill = {}) {
       save.dataset.confirmed = '1';
       return;
     }
-    const row = { id: prefill.barcode ? `own:bc:${prefill.barcode}` : 'own:' + uid(), name: name.value.trim(), cat: cat.value, per100,
+    const row = { id: prefill.barcode ? `${store.prefix}:bc:${prefill.barcode}` : `${store.prefix}:` + uid(), name: name.value.trim(), cat: cat.value, per100,
       note: source.value.trim() || null, allergens: alBoxes.filter((a) => a.box.checked).map((a) => a.k) };
     try {
-      await Data.upsert('coaching_foods', row);
-      await loadOwnFoods();
+      const saved = await store.save(row);
       m.close();
-      onSaved?.(OWN_FOODS.find((f) => f.id === row.id));
+      onSaved?.(saved);
     } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
   });
 }

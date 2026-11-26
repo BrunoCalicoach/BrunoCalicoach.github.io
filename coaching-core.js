@@ -119,7 +119,7 @@ const KEYS = {
   coaching_weeks: ['client_id', 'week_start'], coaching_logs: ['client_id', 'week_start', 'day_index'],
   coaching_feedback: ['client_id', 'week_start', 'day_index'], coaching_checkins: ['client_id', 'week_start'],
   coaching_daily: ['client_id', 'day'], coaching_measurements: ['client_id', 'day'], coaching_targets: ['client_id'],
-  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id']
+  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id'], coaching_athlete_foods: ['client_id', 'id']
 };
 
 class OfflineError extends Error {}

@@ -428,3 +428,7 @@ table.meal-table td { vertical-align: middle; }
 .seg button.active { box-shadow: 0 0 0 1px rgba(77,184,184,0.35), 0 4px 16px rgba(0,128,128,0.35); }
 .food-row.static { cursor: default; }
 .food-row .swap-icon { color: var(--accent-soft); font-size: 13px; }
+.home-food { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.home-food:last-child { border-bottom: 0; }
+.home-food .fmacros span:first-child { margin-left: 0; }
+.btn .barcode-ic, .btn span svg { vertical-align: middle; }

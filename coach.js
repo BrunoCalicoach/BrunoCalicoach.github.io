@@ -83,13 +83,15 @@ async function openAthlete(id) {
 
 async function loadAthlete() {
   const id = { client_id: C.current };
-  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile, choices] = await Promise.all([
+  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile, choices, athleteFoods] = await Promise.all([
     Data.select('coaching_drafts', id, ['week_start']), Data.select('coaching_weeks', id, ['week_start']),
     Data.select('coaching_logs', id), Data.select('coaching_feedback', id), Data.select('coaching_daily', id, ['day']),
     Data.select('coaching_measurements', id, ['day']), Data.select('coaching_checkins', id, ['week_start']),
     Data.select('coaching_targets', id), Data.select('coaching_meal_plans', id), Data.select('coaching_profiles', { user_id: C.current }),
-    Data.select('coaching_meal_choices', id).catch(() => [])]);
-  C.d = { loaded: C.current, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null, choices: choices[0]?.choices || {} };
+    Data.select('coaching_meal_choices', id).catch(() => []),
+    Data.select('coaching_athlete_foods', id, ['name']).catch(() => [])]);
+  C.d = { loaded: C.current, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null, choices: choices[0]?.choices || {},
+    athleteFoods: athleteFoods.map((r) => ({ id: r.id, name: r.name, cat: r.cat, athlete: true, note: r.note, ...r.per100, al: r.allergens || [] })) };
 }
 
 async function renderAthlete(content) {
@@ -467,7 +469,7 @@ function renderNutrition(body) {
   }, 900);
   const mealChanged = () => { mealState.textContent = 'Saving…'; mealState.className = 'save-state'; saveMeals(); };
   const editorHost = el('div', {}, el('p', { class: 'muted' }, 'Loading foods…'));
-  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged, blockFor(c))));
+  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged, blockFor(c), { name: c.name, foods: C.d.athleteFoods || [] })));
 
   body.replaceChildren(el('div', { class: 'stack' },
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), mealState),

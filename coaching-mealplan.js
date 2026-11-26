@@ -322,6 +322,7 @@ function openFoodSheet(meal, block, recent, athlete, onAdded) {
       tabs, groupBar),
     body);
   sheet.querySelector('.search-box span')?.remove(); // keep the box clean: the search field says what it is
+  sheet.addEventListener('click', (e) => { if (e.target === sheet) close(); }); // wide screens: a click on the dimmed page closes it
 
   function row(food, defaultG) {
     const per = { kcal: food.kcal || 0, p: food.p || 0, c: food.c || 0, f: food.f || 0 };

@@ -216,34 +216,45 @@ function renderTraining(weekStart) {
   const thisMonday = mondayOf();
   const when = week.week_start === thisMonday ? 'This week' : week.week_start > thisMonday ? 'Upcoming' : 'Past week';
 
-  const nav = el('div', { class: 'week-nav' },
-    el('button', { class: 'btn icon-btn', 'aria-label': 'Previous week', disabled: index <= 0, onclick: () => { location.hash = 'week/' + S.weeks[index - 1].week_start; } }, icon('left')),
-    el('div', { class: 'grow' }, el('div', { class: 'small accent', style: 'font-weight:700' }, when),
-      el('h1', {}, week.label || 'Week'), el('div', { class: 'muted small' }, weekRange(week.week_start))),
-    el('button', { class: 'btn icon-btn', 'aria-label': 'Next week', disabled: index >= S.weeks.length - 1, onclick: () => { location.hash = 'week/' + S.weeks[index + 1].week_start; } }, icon('right')));
+  // Week header: arrows, the week's name and a ring for workouts done this week
+  const total = days.length;
+  const doneCount = days.filter((_, i) => dayStatus(week, i) === 'done').length;
+  const nav = el('div', { class: 'card week-hero' },
+    el('div', { class: 'week-nav' },
+      el('button', { class: 'btn icon-btn', 'aria-label': 'Previous week', disabled: index <= 0, onclick: () => { location.hash = 'week/' + S.weeks[index - 1].week_start; } }, icon('left')),
+      el('div', { class: 'grow' }, el('div', { class: 'mlabel', style: 'color:var(--accent-soft)' }, when),
+        el('h1', {}, week.label || 'Week'), el('div', { class: 'muted small' }, weekRange(week.week_start))),
+      el('button', { class: 'btn icon-btn', 'aria-label': 'Next week', disabled: index >= S.weeks.length - 1, onclick: () => { location.hash = 'week/' + S.weeks[index + 1].week_start; } }, icon('right'))),
+    el('div', { class: 'week-ring-row' },
+      progressRing(doneCount, total, { size: 84, big: `${doneCount}/${total}`, small: 'done', color: doneCount === total && total ? 'var(--good)' : 'var(--kcal)' }),
+      el('div', { class: 'small soft' }, doneCount === total && total ? 'Every workout of this week is done. Great work!'
+        : `${total - doneCount} workout${total - doneCount === 1 ? '' : 's'} to go this week.`)));
 
+  // One numbered card per training day, like the meal cards
   const cards = days.map((day, i) => {
     const status = dayStatus(week, i);
     const count = exerciseRows(day).length;
     const fb = feedbackFor(week.week_start, i);
-    return el('button', { class: 'card card-link day-card', type: 'button', onclick: () => { location.hash = `workout/${week.week_start}/${i}`; } },
-      el('div', { class: 'row nowrap' },
-        el('span', { class: 'check ' + (status === 'done' ? 'done' : status === 'partial' ? 'partial' : '') }, status === 'todo' ? String(i + 1) : icon('check', 16)),
-        el('div', { class: 'grow' }, el('h3', {}, day.title || `Day ${i + 1}`), day.subtitle ? el('div', { class: 'small soft' }, day.subtitle) : null),
-        icon('right', 18)),
-      el('div', { class: 'row small muted', style: 'margin-top:8px;margin-left:36px' },
-        `${count} exercise${count === 1 ? '' : 's'}`,
-        status === 'done' ? el('span', { class: 'pill good' }, 'Done') : status === 'partial' ? el('span', { class: 'pill warn' }, 'Started') : null,
-        fb ? el('span', { class: 'pill teal' }, 'Feedback from Bruno') : null));
+    return el('button', { class: 'card card-link day-card' + (status === 'done' ? ' is-done' : ''), type: 'button', onclick: () => { location.hash = `workout/${week.week_start}/${i}`; } },
+      el('div', { class: 'meal-head', style: 'margin-bottom:0' },
+        numTag(i + 1), el('span', { class: 'meal-icon' }, icon('dumbbell', 18)),
+        el('h3', {}, day.title || `Day ${i + 1}`),
+        status === 'done' ? el('span', { class: 'status-badge done' }, icon('check', 14), 'Done')
+          : status === 'partial' ? el('span', { class: 'status-badge partial' }, 'Started') : el('span', { class: 'muted' }, icon('right', 18))),
+      day.subtitle ? el('div', { class: 'day-sub' }, day.subtitle) : null,
+      el('div', { class: 'chips', style: 'margin-top:10px' },
+        el('span', { class: 'chip' }, el('b', {}, String(count)), ` exercise${count === 1 ? '' : 's'}`),
+        fb ? el('span', { class: 'chip teal-chip' }, 'Feedback from Bruno') : null));
   });
 
   const weekFb = feedbackFor(week.week_start, -1);
   const history = S.weeks.slice().reverse().map((w) => {
-    const total = (w.content.days || []).length;
+    const t = (w.content.days || []).length;
     const done = (w.content.days || []).filter((_, i) => dayStatus(w, i) === 'done').length;
-    return el('button', { class: 'card card-link tight', type: 'button', onclick: () => { location.hash = 'week/' + w.week_start; } },
-      el('div', { class: 'row nowrap' }, el('div', { class: 'grow' }, el('b', {}, w.label || 'Week'), el('div', { class: 'small muted' }, weekRange(w.week_start))),
-        el('span', { class: 'pill ' + (done === total && total ? 'good' : '') }, `${done}/${total}`)));
+    return el('button', { class: 'card card-link tight week-row' + (w === week ? ' current' : ''), type: 'button', onclick: () => { location.hash = 'week/' + w.week_start; } },
+      progressRing(done, t, { size: 40, big: String(done), stroke: 11, color: done === t && t ? 'var(--good)' : 'var(--kcal)' }),
+      el('div', { class: 'grow' }, el('b', {}, w.label || 'Week'), el('div', { class: 'small muted' }, weekRange(w.week_start))),
+      el('span', { class: 'small muted' }, `${done}/${t}`));
   });
 
   show(el('div', { class: 'stack' }, nav,
@@ -303,10 +314,11 @@ function renderWorkout(weekStart, dayIndex) {
   }, 600);
 
   const blocks = [];
+  let number = 0;
   for (const row of day.rows || []) {
     if (row.kind === 'section') { if (row.c.name) blocks.push(el('div', { class: 'ex-section' }, row.c.name)); continue; }
     if (!String(row.c.name || '').trim()) continue;
-    blocks.push(exerciseCard(row, log, weekStart, extraCols, persist));
+    blocks.push(exerciseCard(row, log, weekStart, extraCols, persist, ++number));
   }
 
   const fb = feedbackFor(weekStart, dayIndex);
@@ -342,15 +354,16 @@ function renderWorkout(weekStart, dayIndex) {
       difficulty, note, finish, doneText)));
 }
 
-function exerciseCard(row, log, weekStart, extraCols, persist) {
+function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
   const entry = log.entries[row.id] = log.entries[row.id] || { sets: [] };
   const count = Math.max(setCount(row), entry.sets.length);
   while (entry.sets.length < count) entry.sets.push({ reps: '', weight: '', rpe: '' });
   const rest = restSeconds(row.c.rest);
   const prev = previousResult(weekStart, row);
 
-  const chips = el('div', { class: 'chips', style: 'margin-top:8px' });
-  const chip = (label, value) => { if (value && value !== '/') chips.append(el('span', { class: 'chip' }, `${label} `, el('b', {}, value))); };
+  // Targets as small labelled tiles: SETS 4 · REPS 30, 28, 26 · WEIGHT 40kg …
+  const chips = el('div', { class: 'targets' });
+  const chip = (label, value) => { if (value && value !== '/') chips.append(el('div', { class: 'target' }, el('span', { class: 'tlabel' }, label), el('b', {}, value))); };
   chip('Sets', row.c.sets); chip('Reps', row.c.reps); chip('Weight', row.c.weight); chip('Rest', row.c.rest); chip('RPE', row.c.rpe);
   for (const col of extraCols) chip(col.label, row.c[col.key]);
 
@@ -381,8 +394,8 @@ function exerciseCard(row, log, weekStart, extraCols, persist) {
   const noteWrap = el('div', { class: entry.note ? '' : 'hidden' }, exNote);
 
   return el('div', { class: 'card ex' },
-    el('div', { class: 'ex-head' }, el('div', { class: 'grow' }, el('div', { class: 'ex-name' }, row.c.name)),
-      rest ? el('button', { class: 'btn small', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null),
+    el('div', { class: 'ex-head' }, numTag(number), el('div', { class: 'grow' }, el('div', { class: 'ex-name' }, row.c.name)),
+      rest ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null),
     chips,
     row.c.notes ? el('div', { class: 'ex-notes' }, row.c.notes) : null,
     row.c.video ? el('a', { class: 'small', href: row.c.video, target: '_blank', rel: 'noopener' }, 'Watch the video') : null,
@@ -408,24 +421,21 @@ function startTimer(rest, name) {
   stopTimer();
   const started = Date.now();
   const total = Math.max(rest.max, 10);
-  const big = el('div', { class: 'big' });
-  const fill = el('div', { class: 'fill' });
-  const minMark = rest.min && rest.min < rest.max ? el('div', { style: `position:absolute;top:0;bottom:0;width:2px;background:#fff;left:${(rest.min / total) * 100}%` }) : null;
+  // A ring that fills while you rest: red until the shortest rest is over, then green
+  const ring = progressRing(0, 1000, { size: 64, big: clock(total), color: '#b5473f', stroke: 10 });
   const label = el('div', { class: 'small muted' });
   const box = el('div', { class: 'timer', role: 'timer' },
-    el('div', { class: 'row between nowrap' }, el('div', {}, el('div', { class: 'small soft' }, `Rest · ${name}`), big),
-      el('div', { class: 'row nowrap' }, el('button', { class: 'btn small', type: 'button', onclick: () => { timer.extra += 30; } }, '+30 s'),
-        el('button', { class: 'btn small', type: 'button', onclick: stopTimer }, 'Done'))),
-    el('div', { class: 'bar' }, fill, minMark), label);
+    el('div', { class: 'row nowrap', style: 'gap:12px' }, ring,
+      el('div', { class: 'grow' }, el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, 'Rest'), el('div', { class: 'small', style: 'font-weight:700' }, name), label),
+      el('div', { class: 'stack', style: 'gap:6px' }, el('button', { class: 'btn small', type: 'button', onclick: () => { timer.extra += 30; } }, '+30 s'),
+        el('button', { class: 'btn small primary', type: 'button', onclick: stopTimer }, 'Done'))));
   document.body.append(box);
   let buzzedMin = false;
   timer = { box, extra: 0, tick: setInterval(() => {
     const t = (Date.now() - started) / 1000;
     const end = total + timer.extra;
     const left = Math.max(0, end - t);
-    big.textContent = clock(left);
-    fill.style.width = Math.min(100, (t / end) * 100) + '%';
-    fill.style.background = rest.min && t < rest.min ? '#b5473f' : 'var(--good)';
+    ring.update(Math.min(1000, (t / end) * 1000), clock(left), undefined, rest.min && t < rest.min ? '#b5473f' : 'var(--good)');
     label.textContent = rest.min && rest.min < rest.max ? (t < rest.min ? `Ready in ${clock(rest.min - t)}` : 'You can start when ready') : '';
     if (rest.min && t >= rest.min && !buzzedMin) { buzzedMin = true; buzz(1); }
     if (left <= 0) { buzz(2); stopTimer(); }
@@ -527,7 +537,7 @@ function renderProgress() {
   const weeks = Calc.weeks(S.daily);
   const todayRow = S.daily.find((d) => d.day === today());
   const dateIn = el('input', { class: 'field', type: 'date', value: today(), max: today() });
-  const weightIn = el('input', { class: 'field', inputMode: 'decimal', placeholder: 'kg', value: todayRow?.weight ?? '' });
+  const weightIn = el('input', { class: 'field', inputMode: 'decimal', placeholder: '', value: todayRow?.weight ?? '' });
   const msg = el('p', { class: 'msg' });
   dateIn.addEventListener('change', () => { weightIn.value = S.daily.find((d) => d.day === dateIn.value)?.weight ?? ''; });
   const saveWeight = el('button', { class: 'btn primary', disabled: S.readOnly }, 'Save');
@@ -540,27 +550,40 @@ function renderProgress() {
 
   const points = S.daily.filter((d) => num(d.weight)).map((d) => ({ x: parseDay(d.day).getTime(), y: num(d.weight) }));
   const avg = weeks.filter((w) => w.avgWeight).map((w) => ({ x: parseDay(addDays(w.week, 3)).getTime(), y: w.avgWeight }));
-  const weekRows = weeks.slice().reverse().filter((w) => w.avgWeight).map((w) => el('tr', {},
-    el('td', {}, weekRange(w.week)),
-    el('td', {}, el('b', {}, fmt(w.avgWeight, 2) + ' kg')),
-    el('td', {}, w.change === null ? '–' : (w.change > 0 ? '+' : '') + fmt(w.change, 2)),
-    el('td', {}, w.balance === null ? '–' : `${w.balance > 0 ? '+' : ''}${fmt(w.balance, 0)} kcal/day`),
-    el('td', { class: w.weights.length < 4 ? 'accent' : '' }, `${w.weights.length}×`)));
+  // Whether a weekly change is going the athlete's way (cut: down, gain: up, maintain: about level)
+  const goal = S.profile?.goal || 'maintain';
+  const mood = (change) => change === null ? 'neutral'
+    : goal === 'cut' ? (change < 0 ? 'good' : change > 0.1 ? 'bad' : 'neutral')
+    : goal === 'gain' ? (change > 0 ? 'good' : change < -0.1 ? 'bad' : 'neutral')
+    : (Math.abs(change) <= 0.3 ? 'good' : 'neutral');
+  const signed = (x, d = 2) => (x > 0 ? '+' : x < 0 ? '−' : '±') + fmt(Math.abs(x), d);
+  const withWeight = weeks.filter((w) => w.avgWeight);
+  const latest = withWeight[withWeight.length - 1];
+  const weekRows = withWeight.slice().reverse().map((w) => el('div', { class: 'wk-row' },
+    el('div', { class: 'grow' }, el('b', {}, weekRange(w.week)), el('div', { class: 'tiny ' + (w.weights.length < 4 ? 'accent-warn' : 'muted') }, `${w.weights.length} weigh-in${w.weights.length === 1 ? '' : 's'}`)),
+    el('div', { style: 'text-align:right' }, el('b', {}, `${fmt(w.avgWeight, 2)} kg`),
+      el('div', { class: 'row nowrap', style: 'gap:4px;justify-content:flex-end;margin-top:3px' },
+        w.change !== null ? changeChip(`${signed(w.change)} kg`, mood(w.change)) : null,
+        w.balance !== null ? el('span', { class: 'tiny muted' }, `${signed(w.balance, 0)} kcal/day`) : null))));
 
   show(el('div', { class: 'stack' },
     el('h1', {}, 'Progress'),
     el('div', { class: 'card stack', 'data-tour': 'weigh' },
-      el('h2', {}, 'Morning weigh-in'),
+      cardHead('scale', 'Morning weigh-in'),
+      latest ? el('div', { class: 'hero-stat' },
+        el('div', {}, el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, 'Weekly average'), el('div', { class: 'hero-num' }, fmt(latest.avgWeight, 1), el('span', {}, ' kg'))),
+        el('div', { style: 'text-align:right' },
+          latest.change !== null ? changeChip(`${signed(latest.change)} kg this week`, mood(latest.change)) : el('span', { class: 'tiny muted' }, 'Change shows after two weeks'),
+          latest.balance !== null ? el('div', { class: 'tiny muted', style: 'margin-top:4px' }, `≈ ${signed(latest.balance, 0)} kcal a day`) : null)) : null,
       el('p', { class: 'small soft' }, 'Every morning, after the bathroom, before eating or drinking anything.'),
-      el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Date', dateIn), el('label', { class: 'lab' }, 'Weight (kg)', weightIn)),
+      el('label', { class: 'lab' }, 'Date', dateIn),
+      valueRow('Weight', weightIn, 'kg', 'kcal'),
       saveWeight, msg),
     el('div', { class: 'card stack' },
-      el('h2', {}, 'Weekly average'),
+      cardHead('chart', 'Weekly average'),
       lineChart(points, { avg, unit: 'kg' }),
       el('p', { class: 'tiny muted' }, 'Grey: daily weigh-ins. Teal: weekly average. Daily numbers jump with water and food; the weekly average is what counts.'),
-      weekRows.length ? el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
-        el('thead', {}, el('tr', {}, el('th', {}, 'Week'), el('th', {}, 'Average'), el('th', {}, 'Change'), el('th', {}, 'Estimated balance'), el('th', {}, 'Weigh-ins'))),
-        el('tbody', {}, ...weekRows))) : null,
+      weekRows.length ? el('div', { class: 'wk-list' }, ...weekRows) : null,
       el('p', { class: 'tiny muted' }, 'Estimated balance: change in weekly average × 7,700 kcal per kg ÷ 7 days. Negative means a deficit. It is a rough guide that settles after 2–3 weeks; aim for at least 4 weigh-ins a week.')),
     measurementsCard(),
     checkinCard(),
@@ -584,7 +607,7 @@ function measurementsCard() {
   const last = S.measurements[S.measurements.length - 1];
   const first = S.measurements[0];
   const dateIn = el('input', { class: 'field', type: 'date', value: today(), max: today() });
-  const inputs = Object.fromEntries(MEASURES.map(([k]) => [k, el('input', { class: 'field', inputMode: 'decimal', placeholder: last?.[k] ? String(last[k]) : 'cm' })]));
+  const inputs = Object.fromEntries(MEASURES.map(([k]) => [k, el('input', { class: 'field', inputMode: 'decimal', placeholder: last?.[k] ? String(last[k]) : '' })]));
   const msg = el('p', { class: 'msg' });
   const save = el('button', { class: 'btn primary', disabled: S.readOnly }, 'Save measurements');
   save.addEventListener('click', async () => {
@@ -598,21 +621,28 @@ function measurementsCard() {
     S.measurements.sort((a, b) => (a.day > b.day ? 1 : -1));
     renderProgress();
   });
-  const table = S.measurements.length ? el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
-    el('thead', {}, el('tr', {}, el('th', {}, 'Date'), ...MEASURES.map(([, l]) => el('th', {}, l.replace(/ \(.*\)/, ''))))),
-    el('tbody', {},
-      ...S.measurements.slice().reverse().map((m) => el('tr', {}, el('td', {}, niceDate(m.day)), ...MEASURES.map(([k]) => el('td', {}, m[k] ?? '–')))),
-      S.measurements.length > 1 ? el('tr', {}, el('td', {}, el('b', {}, 'Change')), ...MEASURES.map(([k]) => {
-        const d = num(last[k]) !== null && num(first[k]) !== null ? num(last[k]) - num(first[k]) : null;
-        return el('td', {}, el('b', {}, d === null ? '–' : (d > 0 ? '+' : '') + fmt(d)));
-      })) : null))) : el('p', { class: 'small muted' }, 'No measurements yet.');
+  const summary = S.measurements.length ? el('div', { class: 'wk-list' }, ...MEASURES.map(([k, l]) => {
+    const now = [...S.measurements].reverse().find((m) => num(m[k]) !== null);
+    const start = S.measurements.find((m) => num(m[k]) !== null);
+    const d = now && start && now !== start ? num(now[k]) - num(start[k]) : null;
+    return el('div', { class: 'wk-row' }, el('div', { class: 'grow' }, el('b', {}, l.replace(/ \(.*\)/, '')), el('div', { class: 'tiny muted' }, l.match(/\((.*)\)/)?.[1] || '')),
+      el('b', {}, now ? `${fmt(num(now[k]))} cm` : '–'),
+      d !== null ? changeChip(`${d > 0 ? '+' : d < 0 ? '−' : '±'}${fmt(Math.abs(d))}`, 'neutral') : null);
+  })) : el('p', { class: 'small muted' }, 'No measurements yet.');
+  const history = S.measurements.length > 1 ? el('details', { class: 'fold' }, el('summary', {}, `All entries (${S.measurements.length})`),
+    el('div', { class: 'table-wrap', style: 'margin-top:8px' }, el('table', { class: 'data' },
+      el('thead', {}, el('tr', {}, el('th', {}, 'Date'), ...MEASURES.map(([, l]) => el('th', {}, l.replace(/ \(.*\)/, ''))))),
+      el('tbody', {}, ...S.measurements.slice().reverse().map((m) => el('tr', {}, el('td', {}, niceDate(m.day)), ...MEASURES.map(([k]) => el('td', {}, m[k] ?? '–')))))))) : null;
   return el('details', { class: 'card', open: !S.measurements.length },
-    el('summary', { style: 'cursor:pointer' }, el('h2', { style: 'display:inline' }, 'Body measurements')),
+    el('summary', { class: 'card-sum' }, cardHead('ruler', 'Body measurements', last ? el('span', { class: 'tiny muted' }, niceDate(last.day)) : null)),
     el('div', { class: 'stack', style: 'margin-top:12px' },
+      summary,
+      S.measurements.length > 1 ? el('p', { class: 'tiny muted' }, 'Change since your first measurement.') : null,
+      el('h3', { style: 'margin-top:6px' }, 'New measurement'),
       el('p', { class: 'small soft' }, 'At the end of each week, in the morning, under the same conditions. Tape snug but not tight, in cm.'),
       el('label', { class: 'lab' }, 'Date', dateIn),
-      el('div', { class: 'form-grid' }, ...MEASURES.map(([k, l]) => el('label', { class: 'lab' }, l, inputs[k]))),
-      save, msg, table));
+      el('div', { class: 'stack', style: 'gap:6px' }, ...MEASURES.map(([k, l]) => valueRow(l.replace(/ \(.*\)/, ''), inputs[k], 'cm', 'kcal', l.match(/\((.*)\)/)?.[1] || ''))),
+      save, msg, history));
 }
 
 const RATINGS = [
@@ -645,7 +675,7 @@ function checkinCard() {
         b.addEventListener('click', () => { c.ratings[k] = v; box.querySelectorAll('button').forEach((x, i) => x.classList.toggle('active', i === v - 1)); save(); });
         return b;
       }));
-      return el('div', {}, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, label), box);
+      return el('div', { class: 'rate-row' }, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, label), box);
     };
     const text = (key, label, placeholder) => {
       const t = el('textarea', { class: 'field', placeholder, value: c[key] || '', disabled: S.readOnly });
@@ -671,7 +701,7 @@ function checkinCard() {
       el('label', { class: 'lab' }, 'Average calories this week', kcal),
       stepWeek?.avgSteps ? el('p', { class: 'small soft' }, `Average steps: ${fmt(stepWeek.avgSteps, 0)} a day (from your daily entries)`) : null,
       el('div', {}, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, 'Additional activities'), acts,
-        S.readOnly ? null : el('button', { class: 'btn small ghost', style: 'margin-top:6px', onclick: () => { c.activities.push({ activity: '', duration: '', intensity: '' }); drawActs(); } }, '+ Add activity')),
+        S.readOnly ? null : el('button', { class: 'add-day', type: 'button', style: 'margin-top:6px;padding:9px', onclick: () => { c.activities.push({ activity: '', duration: '', intensity: '' }); drawActs(); } }, '+ Add activity')),
       text('questions', 'Questions for Bruno', 'For example eating out next week and not sure what to choose. For anything urgent, message Bruno on WhatsApp.'),
       text('feedback', 'Feedback for Bruno', 'Anything he could do better (optional)'),
       msg);
@@ -680,7 +710,8 @@ function checkinCard() {
   draw();
   const due = !S.checkins.find((c) => c.week_start === thisWeek) && new Date().getDay() % 6 === 0;
   return el('details', { class: 'card', 'data-tour': 'checkin', open: due },
-    el('summary', { style: 'cursor:pointer' }, el('h2', { style: 'display:inline' }, 'Weekly check-in'), due ? el('span', { class: 'pill warn', style: 'margin-left:8px' }, 'Due') : null),
+    el('summary', { class: 'card-sum' }, cardHead('clipboard', 'Weekly check-in',
+      due ? el('span', { class: 'pill warn' }, 'Due') : S.checkins.find((c) => c.week_start === thisWeek) ? el('span', { class: 'status-badge done' }, icon('check', 14)) : null)),
     el('div', { class: 'stack', style: 'margin-top:12px' }, el('label', { class: 'lab' }, 'Week', weekSel), body));
 }
 
@@ -710,7 +741,7 @@ function photosCard() {
     file.value = '';
   });
   return el('details', { class: 'card' },
-    el('summary', { style: 'cursor:pointer' }, el('h2', { style: 'display:inline' }, 'Progress photos')),
+    el('summary', { class: 'card-sum' }, cardHead('camera', 'Progress photos')),
     el('div', { class: 'stack', style: 'margin-top:12px' },
       el('p', { class: 'small soft' }, 'Every other weekend: front, side and back, in the same place, light and clothes. Private: only you and Bruno can see them.'),
       S.readOnly ? null : el('div', { class: 'row nowrap' }, el('div', { class: 'grow' }, pose),
@@ -1035,7 +1066,7 @@ function legacyMealPlansCard(plans, note) {
 
 function renderLifestyle() {
   const dateIn = el('input', { class: 'field', type: 'date', value: today(), max: today() });
-  const steps = el('input', { class: 'field', inputMode: 'numeric', placeholder: 'e.g. 8500', value: S.daily.find((d) => d.day === today())?.steps ?? '' });
+  const steps = el('input', { class: 'field', inputMode: 'numeric', placeholder: '', value: S.daily.find((d) => d.day === today())?.steps ?? '' });
   dateIn.addEventListener('change', () => { steps.value = S.daily.find((d) => d.day === dateIn.value)?.steps ?? ''; });
   const msg = el('p', { class: 'msg' });
   const save = el('button', { class: 'btn primary', disabled: S.readOnly }, 'Save');
@@ -1052,20 +1083,35 @@ function renderLifestyle() {
     <line x1="0" x2="640" y1="${150 - (8000 / maxSteps) * 130}" y2="${150 - (8000 / maxSteps) * 130}" stroke="rgba(77,184,184,0.5)" stroke-dasharray="4 4"/>
     <text x="636" y="${146 - (8000 / maxSteps) * 130}" text-anchor="end">8,000</text>
     ${last14.map((d, i) => { const h = ((d.steps || 0) / maxSteps) * 130; const x = i * 45 + 6;
-      return `<rect x="${x}" y="${150 - h}" width="34" height="${Math.max(h, 1)}" rx="5" fill="${d.steps ? '#008080' : '#2a2a2a'}"/>
+      return `<rect x="${x}" y="${150 - h}" width="34" height="${Math.max(h, 1)}" rx="5" fill="${d.steps ? (d.steps >= 8000 ? '#4db8b8' : '#2f7f7f') : '#2a2a2a'}"/>
       <text x="${x + 17}" y="166" text-anchor="middle">${parseDay(d.day).getDate()}</text>`; }).join('')}</svg>` });
   const weeks = Calc.weeks(S.daily).filter((w) => w.avgSteps).slice(-6).reverse();
+  const todaySteps = num(S.daily.find((d) => d.day === today())?.steps) || 0;
+  const STEP_GOAL = 8000;
+  const ring = progressRing(todaySteps, STEP_GOAL, { size: 116, big: fmt(todaySteps, 0), small: `of ${fmt(STEP_GOAL, 0)}`, color: todaySteps >= STEP_GOAL ? 'var(--good)' : 'var(--kcal)', stroke: 10 });
+  const week = weeks[0];
 
   show(el('div', { class: 'stack' },
     el('h1', {}, 'Lifestyle'),
     el('div', { class: 'card stack', 'data-tour': 'steps' },
-      el('h2', {}, 'Daily steps'),
+      cardHead('steps', 'Daily steps'),
+      el('div', { class: 'week-ring-row' }, ring,
+        el('div', { class: 'grow' },
+          el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, 'Today'),
+          el('div', { style: 'font-weight:700;font-size:1.05rem' }, todaySteps >= STEP_GOAL ? 'Goal reached, nice!' : todaySteps ? `${fmt(STEP_GOAL - todaySteps, 0)} steps to go` : 'Not entered yet'),
+          week ? el('div', { class: 'tiny muted', style: 'margin-top:4px' }, `This week: ${fmt(week.avgSteps, 0)} a day on average`) : null)),
       el('p', { class: 'small soft' }, 'Best in the evening: open your phone\'s health app (Health on iPhone, Google Fit, Samsung Health or your watch app) and copy today\'s number.'),
-      el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Date', dateIn), el('label', { class: 'lab' }, 'Steps', steps)),
-      save, msg, bars,
-      weeks.length ? el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
-        el('thead', {}, el('tr', {}, el('th', {}, 'Week'), el('th', {}, 'Average a day'), el('th', {}, 'Days entered'))),
-        el('tbody', {}, ...weeks.map((w) => el('tr', {}, el('td', {}, weekRange(w.week)), el('td', {}, el('b', {}, fmt(w.avgSteps, 0))), el('td', {}, String(w.steps.length))))))) : null),
+      el('label', { class: 'lab' }, 'Date', dateIn),
+      valueRow('Steps', steps, 'steps', 'kcal'),
+      save, msg),
+    el('div', { class: 'card stack' },
+      cardHead('chart', 'Last 14 days'),
+      bars,
+      el('p', { class: 'tiny muted' }, 'Bright bars reached 8,000 steps.'),
+      weeks.length ? el('div', { class: 'wk-list' }, ...weeks.map((w) => el('div', { class: 'wk-row' },
+        el('div', { class: 'grow' }, el('b', {}, weekRange(w.week)), el('div', { class: 'tiny muted' }, `${w.steps.length} day${w.steps.length === 1 ? '' : 's'} entered`)),
+        el('b', {}, `${fmt(w.avgSteps, 0)}`), el('span', { class: 'tiny muted' }, 'a day'),
+        changeChip(w.avgSteps >= STEP_GOAL ? 'On goal' : `${Math.round((w.avgSteps / STEP_GOAL) * 100)} %`, w.avgSteps >= STEP_GOAL ? 'good' : 'neutral')))) : null),
     guideCard('lifestyle', true)));
 }
 

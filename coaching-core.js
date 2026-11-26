@@ -51,8 +51,30 @@ const ICONS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  scale: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 9a4 4 0 0 1 8 0M12 9l1.5-2"/>',
+  ruler: '<path d="M3 17 17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+  steps: '<path d="M7 16c-1.5 0-2.5-1.5-2.5-4S5.5 6 7 6s2.5 2.5 2.5 5-1 5-2.5 5zM5 19h4M17 13c-1.5 0-2.5-1.5-2.5-4S15.5 3 17 3s2.5 2.5 2.5 5-1 5-2.5 5zM15 16h4"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'
 };
+
+// Card header used across the app: a teal icon tile, the title and something on the right
+function cardHead(iconName, title, right) {
+  return el('div', { class: 'card-head' }, el('span', { class: 'head-icon' }, icon(iconName, 18)), el('h2', {}, title), right || null);
+}
+
+// One labelled value row in the app's style (name, box, unit); cls picks the colour (carb, prot, fat, kcal)
+function valueRow(label, input, unit, cls = '', hint = '') {
+  input.classList.add('minput');
+  return el('label', { class: `macro-input ${cls}` }, el('span', { class: 'dot' }),
+    el('span', { class: 'mname' }, label, hint ? el('span', { class: 'tiny muted', style: 'display:block;font-weight:400' }, hint) : null),
+    input, el('span', { class: 'unit' }, unit));
+}
+
+// Small coloured chip for a change: good (green), bad (red) or neutral
+function changeChip(text, mood = 'neutral') { return el('span', { class: `delta ${mood}` }, text); }
 function icon(name, size = 22) {
   const span = el('span', { style: 'display:inline-flex' });
   span.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
@@ -653,6 +675,28 @@ function macroSummary(totals, target) {
       row('prot', 'Protein', totals.p, num(target?.protein)),
       row('fat', 'Fat', totals.f, num(target?.fat))));
 }
+
+// General progress ring (workouts done, steps, rest timer): value/goal filled in a colour, text in the middle
+function progressRing(value, goal, { size = 96, big = '', small = '', color = 'var(--kcal)', stroke = 9 } = {}) {
+  const R = 50 - stroke / 2 - 1, CIRC = 2 * Math.PI * R;
+  const pct = goal ? Math.max(0, Math.min(1, value / goal)) : 0;
+  const ring = el('div', { class: 'pring', style: `width:${size}px;height:${size}px`, html:
+    `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" class="track" style="stroke-width:${stroke}"/>` +
+    `<circle cx="50" cy="50" r="${R}" class="fill" style="stroke:${color};stroke-width:${stroke}" stroke-dasharray="${(pct * CIRC).toFixed(1)} ${CIRC.toFixed(1)}" transform="rotate(-90 50 50)"/></svg>` },
+    el('div', { class: 'pring-text' }, el('b', { style: `font-size:${Math.max(12, Math.min(24, Math.round(size * 0.21)))}px` }, big), small ? el('span', {}, small) : null));
+  ring.update = (v, text, sub, col) => {
+    const p = goal ? Math.max(0, Math.min(1, v / goal)) : 0;
+    const fill = ring.querySelector('.fill');
+    fill.setAttribute('stroke-dasharray', `${(p * CIRC).toFixed(1)} ${CIRC.toFixed(1)}`);
+    if (col) fill.style.stroke = col;
+    ring.querySelector('b').textContent = text;
+    const s = ring.querySelector('.pring-text span'); if (s && sub !== undefined) s.textContent = sub;
+  };
+  return ring;
+}
+
+// Small numbered tag used on cards ("01")
+const numTag = (n) => el('span', { class: 'meal-num' }, String(n).padStart(2, '0'));
 
 // Small donut showing how a meal's (or food's) calories split between carbs, protein and fat
 function macroDonut(totals, size = 30) {

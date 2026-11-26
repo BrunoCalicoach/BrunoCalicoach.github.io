@@ -27,7 +27,7 @@ function tourSteps() {
   ];
   if (firstDay) {
     steps.push(
-      { go: firstDay, target: '.card.ex .chips', title: 'Your targets', text: 'Sets, reps, weight, rest and RPE for each exercise, with Bruno\'s notes underneath. "Last time" shows what you did before.' },
+      { go: firstDay, target: '.card.ex .targets', title: 'Your targets', text: 'Sets, reps, weight, rest and RPE for each exercise, with Bruno\'s notes underneath. "Last time" shows what you did before.' },
       { go: firstDay, target: '.card.ex .sets', title: 'Log every set', text: 'After each set, enter the reps you did, the weight in kg and the RPE. The grey numbers are your targets. Everything saves by itself, even without wifi.' },
       { go: firstDay, target: '[data-tour="rest"]', title: 'Rest timer', text: 'Starts by itself when you enter a set, or tap it any time. It beeps when the shortest rest is over and again at the longest.' },
       { go: firstDay, target: '[data-tour="download"]', title: 'Gym without wifi?', text: 'Save the day as a PDF or an image. Once the app is on your home screen, your plan also works offline.' },

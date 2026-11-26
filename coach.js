@@ -237,7 +237,7 @@ function renderPlan(body) {
     const move = (to) => { if (to < 0 || to >= content.days.length) return; content.days.splice(to, 0, content.days.splice(i, 1)[0]); drawDays(); changed(); };
     return el('div', { class: 'card day-block' },
       el('div', { class: 'row between', style: 'margin-bottom:10px' },
-        el('div', { class: 'row' }, el('b', {}, `Day ${i + 1}`),
+        el('div', { class: 'row' }, numTag(i + 1), el('span', { class: 'meal-icon' }, icon('dumbbell', 18)),
           log?.completed_at ? el('span', { class: 'pill good' }, `Done ${niceDate(ymd(log.completed_at))}`) : log ? el('span', { class: 'pill warn' }, 'Started') : null,
           log?.difficulty ? el('span', { class: 'pill' }, `Difficulty ${log.difficulty}/10`) : null),
         el('div', { class: 'row' },
@@ -292,7 +292,7 @@ function renderPlan(body) {
     note,
     weekFeedback(resultsWeek),
     dayBlocks,
-    el('button', { class: 'btn', style: 'margin-top:14px', onclick: () => { content.days.push(emptyDay(content.days.length + 1)); drawDays(); changed(); } }, '+ Add day'));
+    el('button', { class: 'add-day', type: 'button', style: 'margin-top:14px', onclick: () => { content.days.push(emptyDay(content.days.length + 1)); drawDays(); changed(); } }, icon('plus', 18), `Add day ${content.days.length + 1}`));
   refreshStatus();
 
   async function createWeek(newContent, label) {
@@ -350,34 +350,68 @@ function renderProgress(body) {
   Photos.list(C.current).then((paths) => photos.replaceChildren(paths.length ? photoGrid(paths) : el('p', { class: 'small muted' }, 'No photos yet.')))
     .catch(() => photos.replaceChildren(el('p', { class: 'small muted' }, 'Photos could not be loaded.')));
 
+  // Headline numbers: latest weekly average, its change and the estimated balance, coloured by the athlete's goal
+  const goal = profile?.goal || 'maintain';
+  const mood = (ch) => ch === null ? 'neutral' : goal === 'cut' ? (ch < 0 ? 'good' : ch > 0.1 ? 'bad' : 'neutral')
+    : goal === 'gain' ? (ch > 0 ? 'good' : ch < -0.1 ? 'bad' : 'neutral') : (Math.abs(ch) <= 0.3 ? 'good' : 'neutral');
+  const signed = (x, d = 2) => (x > 0 ? '+' : x < 0 ? '−' : '±') + fmt(Math.abs(x), d);
+  const withWeight = weeks.filter((w) => w.avgWeight);
+  const latest = withWeight[withWeight.length - 1];
+  const firstAvg = withWeight[0];
+  const stat = (label, value, extra) => el('div', { class: 'hero-stat', style: 'flex-direction:column;align-items:flex-start;gap:4px' },
+    el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, label), el('div', { class: 'hero-num', style: 'font-size:26px' }, ...[].concat(value)), extra || null);
+  const MEAS = [['chest', 'Chest'], ['waist_narrow', 'Narrowest waist'], ['waist_navel', 'Waist (navel)'], ['hips', 'Hips'], ['biceps', 'Biceps'], ['thigh', 'Thigh']];
+  const RATE = [['training', 'Training'], ['nutrition', 'Nutrition'], ['stress', 'Stress'], ['sleep', 'Sleep'], ['satisfaction', 'Satisfaction'], ['motivation', 'Motivation']];
+  const dots = (v) => el('span', { class: 'rate-dots', 'aria-label': `${v ?? 'not rated'} of 5` }, ...[1, 2, 3, 4, 5].map((i) => el('i', { class: v >= i ? 'on' : '' })));
+  const since = firstAvg && latest && firstAvg !== latest ? latest.avgWeight - firstAvg.avgWeight : null;
+
   body.replaceChildren(el('div', { class: 'stack-lg' },
-    el('div', { class: 'card stack' }, el('h2', {}, 'Body weight'), lineChart(points, { avg }),
+    el('div', { class: 'card stack' }, cardHead('scale', 'Body weight', latest ? el('span', { class: 'tiny muted' }, `${withWeight.length} week${withWeight.length === 1 ? '' : 's'} of data`) : null),
+      latest ? el('div', { class: 'stat-grid' },
+        stat('Weekly average', [fmt(latest.avgWeight, 1), el('span', {}, ' kg')], el('span', { class: 'tiny muted' }, weekRange(latest.week))),
+        stat('This week', latest.change === null ? '–' : [signed(latest.change), el('span', {}, ' kg')],
+          latest.change !== null ? changeChip(goal === 'cut' ? 'Goal: lose' : goal === 'gain' ? 'Goal: gain' : 'Goal: maintain', mood(latest.change)) : null),
+        stat('Est. balance', latest.balance === null ? '–' : [signed(latest.balance, 0), el('span', {}, ' kcal/day')]),
+        stat('Since start', since === null ? '–' : [signed(since), el('span', {}, ' kg')], since === null ? null : changeChip(`from ${fmt(firstAvg.avgWeight, 1)} kg`, mood(since)))) : null,
+      lineChart(points, { avg }),
       el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
         el('thead', {}, el('tr', {}, ...['Week', 'Average', 'Change', 'Est. balance', 'Weigh-ins', 'Avg steps'].map((h) => el('th', {}, h)))),
         el('tbody', {}, ...weeks.slice().reverse().map((w) => el('tr', {},
-          el('td', {}, weekRange(w.week)), el('td', {}, w.avgWeight ? fmt(w.avgWeight, 2) + ' kg' : '–'),
-          el('td', {}, w.change === null ? '–' : (w.change > 0 ? '+' : '') + fmt(w.change, 2)),
-          el('td', {}, w.balance === null ? '–' : (w.balance > 0 ? '+' : '') + fmt(w.balance, 0) + ' kcal/day'),
-          el('td', {}, String(w.weights.length)), el('td', {}, w.avgSteps ? fmt(w.avgSteps, 0) : '–'))))))),
-    el('div', { class: 'card stack' }, el('h2', {}, 'Starting details and estimate'),
+          el('td', {}, weekRange(w.week)), el('td', {}, w.avgWeight ? el('b', {}, fmt(w.avgWeight, 2) + ' kg') : '–'),
+          el('td', {}, w.change === null ? '–' : changeChip(signed(w.change), mood(w.change))),
+          el('td', {}, w.balance === null ? '–' : signed(w.balance, 0) + ' kcal/day'),
+          el('td', { class: w.weights.length < 4 ? 'accent-warn' : '' }, String(w.weights.length)), el('td', {}, w.avgSteps ? fmt(w.avgSteps, 0) : '–'))))))),
+    el('div', { class: 'card stack' }, cardHead('info', 'Starting details and estimate'),
       profile && !est && profile.birth_date ? el('div', { class: 'notice warn' }, `Details look wrong, so no estimate: ${Calc.ageProblem(profile.birth_date) || 'check height, weight and activity.'} Entered: ${profile.sex || '?'}, born ${profile.birth_date}, ${profile.height_cm ?? '?'} cm, start ${profile.start_weight ?? '?'} kg, activity ${profile.activity ?? '?'}, goal ${GOALS[profile.goal] || '?'}. The athlete is asked to fix them in the app.`) : null,
-      profile && est ? el('p', { class: 'soft' }, `${profile.sex}, age ${est.age}, ${profile.height_cm} cm, start ${profile.start_weight} kg, activity ${profile.activity}, goal: ${GOALS[profile.goal]}. BMR ${fmt(est.bmr, 0)} · TDEE ${fmt(est.tdee, 0)} · target ${fmt(est.kcal, 0)} kcal · P ${est.protein} / F ${est.fat} / C ${est.carbs} g`)
+      profile && est ? el('div', { class: 'stack', style: 'gap:8px' },
+        el('div', { class: 'chips' }, ...[profile.sex, `age ${est.age}`, `${profile.height_cm} cm`, `start ${profile.start_weight} kg`, `activity ${profile.activity}`, GOALS[profile.goal]].map((t) => el('span', { class: 'chip' }, t))),
+        el('div', { class: 'chips' }, el('span', { class: 'chip' }, 'BMR ', el('b', {}, fmt(est.bmr, 0))), el('span', { class: 'chip' }, 'TDEE ', el('b', {}, fmt(est.tdee, 0))),
+          el('span', { class: 'chip teal-chip' }, 'Target ', el('b', {}, `${fmt(est.kcal, 0)} kcal`)),
+          el('span', { class: 'chip', style: 'color:var(--prot)' }, 'Protein ', el('b', {}, `${est.protein} g`)),
+          el('span', { class: 'chip', style: 'color:var(--carb)' }, 'Carbs ', el('b', {}, `${est.carbs} g`)),
+          el('span', { class: 'chip', style: 'color:var(--fat)' }, 'Fat ', el('b', {}, `${est.fat} g`))))
         : profile?.birth_date ? null : el('p', { class: 'muted' }, 'The athlete has not filled in their starting details yet.')),
-    el('div', { class: 'card stack' }, el('h2', {}, 'Measurements (cm)'),
-      measurements.length ? el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
-        el('thead', {}, el('tr', {}, ...['Date', 'Chest', 'Narrowest waist', 'Waist (navel)', 'Hips', 'Biceps', 'Thigh'].map((h) => el('th', {}, h)))),
-        el('tbody', {}, ...measurements.slice().reverse().map((m) => el('tr', {}, el('td', {}, niceDate(m.day)),
-          ...['chest', 'waist_narrow', 'waist_navel', 'hips', 'biceps', 'thigh'].map((k) => el('td', {}, m[k] ?? '–'))))))) : el('p', { class: 'muted' }, 'None yet.')),
-    el('div', { class: 'card stack' }, el('h2', {}, 'Weekly check-ins'),
+    el('div', { class: 'card stack' }, cardHead('ruler', 'Measurements', measurements.length ? el('span', { class: 'tiny muted' }, `Last ${niceDate(measurements[measurements.length - 1].day)}`) : null),
+      measurements.length ? el('div', { class: 'wk-list' }, ...MEAS.map(([k, l]) => {
+        const now = [...measurements].reverse().find((m) => num(m[k]) !== null);
+        const start = measurements.find((m) => num(m[k]) !== null);
+        const d = now && start && now !== start ? num(now[k]) - num(start[k]) : null;
+        return el('div', { class: 'wk-row' }, el('b', { class: 'grow' }, l), el('b', {}, now ? `${fmt(num(now[k]))} cm` : '–'), d !== null ? changeChip(signed(d, 1), 'neutral') : null);
+      })) : el('p', { class: 'muted' }, 'None yet.'),
+      measurements.length > 1 ? el('p', { class: 'tiny muted' }, 'Change since the first measurement.') : null,
+      measurements.length > 1 ? el('details', { class: 'fold' }, el('summary', {}, `All entries (${measurements.length})`),
+        el('div', { class: 'table-wrap', style: 'margin-top:8px' }, el('table', { class: 'data' },
+          el('thead', {}, el('tr', {}, el('th', {}, 'Date'), ...MEAS.map(([, h]) => el('th', {}, h)))),
+          el('tbody', {}, ...measurements.slice().reverse().map((m) => el('tr', {}, el('td', {}, niceDate(m.day)), ...MEAS.map(([k]) => el('td', {}, m[k] ?? '–')))))))) : null),
+    el('div', { class: 'card stack' }, cardHead('clipboard', 'Weekly check-ins'),
       checkins.length ? el('div', { class: 'stack' }, ...checkins.slice().reverse().map((c) => el('div', { class: 'card alt tight stack' },
-        el('b', {}, weekRange(c.week_start)),
-        el('div', { class: 'chips' }, ...['training', 'nutrition', 'stress', 'sleep', 'satisfaction', 'motivation'].map((k) => el('span', { class: 'chip' }, `${k} `, el('b', {}, c.ratings?.[k] ?? '–'))),
-          c.avg_kcal ? el('span', { class: 'chip' }, 'avg kcal ', el('b', {}, c.avg_kcal)) : null),
+        el('div', { class: 'row between' }, el('b', {}, weekRange(c.week_start)), c.avg_kcal ? el('span', { class: 'chip' }, 'avg ', el('b', {}, `${c.avg_kcal} kcal`)) : null),
+        el('div', { class: 'rate-grid' }, ...RATE.map(([k, l]) => el('div', { class: 'rate-cell' }, el('span', { class: 'small soft grow' }, l), dots(c.ratings?.[k]), el('b', { class: 'small' }, String(c.ratings?.[k] ?? '–'))))),
         c.impression ? el('p', { class: 'soft pre small' }, c.impression) : null,
         (c.activities || []).filter((a) => a.activity).length ? el('p', { class: 'small' }, 'Activities: ' + c.activities.filter((a) => a.activity).map((a) => `${a.activity} ${a.duration || ''} ${a.intensity || ''}`.trim()).join('; ')) : null,
         c.questions ? el('p', { class: 'small' }, el('b', {}, 'Questions: '), c.questions) : null,
         c.feedback ? el('p', { class: 'small' }, el('b', {}, 'Feedback for you: '), c.feedback) : null))) : el('p', { class: 'muted' }, 'None yet.')),
-    el('div', { class: 'card stack' }, el('h2', {}, 'Progress photos'), photos)));
+    el('div', { class: 'card stack' }, cardHead('camera', 'Progress photos'), photos)));
 }
 
 /* ---------- Nutrition ---------- */
@@ -492,7 +526,7 @@ function renderSettings(body) {
   const current = new Set(c.allergies || []);
   const boxes = ALLERGENS.map(([k, label]) => {
     const box = el('input', { type: 'checkbox', value: k, checked: current.has(k) });
-    return { k, box, node: el('label', { class: 'row nowrap small', style: 'gap:8px' }, box, label) };
+    return { k, box, node: el('label', { class: 'allergen-chip' }, box, label) };
   });
   const avoid = el('input', { class: 'field', value: c.avoid_foods || '', placeholder: 'e.g. kiwi, mushrooms, pork' });
   const msg = el('p', { class: 'msg' });
@@ -503,14 +537,14 @@ function renderSettings(body) {
     try { await Data.upsert('coaching_clients', row); Object.assign(c, row); render(); } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
   });
   body.replaceChildren(el('div', { class: 'stack', style: 'max-width:620px' },
-    el('div', { class: 'card stack' },
-      el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching plan', tier),
-      el('label', { class: 'lab' }, 'Access', active), el('label', { class: 'lab' }, 'Start date', startDate),
+    el('div', { class: 'card stack' }, cardHead('users', 'Athlete', el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase())),
+      el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Coaching plan', tier),
+        el('label', { class: 'lab' }, 'Access', active), el('label', { class: 'lab' }, 'Start date', startDate)),
       el('p', { class: 'small muted' }, 'PRO unlocks meal plans, food lists and supplement texts for this athlete. Inactive athletes can no longer save anything; their data stays.')),
     el('div', { class: 'card stack' },
-      el('h2', {}, 'Allergies and foods to avoid'),
+      cardHead('leaf', 'Allergies and foods to avoid', current.size ? el('span', { class: 'pill bad' }, `${current.size} allergen${current.size === 1 ? '' : 's'}`) : null),
       el('p', { class: 'small soft' }, 'Foods containing these are hidden from your food search and from every swap the athlete is offered. Meals that still contain one are flagged in the meal plan with a button to replace them.'),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px' }, ...boxes.map((b) => b.node)),
+      el('div', { class: 'allergen-chips' }, ...boxes.map((b) => b.node)),
       el('label', { class: 'lab' }, 'Other foods to avoid (words in the food name, separated by commas)', avoid),
       el('p', { class: 'tiny muted' }, 'Allergens follow the 14 the EU requires on food labels. For your own foods, tick their allergens when you add them. Always double-check product labels.')),
     save, msg));
@@ -561,19 +595,31 @@ async function renderDashboard(content) {
     return { c, total, done, week, last, lastWeigh, next, notes, lastCheck };
   }));
   const go = (c, tab = 'plan', week = thisWeek) => { C.tab = tab; C.week = week; openAthlete(c.user_id); };
+  // One card per athlete: a ring for this week's workouts, then chips that open the right tab
+  const chipBtn = (cls, onclick, ...kids) => el('button', { class: `chip ${cls}`, type: 'button', style: 'border:0;cursor:pointer;font:inherit;font-size:13px', onclick }, ...kids);
+  const cards = rows.map((r) => {
+    const allDone = r.week && r.total && r.done >= r.total;
+    const weighDays = r.lastWeigh ? Math.round((parseDay(today()) - parseDay(r.lastWeigh.day)) / 86400000) : null;
+    return el('div', { class: 'card athlete-card' },
+      el('div', { class: 'top' },
+        r.week ? progressRing(r.done, r.total, { size: 64, big: `${r.done}/${r.total}`, small: 'done', color: allDone ? 'var(--good)' : 'var(--kcal)' })
+          : progressRing(0, 1, { size: 64, big: '–', small: 'no plan' }),
+        el('div', { class: 'grow', style: 'min-width:0' },
+          el('div', { class: 'row nowrap', style: 'gap:8px' }, el('span', { class: 'name' }, r.c.name), el('span', { class: 'pill ' + (r.c.tier === 'pro' ? 'pro' : '') }, r.c.tier.toUpperCase())),
+          el('div', { class: 'small muted' }, r.week ? (r.last ? `Last workout ${niceDate(ymd(r.last.completed_at), { weekday: 'short', day: 'numeric', month: 'short' })}` : 'No workout done yet') : 'No plan published this week')),
+        el('button', { class: 'btn icon-btn ghost', 'aria-label': `Open ${r.c.name}`, onclick: () => go(r.c) }, icon('right'))),
+      el('div', { class: 'chips' },
+        chipBtn(weighDays === null || weighDays > 3 ? 'warn' : '', () => go(r.c, 'progress'), icon('scale', 14), ' ',
+          r.lastWeigh ? el('b', {}, `${fmt(num(r.lastWeigh.weight), 1)} kg`) : 'No weigh-in', r.lastWeigh ? ` · ${weighDays === 0 ? 'today' : weighDays === 1 ? 'yesterday' : niceDate(r.lastWeigh.day)}` : ''),
+        chipBtn(r.lastCheck?.week_start === thisWeek ? 'good' : '', () => go(r.c, 'progress'), icon('clipboard', 14), ' Check-in ',
+          el('b', {}, r.lastCheck ? (r.lastCheck.week_start === thisWeek ? 'this week' : niceDate(r.lastCheck.week_start)) : '–')),
+        r.notes ? chipBtn('teal-chip', () => go(r.c), el('b', {}, String(r.notes)), ` note${r.notes > 1 ? 's' : ''}`) : null,
+        chipBtn(r.next === 'Published' ? 'good' : r.next === 'Draft' ? 'warn' : '', () => go(r.c, 'plan', nextWeek), 'Next week ',
+          el('b', {}, r.next === 'Published' ? 'published' : r.next === 'Draft' ? 'draft' : 'create'))));
+  });
   content.replaceChildren(el('h1', {}, 'Dashboard'),
     el('p', { class: 'muted small', style: 'margin:6px 0 14px' }, `This week: ${weekRange(thisWeek)}`),
-    el('div', { class: 'card', style: 'padding:6px' }, el('div', { class: 'table-wrap' }, el('table', { class: 'data' },
-      el('thead', {}, el('tr', {}, ...['Athlete', 'This week', 'Last workout', 'Last weigh-in', 'Check-in', 'Notes (2 wks)', 'Next week\'s plan'].map((h) => el('th', {}, h)))),
-      el('tbody', {}, ...rows.map((r) => el('tr', {},
-        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); go(r.c); } }, r.c.name), ' ', el('span', { class: 'pill ' + (r.c.tier === 'pro' ? 'pro' : '') }, r.c.tier.toUpperCase())),
-        el('td', {}, r.week ? `${r.done}/${r.total} done` : el('span', { class: 'accent' }, 'No plan published')),
-        el('td', {}, r.last ? niceDate(ymd(r.last.completed_at), { weekday: 'short', day: 'numeric', month: 'short' }) : '–'),
-        el('td', {}, r.lastWeigh ? `${r.lastWeigh.weight} kg · ${niceDate(r.lastWeigh.day)}` : '–'),
-        el('td', {}, r.lastCheck ? (r.lastCheck.week_start === thisWeek ? el('span', { class: 'pill good' }, 'This week') : niceDate(r.lastCheck.week_start)) : '–'),
-        el('td', {}, r.notes ? el('a', { href: '#', onclick: (e) => { e.preventDefault(); go(r.c); } }, `${r.notes} note${r.notes > 1 ? 's' : ''}`) : '–'),
-        el('td', {}, el('a', { href: '#', onclick: (e) => { e.preventDefault(); go(r.c, 'plan', nextWeek); } },
-          r.next === 'Published' ? el('span', { class: 'pill good' }, 'Published') : r.next === 'Draft' ? el('span', { class: 'pill warn' }, 'Draft') : 'Create')))))))));
+    el('div', { class: 'athlete-cards' }, ...cards));
 }
 
 /* ---------- Guide texts ---------- */

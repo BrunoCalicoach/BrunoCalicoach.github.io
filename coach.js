@@ -98,7 +98,7 @@ async function renderAthlete(content) {
   try { if (C.d.loaded !== C.current) await loadAthlete(); } catch (e) { return fatal(e); }
   const c = client();
   const tabs = [['plan', 'Training plan'], ['progress', 'Progress'], ['nutrition', 'Nutrition'], ['settings', 'Settings']];
-  const body = el('div');
+  const body = el('div', { class: `athlete-tab tab-${C.tab}` });
   content.replaceChildren(
     el('div', { class: 'row', style: 'margin-bottom:10px' }, el('h1', {}, c.name), el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase()),
       c.active ? null : el('span', { class: 'pill warn' }, 'Inactive')),

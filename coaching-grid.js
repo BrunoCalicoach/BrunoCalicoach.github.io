@@ -224,10 +224,17 @@ function createSheet({ columns, rows, onChange, editableColumns = true, sections
   let dragFrom = null, mouseAnchor = null;
   function render() {
     const extra = typeof extraColumn === 'function';
-    const colgroup = el('colgroup', {}, el('col', { style: 'width:34px' }),
-      ...state.columns.map((col) => el('col', { style: `width:${col.width || 120}px` })),
-      extra ? el('col', { style: 'width:220px' }) : null,
-      editableColumns ? el('col', { style: 'width:44px' }) : null);
+    // Column widths are proportions: on a wide screen the table fills the space, on a narrower one the columns
+    // shrink to 70% of their set width, and only below that does the table scroll sideways
+    const widths = [34, ...state.columns.map((col) => col.width || 120), ...(extra ? [220] : []), ...(editableColumns ? [44] : [])];
+    const total = widths.reduce((a, b) => a + b, 0);
+    const share = (w) => `width:${((w / total) * 100).toFixed(3)}%`;
+    let wi = 0;
+    const colgroup = el('colgroup', {}, el('col', { style: share(widths[wi++]) }),
+      ...state.columns.map(() => el('col', { style: share(widths[wi++]) })),
+      extra ? el('col', { style: share(widths[wi++]) }) : null,
+      editableColumns ? el('col', { style: share(widths[wi++]) }) : null);
+    const minWidth = Math.max(640, Math.round(total * 0.7));
     const head = el('tr', {}, el('th', {}),
       ...state.columns.map((col, c) => {
         const input = el('input', { class: 'colname', value: col.label, readOnly: !editableColumns, title: editableColumns ? 'Click to rename, right-click for more' : '' });
@@ -292,7 +299,7 @@ function createSheet({ columns, rows, onChange, editableColumns = true, sections
       if (editableColumns) tr.append(el('td', {}));
       body.append(tr);
     });
-    wrap.replaceChildren(el('table', { class: 'sheet' }, colgroup, el('thead', {}, head), body));
+    wrap.replaceChildren(el('table', { class: 'sheet', style: `min-width:${minWidth}px` }, colgroup, el('thead', {}, head), body));
     requestAnimationFrame(() => wrap.querySelectorAll('textarea.cell').forEach(grow));
   }
   document.addEventListener('mouseup', () => { mouseAnchor = null; });

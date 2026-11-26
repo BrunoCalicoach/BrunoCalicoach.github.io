@@ -625,3 +625,6 @@ details[open] > summary.card-sum .card-head::after { transform: rotate(-135deg);
 a.chip { text-decoration: none; }
 .subtabs { overflow-x: auto; scrollbar-width: none; }
 .subtabs button { white-space: nowrap; }
+
+/* Amounts shown in pieces ("2 eggs") get a slightly wider chip */
+.gram-chip.pieces { min-width: 0; white-space: nowrap; }

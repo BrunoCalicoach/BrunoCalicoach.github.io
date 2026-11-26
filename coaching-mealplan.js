@@ -107,6 +107,12 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     return out;
   }
 
+  // The piece size a plan item could use (library food, Bruno's own food or the athlete's food), even when it is in grams now
+  function availablePiece(it) {
+    const src = FOOD_LIBRARY.find((f) => f.id === it.food) || OWN_FOODS.find((f) => f.id === it.food) || (athlete.foods || []).find((f) => f.id === it.food);
+    return src ? foodPiece(src) : null;
+  }
+
   // Foods already used in this athlete's plans, most recent plan first: the "Recent" list in the Add food window
   function recentFoods() {
     const seen = new Map();
@@ -230,7 +236,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         const why = blockedReasons(it, block);
         const own = OWN_FOODS.find((f) => f.id === it.food);
         const source = it.food?.startsWith('usda:') ? '' : it.food?.startsWith('ath:') ? `Added by ${athlete.name.split(' ')[0]}` : (own?.note && !/^Open Food Facts/.test(own.note) ? own.note : '');
-        const chip = el('span', { class: 'gram-chip' }, `${fmt(num(it.g), 0)} g`);
+        const chip = el('span', { class: 'gram-chip' + (it.pc ? ' pieces' : '') }, amountLabel(it));
         const kcal = el('div', { class: 'fkcal' }, fmt(t.kcal, 0));
         const bar = el('div', {}, macroMiniBar(t));
         const rowEl = el('li', { class: 'food-row' + (editing === it.id ? ' open' : ''), role: 'button', tabindex: 0, 'aria-expanded': String(editing === it.id),
@@ -244,12 +250,21 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
             bar),
           kcal);
         if (editing !== it.id) return [rowEl];
-        const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: it.g ?? '', 'aria-label': `Grams of ${it.name}` });
+        // Countable foods are edited in pieces (whole or half), everything else in grams; one tap switches between them
+        const piece = availablePiece(it);
+        const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: it.pc ? String(pieceCount(it)) : (it.g ?? ''),
+          'aria-label': it.pc ? `Number of ${it.pc.many} of ${it.name}` : `Grams of ${it.name}` });
+        const gramsNote = el('span', { class: 'tiny muted' }, it.pc ? `= ${fmt(num(it.g), 0)} g` : '');
         const exact = el('div', {}, coloredMacros(t));
         g.addEventListener('input', () => {
-          it.g = num(g.value) || 0;
+          const v = num(g.value) || 0;
+          if (it.pc) {
+            const step = pieceStep(it.pc);
+            it.g = Math.max(0, Math.round(v / step) * step) * it.pc.g;
+            gramsNote.textContent = `= ${fmt(num(it.g), 0)} g` + (Math.round(v / step) * step !== v ? ` (${it.pc.half ? 'halves' : 'whole pieces'} only)` : '');
+          } else it.g = v;
           const nt = mealTotals([it]);
-          chip.textContent = `${fmt(num(it.g), 0)} g`;
+          chip.textContent = amountLabel(it);
           kcal.textContent = fmt(nt.kcal, 0);
           bar.replaceChildren(macroMiniBar(nt));
           exact.replaceChildren(coloredMacros(nt));
@@ -257,9 +272,15 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         });
         g.addEventListener('keydown', (e) => { if (e.key === 'Enter') { editing = null; drawRows(); } });
         setTimeout(() => { g.focus(); g.select(); }, 0);
+        const unitSwitch = it.pc
+          ? el('button', { class: 'btn small ghost', type: 'button', title: 'Measure this food in grams instead', onclick: () => { it.pc = null; drawRows(); update(); changed(); } }, 'Use grams')
+          : piece ? el('button', { class: 'btn small ghost', type: 'button', title: `1 ${piece.one} = ${piece.g} g`, onclick: () => {
+            it.pc = { g: piece.g, one: piece.one, many: piece.many, half: !!piece.half }; it.g = roundToPieces(it.g, it.pc); drawRows(); update(); changed();
+          } }, `Use ${piece.many}`) : null;
         return [rowEl, el('li', { class: 'food-edit' },
-          el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, 'g')),
+          el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, it.pc ? it.pc.many : 'g'), gramsNote),
           exact,
+          unitSwitch,
           el('div', { class: 'grow' }),
           i > 0 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move up', onclick: () => { meal.items.splice(i - 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↑') : null,
           i < meal.items.length - 1 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move down', onclick: () => { meal.items.splice(i + 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↓') : null,
@@ -343,27 +364,32 @@ function openFoodSheet(meal, block, recent, athlete, onAdded) {
     const tag = group ? group.tag(macroShares(food), food) : '';
     const btn = el('button', { class: 'food-pick', type: 'button', onclick: () => { open = open === food.id ? null : food.id; draw(); } },
       el('div', { class: 'top' }, el('b', {}, food.name, food.own ? el('span', { class: 'pill teal', style: 'margin-left:6px' }, 'Own') : null), el('span', { class: 'k' }, `${fmt(per.kcal, 0)} kcal`)),
-      el('div', { class: 'sub' }, el('span', {}, food.athlete ? `Added by ${athlete.name.split(' ')[0]}` : food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g'), coloredMacros(per),
+      el('div', { class: 'sub' }, el('span', {}, food.athlete ? `Added by ${athlete.name.split(' ')[0]}` : food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g', foodPiece(food) ? ` · 1 ${foodPiece(food).one} = ${foodPiece(food).g} g` : ''), coloredMacros(per),
         tag ? el('span', { class: `group-tag ${group.key}` }, tag) : null));
     if (open !== food.id) return [btn];
-    const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: String(defaultG || 100), 'aria-label': `Grams of ${food.name}` });
+    // Countable foods (eggs, fruit, slices…) are added in pieces, everything else in grams
+    const piece = foodPiece(food);
+    const startValue = piece ? (defaultG ? Math.max(pieceStep(piece), Math.round(defaultG / piece.g / pieceStep(piece)) * pieceStep(piece)) : 1) : (defaultG || 100);
+    const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: String(startValue), 'aria-label': piece ? `Number of ${piece.many}` : `Grams of ${food.name}` });
+    const gramsOf = () => (piece ? (num(g.value) || 0) * piece.g : num(g.value) || 0);
     const preview = el('div', { class: 'small' });
-    const showPreview = () => { const t = mealTotals([newMealItem(food, num(g.value) || 0)]); preview.replaceChildren(el('b', { style: 'color:var(--kcal)' }, `${fmt(t.kcal, 0)} kcal `), coloredMacros(t)); };
+    const showPreview = () => { const t = mealTotals([newMealItem(food, gramsOf())]); preview.replaceChildren(el('b', { style: 'color:var(--kcal)' }, `${fmt(t.kcal, 0)} kcal `), coloredMacros(t)); };
     g.addEventListener('input', showPreview);
     showPreview();
     const addIt = () => {
-      const grams = num(g.value);
+      const grams = gramsOf();
       if (!grams) { g.focus(); return; }
-      meal.items.push(newMealItem(food, grams));
+      const item = newMealItem(food, grams);
+      meal.items.push(item);
       onAdded();
-      recent.unshift({ food, g: grams });
+      recent.unshift({ food, g: item.g });
       open = null;
-      toast(`Added ${food.name}, ${fmt(grams, 0)} g`);
+      toast(`Added ${food.name}, ${amountLabel(item)}`);
       draw();
     };
     g.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addIt(); } });
     const panel = el('div', { class: 'amount-panel row nowrap' },
-      el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, 'g')),
+      el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, piece ? `${piece.many} (${piece.g} g each)` : 'g')),
       el('div', { class: 'grow' }, preview),
       el('button', { class: 'btn small primary', type: 'button', onclick: addIt }, 'Add'));
     setTimeout(() => { g.focus(); g.select(); }, 0);
@@ -618,6 +644,23 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
   for (const [key] of fields) inputs[key].addEventListener('input', () => { showPer100(); updateCheck(); });
   showPer100(); drawPerButtons(); updateCheck();
 
+  // Optional: a food usually counted, not weighed (1 bar = 60 g). Stored with the values (per100._piece), so no new column.
+  const pcOn = el('input', { type: 'checkbox' });
+  const pcG = el('input', { class: 'field', inputMode: 'decimal', style: 'width:90px', placeholder: 'g', value: prefill.serving?.qty ? String(prefill.serving.qty) : '' });
+  const pcOne = el('input', { class: 'field', placeholder: 'e.g. bar', style: 'width:130px' });
+  const pcMany = el('input', { class: 'field', placeholder: 'e.g. bars', style: 'width:130px' });
+  const pcHalf = el('input', { type: 'checkbox' });
+  pcOne.addEventListener('input', () => { if (!pcMany.dataset.touched) pcMany.value = pcOne.value ? pcOne.value.replace(/(s|x|ch|sh)$/i, '$1e') + 's' : ''; });
+  pcMany.addEventListener('input', () => { pcMany.dataset.touched = '1'; });
+  [pcG, pcOne].forEach((x) => x.addEventListener('input', () => { if (pcG.value && pcOne.value) pcOn.checked = true; }));
+  const pieceBox = el('details', { class: 'more-nutrients' },
+    el('summary', {}, 'Counted in pieces? (optional, e.g. 1 bar = 60 g)'),
+    el('div', { class: 'stack', style: 'margin-top:10px;gap:8px' },
+      el('label', { class: 'row nowrap small', style: 'gap:8px' }, pcOn, 'Plans show this food in pieces instead of grams'),
+      el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('span', { class: 'small' }, '1'), pcOne, el('span', { class: 'small' }, '='), pcG, el('span', { class: 'small muted' }, 'g')),
+      el('div', { class: 'row', style: 'gap:8px;align-items:center' }, el('span', { class: 'small muted' }, 'More than one:'), pcMany),
+      el('label', { class: 'row nowrap small', style: 'gap:8px' }, pcHalf, 'Halves are fine (e.g. ½ bar)')));
+
   const m = modal(prefill.barcode ? 'New product' : 'Add your own food',
     prefill.values || prefill.per100 ? el('div', { class: 'notice' }, `Found in Open Food Facts (barcode ${prefill.barcode}). This is crowd-sourced label data: check it against the pack before saving.${prefill.serving ? ` Pack serving: ${prefill.serving.label}.` : ''}`)
       : el('p', { class: 'small soft' }, store.intro),
@@ -636,6 +679,7 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
       el('div', { class: 'macro-inputs', style: 'margin-top:10px' },
         macroInput('fib', 'Fibre', 'g'), macroInput('sug', 'Sugars', 'g'), macroInput('sat', 'Saturated fat', 'g'),
         macroInput('na', 'Sodium', 'mg', '', 'salt g × 400'))),
+    pieceBox,
     el('div', {}, el('div', { class: 'small', style: 'font-weight:700;margin-bottom:8px' }, 'Allergens', el('span', { class: 'muted', style: 'font-weight:400' }, ' · bold on the label, including "may contain"')),
       el('div', { class: 'allergen-chips' },
         ...alBoxes.map((a) => el('label', { class: 'allergen-chip' }, a.box, a.label.replace(/ \(.*\)/, ''))))),
@@ -655,6 +699,11 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
     }
     // Store per 100 g whatever amount the values were entered for
     if (perAmount !== 100) for (const k of Object.keys(per100)) per100[k] = roundFor(k, (per100[k] * 100) / perAmount);
+    if (pcOn.checked) {
+      const g = num(pcG.value);
+      if (!g || g <= 0 || g > 2000 || !pcOne.value.trim()) { msg.className = 'msg err'; msg.textContent = 'For pieces, enter what one piece is called and how many grams it weighs.'; pieceBox.open = true; return; }
+      per100._piece = { g, one: pcOne.value.trim(), many: pcMany.value.trim() || pcOne.value.trim(), half: pcHalf.checked };
+    }
     const row = { id: prefill.barcode ? `${store.prefix}:bc:${prefill.barcode}` : `${store.prefix}:` + uid(), name: name.value.trim(), cat: cat.value, per100,
       note: source.value.trim() || null, allergens: alBoxes.filter((a) => a.box.checked).map((a) => a.k) };
     try {

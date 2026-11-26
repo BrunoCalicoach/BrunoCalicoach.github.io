@@ -1115,7 +1115,7 @@ function mealDaysCard(days, note, dayTarget) {
         m.close();
         setChoice(day, mi, { basedOn: mealSignature(day.meals[mi]), from: `${o.meal.name} from ${o.d.title}`, items: clone(o.meal.items), swaps: [] });
       } }, el('div', { class: 'row between nowrap' }, el('b', {}, `${o.d.title}`), el('span', { class: 'pill' }, `${fmt(mealTotals(o.meal.items).kcal, 0)} kcal`)),
-        el('p', { class: 'small soft', style: 'margin-top:4px' }, o.meal.items.map((it) => `${it.name} ${fmt(num(it.g), 0)} g`).join(' · '))))
+        el('p', { class: 'small soft', style: 'margin-top:4px' }, o.meal.items.map((it) => `${it.name} ${amountLabel(it)}`).join(' · '))))
         : [el('p', { class: 'muted' }, 'No other plan has a matching meal for this slot yet.')]));
   }
 
@@ -1125,13 +1125,13 @@ function mealDaysCard(days, note, dayTarget) {
     const item = current.items[ii];
     const options = foodSwapOptions(current.items, ii, target, block);
     const m = modal(`Instead of ${item.name.toLowerCase()}`,
-      el('p', { class: 'small soft' }, `${fmt(num(item.g), 0)} g now. Each option keeps this meal within its calorie and macro target; the amount is adjusted for you.`),
+      el('p', { class: 'small soft' }, `${amountLabel(item)} now. Each option keeps this meal within its calorie and macro target; the amount is adjusted for you.`),
       ...(options.length ? options.map((o) => el('button', { class: 'card card-link tight', type: 'button', onclick: () => {
         m.close();
         const prev = current.choice;
         setChoice(day, mi, { basedOn: mealSignature(day.meals[mi]), from: prev?.from || null, items: o.items,
-          swaps: [...(prev?.swaps || []), `${item.name} → ${o.food.name} ${o.g} g`] });
-      } }, el('div', { class: 'row between nowrap' }, el('b', {}, o.food.name), el('span', { class: 'g' }, `${o.g} g`)),
+          swaps: [...(prev?.swaps || []), `${item.name} → ${o.food.name} ${o.label}`] });
+      } }, el('div', { class: 'row between nowrap' }, el('b', {}, o.food.name), el('span', { class: 'g' }, o.label)),
         el('p', { class: 'tiny muted', style: 'margin-top:4px' }, `Meal becomes ${line(o.totals)}`)))
         : [el('p', { class: 'muted' }, 'No equal swap for this food keeps the meal on target.')]));
   }
@@ -1162,7 +1162,7 @@ function mealDaysCard(days, note, dayTarget) {
               title: canSwap ? 'Tap to swap this food' : null,
               onclick: canSwap ? () => swapFoodDialog(day, mi, ii) : null,
               onkeydown: canSwap ? (e) => { if (e.key === 'Enter') swapFoodDialog(day, mi, ii); } : null },
-              el('span', { class: 'gram-chip' }, `${fmt(num(it.g), 0)} g`),
+              el('span', { class: 'gram-chip' + (it.pc ? ' pieces' : '') }, amountLabel(it)),
               el('div', { class: 'info' }, el('div', { class: 'fname' }, it.name, canSwap ? el('span', { class: 'swap-icon', 'aria-hidden': 'true' }, ' ⇄') : null), macroMiniBar(ft)),
               el('div', { class: 'fkcal' }, fmt(ft.kcal, 0)));
           })),
@@ -1230,7 +1230,11 @@ function shopCategory(it) {
   LIBRARY_CATS = LIBRARY_CATS || new Map(FOOD_LIBRARY.map((f) => [f.id, f.cat]));
   return LIBRARY_CATS.get(it.food) || S.athleteFoods.find((f) => f.id === it.food)?.cat || 'other';
 }
-const shopAmount = (g) => g >= 1000 ? `${fmt(Math.round(g / 100) / 10, 1)} kg` : `${g >= 50 ? Math.round(g / 5) * 5 : Math.round(g)} g`;
+// Amount to buy: whole pieces for countable foods (rounded up, e.g. "14 eggs"), otherwise grams or kilograms
+const shopAmount = (g, pc) => {
+  if (pc) { const n = Math.max(1, Math.ceil(g / pc.g - 0.01)); return `${n} ${n === 1 ? pc.one : pc.many}`; }
+  return g >= 1000 ? `${fmt(Math.round(g / 100) / 10, 1)} kg` : `${g >= 50 ? Math.round(g / 5) * 5 : Math.round(g)} g`;
+};
 
 function shoppingPlans() {
   const plans = S.meals?.plans;
@@ -1256,7 +1260,8 @@ function shoppingLines(plans, days) {
         const g = num(it.g) || 0;
         if (!g) continue;
         const key = it.food || it.name.trim().toLowerCase();
-        const line = lines.get(key) || { key, name: it.name, cat: shopCategory(it), g: 0, uses: new Set() };
+        const line = lines.get(key) || { key, name: it.name, cat: shopCategory(it), g: 0, uses: new Set(), pc: it.pc || null };
+        if (!it.pc || (line.pc && line.pc.g !== it.pc.g)) line.pc = null; // counted only when every use is in the same pieces
         line.g += g * times;
         line.uses.add(`${day.title || `Plan ${pi + 1}`} ${meal.name.toLowerCase()}`);
         lines.set(key, line);
@@ -1325,17 +1330,17 @@ function renderShopping() {
         ...ls.map((l) => {
           const on = isTicked(l);
           const more = !on && have[l.key] !== undefined;
-          const box = el('input', { type: 'checkbox', checked: on, disabled: S.readOnly, 'aria-label': `${l.name}, ${shopAmount(l.g)}` });
+          const box = el('input', { type: 'checkbox', checked: on, disabled: S.readOnly, 'aria-label': `${l.name}, ${shopAmount(l.g, l.pc)}` });
           box.addEventListener('change', () => tick(l, box.checked));
           return el('label', { class: 'shop-item' + (on ? ' done' : '') }, box, el('span', { class: 'shop-box', 'aria-hidden': 'true' }, icon('check', 14)),
             el('span', { class: 'grow', style: 'min-width:0' }, el('span', { class: 'sname' }, l.name),
               el('span', { class: 'tiny ' + (more ? 'accent-warn' : 'muted'), style: 'display:block' },
-                more ? `Your plan changed: you ticked ${shopAmount(have[l.key])}, now ${shopAmount(l.g)}` : [...l.uses].join(', '))),
-            el('span', { class: 'gram-chip' }, shopAmount(l.g)));
+                more ? `Your plan changed: you ticked ${shopAmount(have[l.key], l.pc)}, now ${shopAmount(l.g, l.pc)}` : [...l.uses].join(', '))),
+            el('span', { class: 'gram-chip' }, shopAmount(l.g, l.pc)));
         }));
     });
 
-    const asText = () => groups.map(([cat, ls]) => `${SHOP_LABELS[cat]}\n` + ls.map((l) => `${isTicked(l) ? '[x]' : '[ ]'} ${l.name}: ${shopAmount(l.g)}`).join('\n')).join('\n\n');
+    const asText = () => groups.map(([cat, ls]) => `${SHOP_LABELS[cat]}\n` + ls.map((l) => `${isTicked(l) ? '[x]' : '[ ]'} ${l.name}: ${shopAmount(l.g, l.pc)}`).join('\n')).join('\n\n');
     host.replaceChildren(hero, daysCard,
       ...groupCards,
       el('div', { class: 'row' },

@@ -210,7 +210,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v7';
+const DEMO_KEY = 'coaching-demo-db-v8';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -506,11 +506,65 @@ function setMealLayout(row, count, { dryRun = false } = {}) {
   return lost;
 }
 
-// The food's values per 100 g (and its allergens) are copied into the plan, so a published plan never shifts
+/* Foods usually counted, not weighed: weight of one average piece (edible part, raw), names, and whether halves are fine.
+   The plan keeps calculating in grams (pieces x weight), so targets, the fit check, swaps and the shopping list work
+   exactly as before; athletes just see "2 eggs" instead of "104 g". 1 egg = 52 g gives about 75 kcal, P 6.5, F 5, C 0.4. */
+const PIECES = {
+  'Egg, whole, raw': { g: 52, one: 'egg', many: 'eggs' },
+  'Egg white, raw': { g: 33, one: 'egg white', many: 'egg whites' },
+  'Egg yolk, raw': { g: 17, one: 'yolk', many: 'yolks' },
+  'Banana': { g: 118, one: 'banana', many: 'bananas', half: true },
+  'Apple': { g: 180, one: 'apple', many: 'apples', half: true },
+  'Pear': { g: 178, one: 'pear', many: 'pears', half: true },
+  'Orange': { g: 130, one: 'orange', many: 'oranges', half: true },
+  'Mandarin': { g: 75, one: 'mandarin', many: 'mandarins' },
+  'Kiwi': { g: 70, one: 'kiwi', many: 'kiwis' },
+  'Peach': { g: 150, one: 'peach', many: 'peaches', half: true },
+  'Plum': { g: 65, one: 'plum', many: 'plums' },
+  'Apricot': { g: 35, one: 'apricot', many: 'apricots' },
+  'Figs, fresh': { g: 50, one: 'fig', many: 'figs' },
+  'Dates (Medjool)': { g: 24, one: 'date', many: 'dates' },
+  'Avocado': { g: 140, one: 'avocado', many: 'avocados', half: true },
+  'Bread, white': { g: 25, one: 'slice', many: 'slices' },
+  'Bread, whole wheat': { g: 32, one: 'slice', many: 'slices' },
+  'Bread, rye': { g: 32, one: 'slice', many: 'slices' },
+  'Tortilla (wheat)': { g: 60, one: 'tortilla', many: 'tortillas', half: true },
+  'Rice cakes': { g: 9, one: 'rice cake', many: 'rice cakes' },
+  'Crispbread (rye)': { g: 10, one: 'crispbread', many: 'crispbreads' }
+};
+// The piece of a food or plan item: a plan item's own (it.pc), the library's, or the one Bruno/the athlete gave their own food
+function foodPiece(food) {
+  if (!food) return null;
+  if (food.pc !== undefined) return food.pc || null;          // plan item: null means "measured in grams"
+  const own = food._piece || food.per100?._piece;
+  if (own && num(own.g) > 0) return { g: num(own.g), one: own.one || 'piece', many: own.many || own.one || 'pieces', half: !!own.half };
+  return String(food.id || food.food || '').startsWith('usda:') || FOOD_LIBRARY.some((f) => f.name === food.name) ? PIECES[food.name] || null : null;
+}
+const pieceStep = (pc) => (pc?.half ? 0.5 : 1);
+// Grams rounded to whole (or half) pieces, at least one step
+function roundToPieces(grams, pc) {
+  const step = pieceStep(pc);
+  return Math.max(step, Math.round((num(grams) || 0) / pc.g / step) * step) * pc.g;
+}
+const pieceCount = (it) => (it.pc ? (num(it.g) || 0) / it.pc.g : null);
+// "2 eggs", "½ banana", "1½ bananas", or "104 g" for foods measured in grams
+function amountLabel(it) {
+  if (!it.pc) return `${fmt(num(it.g) || 0, 0)} g`;
+  const n = Math.round(pieceCount(it) * 2) / 2;
+  const whole = Math.floor(n), half = n - whole >= 0.5;
+  const text = (whole ? String(whole) : '') + (half ? '½' : '');
+  return `${text || '0'} ${n === 1 || n === 0.5 ? it.pc.one : it.pc.many}`;
+}
+
+// The food's values per 100 g (and its allergens) are copied into the plan, so a published plan never shifts.
+// Countable foods (eggs, fruit, slices of bread…) are kept in whole pieces; Bruno can switch one to grams.
 function newMealItem(food, grams) {
   const per100 = {};
   for (const k of NUTRIENT_KEYS) if (food[k] !== undefined && food[k] !== null) per100[k] = food[k];
-  return { id: uid(), food: food.id, name: food.name, cat: food.cat || undefined, g: grams, per100, al: [...(food.al || [])] };
+  const pc = foodPiece(food);
+  const item = { id: uid(), food: food.id, name: food.name, cat: food.cat || undefined, g: grams, per100, al: [...(food.al || [])] };
+  if (pc) { item.pc = { g: pc.g, one: pc.one, many: pc.many, half: !!pc.half }; item.g = roundToPieces(grams, item.pc); }
+  return item;
 }
 
 /* ---------- Allergies: the 14 EU label allergens plus any foods Bruno lists for an athlete ---------- */
@@ -669,40 +723,64 @@ function foodSwapOptions(items, itemIndex, target, block) {
   const ref = swapReference(items, target);
   return FOOD_LIBRARY.filter((f) => f.cat === lib.cat && f.id !== lib.id && !NO_SWAP.test(f.name) && f[basis] > 0 && isAllowed(f, block))
     .map((f) => {
-      const g = Math.round((amount / f[basis]) * 100 / 5) * 5;
-      if (g < 5 || g > 700) return null;
-      const next = items.map((x, i) => (i === itemIndex ? { ...newMealItem(f, g), id: x.id } : x));
-      const t = mealTotals(next);
+      const g0 = Math.round((amount / f[basis]) * 100 / 5) * 5;
+      if (g0 < 5 || g0 > 700) return null;
+      const swapped = { ...newMealItem(f, g0), id: it.id };   // countable foods come out in whole pieces
+      let next = items.map((x, i) => (i === itemIndex ? swapped : x));
+      let t = mealTotals(next);
+      // Whole pieces can overshoot a little: let the other foods' grams make up for it (pieces stay as they are)
+      if (!mealFit(t, ref).ok && swapped.pc) {
+        const copy = { items: next.map((x) => ({ ...x })) };
+        fitMealToTarget(copy, ref, { keepPieces: true });
+        if (mealFit(mealTotals(copy.items), ref).ok) { next = copy.items; t = mealTotals(next); }
+      }
       if (!mealFit(t, ref).ok) return null;
       const score = Math.abs(t.kcal - old.kcal) / 50 + Math.abs(t.p - old.p) / 5 + Math.abs(t.c - old.c) / 10 + Math.abs(t.f - old.f) / 5;
-      return { food: f, g, items: next, totals: t, score };
+      const placed = next[itemIndex];
+      return { food: f, g: placed.g, label: amountLabel(placed), items: next, totals: t, score };
     })
     .filter(Boolean).sort((a, b) => a.score - b.score).slice(0, 10);
 }
 
-// Adjusts the grams of the foods already in the meal so calories, protein, carbs and fat all come as close as
-// possible to the target (least squares, amounts kept between 5 g and 3x the start, then rounded to 5 g).
+// Adjusts the amounts of the foods already in the meal so calories, protein, carbs and fat all come as close as
+// possible to the target (least squares, amounts kept between 5 g and 3x the start). Gram foods are rounded to 5 g;
+// countable foods (eggs, fruit, slices…) to whole or half pieces, after which the gram foods are fitted again around them.
 // Returns whether the result fits. Foods are never added or removed: that stays Bruno's choice.
-function fitMealToTarget(meal, target) {
+// keepPieces: countable foods stay exactly as they are and only the gram foods move (used after a food swap)
+function fitMealToTarget(meal, target, { keepPieces = false } = {}) {
   const items = meal.items.filter((it) => num(it.g) > 0);
   if (!target?.kcal || !items.length) return false;
   const keys = [['kcal', 25], ['p', 5], ['c', 10], ['f', 5]].filter(([k]) => target[k]);
   const a = items.map((it) => keys.map(([k]) => (it.per100[k] || 0) / 100));
   const start = items.map((it) => num(it.g));
-  let g = start.map((x) => x * (target.kcal / Math.max(1, mealTotals(items).kcal)));
-  const lo = start.map(() => 5), hi = start.map((x) => Math.max(30, x * 3));
-  const cost = (gs) => keys.reduce((s, [k, sc], j) => s + ((gs.reduce((acc, x, i) => acc + a[i][j] * x, 0) - target[k]) / sc) ** 2, 0)
-    + gs.reduce((s, x, i) => s + 0.02 * ((x - start[i]) / start[i]) ** 2, 0);
-  for (let iter = 0; iter < 4000; iter++) {
-    const grad = g.map((_, i) => keys.reduce((s, [k, sc], j) => s + 2 * a[i][j] * ((g.reduce((acc, x, n) => acc + a[n][j] * x, 0) - target[k]) / sc ** 2), 0)
-      + 0.04 * (g[i] - start[i]) / start[i] ** 2);
-    const norm = Math.sqrt(grad.reduce((s, x) => s + x * x, 0));
-    if (norm < 1e-6) break;
-    const step = Math.max(0.2, 30 / (1 + iter / 50));
-    const next = g.map((x, i) => Math.min(hi[i], Math.max(lo[i], x - (step * grad[i]) / norm)));
-    if (cost(next) < cost(g)) g = next;
+  // One least-squares run; `fixed` holds the amounts that must not move (pieces already rounded)
+  const solve = (fixed) => {
+    let g = start.map((x, i) => fixed[i] ?? x * (target.kcal / Math.max(1, mealTotals(items).kcal)));
+    const lo = start.map((x, i) => fixed[i] ?? (items[i].pc ? pieceStep(items[i].pc) * items[i].pc.g : 5));
+    const hi = start.map((x, i) => fixed[i] ?? Math.max(30, x * 3, items[i].pc ? items[i].pc.g * 3 : 0));
+    const cost = (gs) => keys.reduce((s, [k, sc], j) => s + ((gs.reduce((acc, x, i) => acc + a[i][j] * x, 0) - target[k]) / sc) ** 2, 0)
+      + gs.reduce((s, x, i) => s + 0.02 * ((x - start[i]) / start[i]) ** 2, 0);
+    for (let iter = 0; iter < 4000; iter++) {
+      const grad = g.map((_, i) => (fixed[i] !== undefined ? 0 : keys.reduce((s, [k, sc], j) => s + 2 * a[i][j] * ((g.reduce((acc, x, n) => acc + a[n][j] * x, 0) - target[k]) / sc ** 2), 0)
+        + 0.04 * (g[i] - start[i]) / start[i] ** 2));
+      const norm = Math.sqrt(grad.reduce((s, x) => s + x * x, 0));
+      if (norm < 1e-6) break;
+      const step = Math.max(0.2, 30 / (1 + iter / 50));
+      const next = g.map((x, i) => Math.min(hi[i], Math.max(lo[i], x - (step * grad[i]) / norm)));
+      if (cost(next) < cost(g)) g = next;
+    }
+    return g;
+  };
+  const keep = {};
+  if (keepPieces) items.forEach((it, i) => { if (it.pc) keep[i] = start[i]; });
+  let g = solve(keep);
+  if (items.some((it) => it.pc) && !keepPieces) {
+    // Pieces can only be whole (or half): round them, then let the gram foods make up the difference
+    const fixed = {};
+    items.forEach((it, i) => { if (it.pc) fixed[i] = roundToPieces(g[i], it.pc); });
+    g = items.some((it) => !it.pc) ? solve(fixed) : g.map((x, i) => fixed[i]);
   }
-  items.forEach((it, i) => { it.g = Math.max(5, Math.round(g[i] / 5) * 5); });
+  items.forEach((it, i) => { it.g = it.pc ? roundToPieces(g[i], it.pc) : Math.max(5, Math.round(g[i] / 5) * 5); });
   return mealFit(mealTotals(meal.items), target).ok;
 }
 

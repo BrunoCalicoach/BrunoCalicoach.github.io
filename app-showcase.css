@@ -16,12 +16,20 @@
   transform: translateX(-50%); border-radius: 6px; background: #26282d;
 }
 
-/* Three phones side by side; on narrow screens they scroll sideways, one at a time */
+/* Three phones side by side; on narrow screens one phone at a time, swiped left and right, with dots below */
 .mini-phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.mini-dots { display: none; }
 @media (max-width: 760px) {
-  .mini-phones { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(250px, 78%); overflow-x: auto;
-    scroll-snap-type: x mandatory; padding-bottom: 10px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; scrollbar-width: thin; }
-  .mini-phones .phone-wrap { scroll-snap-align: center; }
+  .mini-phones { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 100%; gap: 0; overflow-x: auto;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .mini-phones::-webkit-scrollbar { display: none; }
+  .mini-phones .phone-wrap { scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; padding: 0 6px; }
+  .mini-phones .phone { width: min(320px, 112%); }   /* zoom .8 below: shows at about 256 px */
+  .mini-phones .phone-wrap figcaption { max-width: 300px; }
+  .mini-dots { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  .mini-dots button { width: 10px; height: 10px; padding: 0; border: 0; border-radius: 999px; background: rgba(255,255,255,.25); cursor: pointer; transition: width .25s, background .25s; }
+  .mini-dots button.on { width: 26px; background: #4db8b8; }
+  .mini-dots button:focus-visible { outline: 2px solid #4db8b8; outline-offset: 3px; }
 }
 
 .app-detail-list { display: grid; gap: 12px 24px; grid-template-columns: 1fr; }

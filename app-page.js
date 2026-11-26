@@ -107,4 +107,29 @@
       question.setAttribute('aria-expanded', String(open));
     });
   }
+
+  // Plan pages on phones: one phone screen at a time, swiped sideways; dots show which one and switch on tap
+  document.querySelectorAll('.mini-phones').forEach((strip) => {
+    const screens = Array.from(strip.children);
+    if (screens.length < 2) return;
+    const dots = document.createElement('div');
+    dots.className = 'mini-dots';
+    dots.setAttribute('role', 'tablist');
+    dots.setAttribute('aria-label', 'App screens');
+    const buttons = screens.map((screen, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', `Screen ${i + 1} of ${screens.length}`);
+      b.addEventListener('click', () => strip.scrollTo({ left: screen.offsetLeft - strip.offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' }));
+      dots.append(b);
+      return b;
+    });
+    strip.after(dots);
+    const mark = () => {
+      const i = Math.round(strip.scrollLeft / Math.max(1, strip.clientWidth));
+      buttons.forEach((b, k) => { b.classList.toggle('on', k === i); b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    };
+    strip.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+    mark();
+  });
 })();

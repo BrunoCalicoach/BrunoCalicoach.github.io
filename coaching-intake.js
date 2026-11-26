@@ -27,7 +27,7 @@ const INTAKE_SECTIONS = [
       { key: 'job', label: 'What kind of work or study do you do?', type: 'choice', required: true,
         options: [['desk', 'Mostly sitting (desk, student)'], ['feet', 'On my feet a lot'], ['physical', 'Physical work'], ['other', 'Something else']] }
     ] },
-  { key: 'training', title: 'Training', icon: 'dumbbell',
+  { key: 'training', title: 'Training', icon: 'pullup',
     intro: 'What you do now, so the first weeks match your current level.',
     fields: [
       { key: 'days_per_week', label: 'How many days a week do you usually work out?', type: 'choice', required: true,

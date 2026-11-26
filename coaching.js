@@ -13,7 +13,7 @@ const S = {
 };
 
 const TABS = [
-  { id: 'training', label: 'Training', icon: 'dumbbell' },
+  { id: 'training', label: 'Training', icon: 'pullup' },
   { id: 'progress', label: 'Progress', icon: 'chart' },
   { id: 'nutrition', label: 'Nutrition', icon: 'apple' },
   { id: 'shopping', label: 'Shopping', icon: 'cart', pro: true },
@@ -384,7 +384,7 @@ function renderTraining(weekStart) {
     const fb = feedbackFor(week.week_start, i);
     return el('button', { class: 'card card-link day-card' + (status === 'done' ? ' is-done' : ''), type: 'button', onclick: () => { location.hash = `workout/${week.week_start}/${i}`; } },
       el('div', { class: 'meal-head', style: 'margin-bottom:0' },
-        numTag(i + 1), el('span', { class: 'meal-icon' }, icon('dumbbell', 18)),
+        numTag(i + 1), el('span', { class: 'meal-icon' }, icon('pullup', 18)),
         el('h3', {}, day.title || `Day ${i + 1}`),
         status === 'done' ? el('span', { class: 'status-badge done' }, icon('check', 14), 'Done')
           : status === 'partial' ? el('span', { class: 'status-badge partial' }, 'Started') : el('span', { class: 'muted' }, icon('right', 18))),

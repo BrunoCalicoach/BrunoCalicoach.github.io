@@ -329,7 +329,7 @@ function renderPlan(body) {
     const move = (to) => { if (to < 0 || to >= content.days.length) return; content.days.splice(to, 0, content.days.splice(i, 1)[0]); drawDays(); changed(); };
     return el('div', { class: 'card day-block' },
       el('div', { class: 'row between', style: 'margin-bottom:10px' },
-        el('div', { class: 'row' }, numTag(i + 1), el('span', { class: 'meal-icon' }, icon('dumbbell', 18)),
+        el('div', { class: 'row' }, numTag(i + 1), el('span', { class: 'meal-icon' }, icon('pullup', 18)),
           log?.completed_at ? el('span', { class: 'pill good' }, `Done ${niceDate(ymd(log.completed_at))}`) : log ? el('span', { class: 'pill warn' }, 'Started') : null,
           log?.difficulty ? el('span', { class: 'pill' }, `Difficulty ${log.difficulty}/10`) : null),
         el('div', { class: 'row' },

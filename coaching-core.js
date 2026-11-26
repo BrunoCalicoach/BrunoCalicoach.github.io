@@ -39,6 +39,7 @@ function el(tag, props = {}, ...children) {
 
 const ICONS = {
   dumbbell: '<path d="M6 7v10M3 9.5v5M18 7v10M21 9.5v5M6 12h12"/>',
+  pullup: '<path d="M5 21V5h14v16"/>',   // pull-up bar: the Training tab (calisthenics)
   chart: '<path d="M4 19h16M7 15l3-4 3 2 4-6"/>',
   apple: '<path d="M12 7c-2-2-6-1.5-6 3 0 4 3 9 6 9s6-5 6-9c0-4.5-4-5-6-3zM12 7c0-2 1-3.5 3-4"/>',
   leaf: '<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14zM5 19l7-7"/>',

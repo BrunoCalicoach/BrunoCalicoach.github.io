@@ -628,3 +628,8 @@ a.chip { text-decoration: none; }
 
 /* Amounts shown in pieces ("2 eggs") get a slightly wider chip */
 .gram-chip.pieces { min-width: 0; white-space: nowrap; }
+
+/* Locked amounts: Fit to target leaves them alone */
+.gram-chip.locked { border-color: rgba(232,196,106,.7); }
+.gram-chip.locked::before { content: "🔒"; font-size: 10px; margin-right: 4px; }
+.food-edit .lock-on { color: #e8c46a; border-color: rgba(232,196,106,.6); }

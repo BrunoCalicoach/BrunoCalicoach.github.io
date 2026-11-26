@@ -771,16 +771,22 @@ function fitMealToTarget(meal, target, { keepPieces = false } = {}) {
     }
     return g;
   };
+  // Foods Bruno locked (e.g. "always 250 ml milk") never move; with keepPieces, countable foods stay put too
   const keep = {};
-  if (keepPieces) items.forEach((it, i) => { if (it.pc) keep[i] = start[i]; });
+  items.forEach((it, i) => { if (it.locked || (keepPieces && it.pc)) keep[i] = start[i]; });
+  const free = (it) => !it.locked && !(keepPieces && it.pc);
+  if (!items.some(free)) return mealFit(mealTotals(meal.items), target).ok;
   let g = solve(keep);
-  if (items.some((it) => it.pc) && !keepPieces) {
+  if (items.some((it) => it.pc && free(it))) {
     // Pieces can only be whole (or half): round them, then let the gram foods make up the difference
-    const fixed = {};
-    items.forEach((it, i) => { if (it.pc) fixed[i] = roundToPieces(g[i], it.pc); });
-    g = items.some((it) => !it.pc) ? solve(fixed) : g.map((x, i) => fixed[i]);
+    const fixed = { ...keep };
+    items.forEach((it, i) => { if (it.pc && free(it)) fixed[i] = roundToPieces(g[i], it.pc); });
+    g = items.some((it) => !it.pc && free(it)) ? solve(fixed) : g.map((x, i) => fixed[i] ?? x);
   }
-  items.forEach((it, i) => { it.g = it.pc ? roundToPieces(g[i], it.pc) : Math.max(5, Math.round(g[i] / 5) * 5); });
+  items.forEach((it, i) => {
+    if (!free(it)) return;
+    it.g = it.pc ? roundToPieces(g[i], it.pc) : Math.max(5, Math.round(g[i] / 5) * 5);
+  });
   return mealFit(mealTotals(meal.items), target).ok;
 }
 

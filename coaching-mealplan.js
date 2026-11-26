@@ -236,7 +236,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         const why = blockedReasons(it, block);
         const own = OWN_FOODS.find((f) => f.id === it.food);
         const source = it.food?.startsWith('usda:') ? '' : it.food?.startsWith('ath:') ? `Added by ${athlete.name.split(' ')[0]}` : (own?.note && !/^Open Food Facts/.test(own.note) ? own.note : '');
-        const chip = el('span', { class: 'gram-chip' + (it.pc ? ' pieces' : '') }, amountLabel(it));
+        const chip = el('span', { class: 'gram-chip' + (it.pc ? ' pieces' : '') + (it.locked ? ' locked' : ''), title: it.locked ? 'Locked: Fit to target leaves this amount alone' : null }, amountLabel(it));
         const kcal = el('div', { class: 'fkcal' }, fmt(t.kcal, 0));
         const bar = el('div', {}, macroMiniBar(t));
         const rowEl = el('li', { class: 'food-row' + (editing === it.id ? ' open' : ''), role: 'button', tabindex: 0, 'aria-expanded': String(editing === it.id),
@@ -281,6 +281,9 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
           el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, it.pc ? it.pc.many : 'g'), gramsNote),
           exact,
           unitSwitch,
+          el('button', { class: 'btn small ghost' + (it.locked ? ' lock-on' : ''), type: 'button', 'aria-pressed': String(!!it.locked),
+            title: it.locked ? 'Let Fit to target change this amount again' : 'Keep this exact amount when you use Fit to target',
+            onclick: () => { if (it.locked) delete it.locked; else it.locked = true; drawRows(); changed(); } }, it.locked ? 'Unlock' : 'Lock amount'),
           el('div', { class: 'grow' }),
           i > 0 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move up', onclick: () => { meal.items.splice(i - 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↑') : null,
           i < meal.items.length - 1 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move down', onclick: () => { meal.items.splice(i + 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↓') : null,
@@ -294,7 +297,8 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     const addLabel = el('span', {}, `Add food to ${meal.name}`);
     const menu = el('button', { class: 'kebab', type: 'button', 'aria-label': `Options for ${meal.name}`, onclick: (e) => popMenu(e.currentTarget, [
       ['Rename', () => askText('Rename meal', 'Meal name', meal.name, (n) => { meal.name = n; title.textContent = meal.name; addLabel.textContent = `Add food to ${meal.name}`; changed(); })],
-      target && meal.items.length ? ['Fit to target (adjust grams)', () => {
+      target && meal.items.length ? [meal.items.some((it) => it.locked) ? 'Fit to target (locked foods stay)' : 'Fit to target (adjust amounts)', () => {
+        if (meal.items.every((it) => it.locked)) { toast('Every food in this meal is locked. Unlock one to fit the meal.'); return; }
         const ok = fitMealToTarget(meal, target);
         drawRows(); update(); changed();
         toast(ok ? 'Fits its target now' : 'Closer, but these foods cannot hit every macro');

@@ -251,6 +251,79 @@ table.sheet th.did { color: #86e0b5; padding: 8px; }
 .day-head textarea.field { grid-column: 1 / -1; min-height: 44px; font-size: 14px; }
 @media (max-width: 600px) { .day-head { grid-template-columns: 1fr; } }
 
+/* ---------- Macro colours, summary bars, meal counters, water ---------- */
+:root { --carb: #ff6b8b; --prot: #7d95ff; --fat: #f5c04e; --kcal: #4db8b8; --water: #5aa9ff; }
+.carb { --c: var(--carb); } .prot { --c: var(--prot); } .fat { --c: var(--fat); } .kcal { --c: var(--kcal); }
+.msummary { display: grid; gap: 8px; }
+.mcols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mcol { text-align: center; min-width: 0; }
+.mlabel { color: var(--c, var(--text-soft)); font-size: 13px; font-weight: 600; }
+.mval { color: var(--c, var(--text)); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.mbar { height: 6px; border-radius: 6px; background: color-mix(in srgb, var(--c, #888) 22%, #1a1a1a); overflow: hidden; margin-top: 5px; }
+.mbar > span { display: block; height: 100%; border-radius: 6px; background: var(--c, #888); transition: width .3s ease; }
+.mbar.over > span { background: repeating-linear-gradient(45deg, var(--c), var(--c) 6px, #e5534b 6px, #e5534b 12px); }
+.mcounters { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px 0; margin: 0 -14px; }
+.mcount { min-width: 0; }
+.mnum { color: var(--c); font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+@media (max-width: 400px) { .mnum { font-size: 15px; } }
+.compbar { display: flex; gap: 4px; height: 4px; margin: 0 -14px 2px; }
+.compbar span { background: var(--c); min-width: 0; }
+.compbar.empty { background: var(--line); }
+.food-row { cursor: pointer; }
+.food-row .right { text-align: right; flex: none; }
+.food-row .right .fkcal { width: auto; }
+.food-row .fsub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.food-edit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0 12px; border-bottom: 1px solid var(--line); }
+.mcount .mlabel { font-size: 12px; }
+.meal-card { padding: 14px; }
+.meal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.meal-head h3 { font-size: 18px; flex: 1; min-width: 0; }
+.kebab { background: none; border: 0; color: var(--text-soft); font-size: 22px; line-height: 1; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; }
+.kebab:hover { background: var(--surface-hi); color: var(--text); }
+.meal-fit { font-size: 12px; margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.meal-items { list-style: none; margin: 4px 0 0; padding: 0; }
+.meal-items li.food-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.food-row .info { flex: 1; min-width: 0; }
+.food-row .fname { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.food-row .fmacros { font-size: 12px; margin-top: 2px; }
+.fmacros span { margin-left: 8px; font-weight: 600; white-space: nowrap; }
+.food-row .fmacros .carb, .fmacros .carb { color: var(--carb); } .fmacros .prot { color: var(--prot); } .fmacros .fat { color: var(--fat); }
+.food-row .gram { width: 70px; text-align: right; padding: 8px 8px; font-size: 15px; }
+.food-row .fkcal { width: 58px; text-align: right; color: var(--kcal); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.add-food { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: none; border: 0; color: var(--accent-soft); font: inherit; font-weight: 700; font-size: 16px; padding: 12px 0 4px; cursor: pointer; }
+.add-food .plus { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
+.water { text-align: center; }
+.water-head { font-size: 15px; }
+.water-bar { --c: var(--water); height: 10px; }
+.water-amount { color: var(--water); font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.water-buttons { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 12px; }
+.water-step { color: var(--water); font-weight: 600; }
+.round-btn { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--water); color: #08131f; font-size: 26px; font-weight: 800; line-height: 1; cursor: pointer; }
+.round-btn:active { transform: scale(.94); }
+
+/* Full-screen "Add food" window */
+.sheet { position: fixed; inset: 0; z-index: 75; background: var(--page); display: flex; flex-direction: column; }
+.sheet-top { background: #111; border-bottom: 1px solid var(--line); padding: 10px 12px 0; }
+.sheet-bar { display: flex; align-items: center; gap: 8px; }
+.sheet-bar h2 { flex: 1; text-align: center; font-size: 17px; }
+.search-box { display: flex; align-items: center; gap: 8px; background: #1e1e1e; border-radius: 12px; padding: 4px 6px 4px 12px; margin: 10px 0; }
+.search-box input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font: inherit; font-size: 16px; padding: 8px 0; }
+.search-box input:focus { outline: none; }
+.sheet-tabs { display: flex; }
+.sheet-tabs button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--text-muted); font: inherit; font-weight: 700; font-size: 14px; padding: 10px 4px; cursor: pointer; }
+.sheet-tabs button.active { color: var(--text); border-color: var(--accent-soft); }
+.sheet-body { flex: 1; overflow: auto; padding: 6px 12px 90px; }
+.sheet-section { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 14px 4px 6px; }
+.food-pick { display: block; width: 100%; text-align: left; background: var(--surface); border: 0; border-bottom: 1px solid var(--line); color: var(--text); font: inherit; padding: 12px; cursor: pointer; }
+.food-pick:first-of-type { border-radius: 12px 12px 0 0; }
+.food-pick .top { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; }
+.food-pick .top b { font-weight: 600; }
+.food-pick .top .k { color: var(--kcal); font-weight: 700; white-space: nowrap; }
+.food-pick .sub { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.amount-panel { background: #1b2424; padding: 12px; border-bottom: 1px solid var(--line); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 90; background: #1f3a2d; color: #b6f0d0; border-radius: 12px; padding: 10px 16px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.scan-box { width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #000; min-height: 220px; }
+
 /* ---------- Meal plans ---------- */
 .stat .v.good { color: #86e0b5; }
 .stat .v.warn { color: #f1c77d; }
@@ -306,3 +379,7 @@ table.meal-table td { vertical-align: middle; }
   .print-only .write { min-width: 90px; }
   .print-only .sec td { background: #e6f2f2; font-weight: 700; text-transform: uppercase; }
 }
+/* Amount boxes stay compact everywhere (food rows, Add food window) */
+.set-in.gram { width: 80px; min-width: 0; flex: none; }
+.amount-panel .grow { min-width: 0; }
+.amount-panel .fmacros span:first-child { margin-left: 0; }

@@ -384,6 +384,8 @@ function renderNutrition(body) {
   const c = client();
   const t = C.d.targets || { client_id: C.current };
   const est = C.d.profile ? Calc.targets(C.d.profile, Calc.latestWeight(C.d.daily, C.d.profile)) : null;
+
+  // Daily targets (folded): the app's estimate, or Bruno's own numbers
   const field = (k, ph) => el('input', { class: 'field', inputMode: 'numeric', value: t[k] ?? '', placeholder: ph });
   const kcal = field('kcal', est ? String(est.kcal) : ''), protein = field('protein', est ? String(est.protein) : ''),
     fat = field('fat', est ? String(est.fat) : ''), carbs = field('carbs', est ? String(est.carbs) : '');
@@ -393,50 +395,88 @@ function renderNutrition(body) {
   save.addEventListener('click', async () => {
     const row = { client_id: C.current, kcal: num(kcal.value), protein: num(protein.value), fat: num(fat.value), carbs: num(carbs.value), note: note.value.trim() || null };
     if (!row.kcal) { msg.className = 'msg err'; msg.textContent = 'Enter calories, or use "Use the estimate".'; return; }
-    try { await Data.upsert('coaching_targets', row); C.d.targets = row; msg.className = 'msg ok'; msg.textContent = 'Saved. The athlete sees these now.'; }
+    try { await Data.upsert('coaching_targets', row); C.d.targets = { ...(C.d.targets || {}), ...row }; render(); }
     catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
   });
   const reset = el('button', { class: 'btn ghost' }, 'Use the estimate');
-  reset.addEventListener('click', async () => { await Data.remove('coaching_targets', { client_id: C.current }); C.d.targets = null; render(); });
-
-  const meals = C.d.meals ? clone(C.d.meals) : { client_id: C.current, plans: [], note: '' };
-  const legacy = isLegacyMealPlan(meals.plans) ? clone(meals.plans) : null;
-  const mealState = el('span', { class: 'save-state' });
-  const saveMeals = debounce(async () => {
-    try { await Data.upsert('coaching_meal_plans', { client_id: C.current, plans: meals.plans, note: meals.note || null }); C.d.meals = meals; mealState.textContent = 'Saved, live for the athlete'; mealState.className = 'save-state live'; }
-    catch (e) { mealState.textContent = 'Not saved: ' + e.message; }
-  }, 900);
-  const mealChanged = () => { mealState.textContent = 'Saving…'; mealState.className = 'save-state'; saveMeals(); };
-  const mealNote = el('textarea', { class: 'field', style: 'min-height:50px', value: meals.note || '', placeholder: 'Note above the meal plans, e.g. "Almonds, hazelnuts and cashews can be swapped"' });
-  mealNote.addEventListener('input', () => { meals.note = mealNote.value; mealChanged(); });
+  reset.addEventListener('click', async () => {
+    const water = C.d.targets?.water_ml || null;
+    await Data.remove('coaching_targets', { client_id: C.current });
+    C.d.targets = null;
+    if (water) { await Data.upsert('coaching_targets', { client_id: C.current, water_ml: water }); C.d.targets = { client_id: C.current, water_ml: water }; }
+    render();
+  });
 
   // Targets the plan is checked against: Bruno's numbers if set, otherwise the app's estimate
-  const planTarget = C.d.targets?.kcal ? { kcal: C.d.targets.kcal, protein: C.d.targets.protein, fat: C.d.targets.fat, carbs: C.d.targets.carbs }
+  const byCoach = Boolean(C.d.targets?.kcal);
+  const planTarget = byCoach ? { kcal: C.d.targets.kcal, protein: C.d.targets.protein, fat: C.d.targets.fat, carbs: C.d.targets.carbs }
     : est ? { kcal: est.kcal, protein: est.protein, fat: est.fat, carbs: est.carbs } : null;
-  const editorHost = el('div', {}, el('p', { class: 'muted' }, 'Loading foods…'));
-  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged, blockFor(c))));
-  const planBlocks = [
-    legacy ? el('div', { class: 'notice warn' }, 'This athlete had an older typed-in meal plan. It is replaced as soon as you add a food here.') : null,
-    el('div', { class: 'row' }, el('button', { class: 'btn small', onclick: () => ownFoodDialog() }, '+ Add your own food (from a label)'),
-      el('span', { class: 'small muted' }, `Food library: ${FOOD_LIBRARY.length} foods from USDA FoodData Central, values per 100 g raw or dry weight.`)),
-    el('p', { class: 'small soft' }, planTarget
-      ? `Checked against ${C.d.targets?.kcal ? 'your targets' : 'the estimated targets'}: ${fmt(planTarget.kcal, 0)} kcal, protein ${fmt(planTarget.protein, 0)} g min, carbs ${fmt(planTarget.carbs, 0)} g, fat ${fmt(planTarget.fat, 0)} g. Green = within 5%.`
-      : 'No targets yet: the athlete has not entered their details and you have not set targets above.'),
-    editorHost,
-    athleteSwaps()];
-
-  body.replaceChildren(el('div', { class: 'stack-lg' },
-    el('div', { class: 'card stack' },
-      el('h2', {}, 'Calories and macros'),
+  const targetsCard = el('details', { class: 'card tight' },
+    el('summary', { style: 'cursor:pointer' },
+      el('b', {}, 'Daily targets '), el('span', { class: 'pill ' + (byCoach ? 'teal' : '') }, byCoach ? 'Set by you' : 'Estimate'),
+      el('div', { class: 'small soft', style: 'margin-top:4px' }, planTarget
+        ? `${fmt(planTarget.kcal, 0)} kcal · P ${fmt(planTarget.protein, 0)} g · C ${fmt(planTarget.carbs, 0)} g · F ${fmt(planTarget.fat, 0)} g`
+        : 'No targets yet: the athlete has not entered their details. Tap to set them yourself.')),
+    el('div', { class: 'stack', style: 'margin-top:12px' },
       el('p', { class: 'small soft' }, est
-        ? `The app's estimate from the athlete's details: ${fmt(est.kcal, 0)} kcal, protein ${est.protein} g, fat ${est.fat} g, carbs ${est.carbs} g (TDEE ${fmt(est.tdee, 0)}). Leave empty to show the estimate, or enter your own numbers; they replace it for every tier.`
+        ? `The app's estimate from the athlete's details: ${fmt(est.kcal, 0)} kcal, protein ${est.protein} g, fat ${est.fat} g, carbs ${est.carbs} g (TDEE ${fmt(est.tdee, 0)}). Leave empty to use the estimate, or enter your own numbers; they replace it for every tier.`
         : 'The athlete has not entered their details yet, so there is no estimate. You can still set targets yourself.'),
       el('div', { class: 'form-grid' }, el('label', { class: 'lab' }, 'Calories (kcal)', kcal), el('label', { class: 'lab' }, 'Protein min (g)', protein),
         el('label', { class: 'lab' }, 'Fat min (g)', fat), el('label', { class: 'lab' }, 'Carbs (g)', carbs)),
-      note, el('div', { class: 'row' }, save, C.d.targets ? reset : null), msg),
+      note, el('div', { class: 'row' }, save, byCoach ? reset : null), msg));
+
+  // Water: the target (estimate or Bruno's) and what the athlete logged lately
+  const water = Calc.waterTarget(C.d.profile, C.d.targets?.water_ml);
+  const waterIn = el('input', { class: 'field', inputMode: 'numeric', style: 'max-width:140px', value: C.d.targets?.water_ml ?? '', placeholder: String(Calc.waterTarget(C.d.profile).ml) });
+  const waterMsg = el('span', { class: 'small' });
+  const saveWater = async (ml) => {
+    try {
+      await Data.upsert('coaching_targets', { client_id: C.current, water_ml: ml });
+      C.d.targets = { ...(C.d.targets || { client_id: C.current }), water_ml: ml };
+      render();
+    } catch (e) {
+      waterMsg.className = 'small msg err';
+      waterMsg.textContent = /water_ml/.test(e.message) ? 'The database needs the water update first (coaching-update-2026-11-26-water.sql).' : e.message;
+    }
+  };
+  const lastDays = Array.from({ length: 7 }, (_, i) => addDays(today(), i - 6)).map((d) => ({ d, ml: num(C.d.daily.find((x) => x.day === d)?.water_ml) }));
+  const logged = lastDays.filter((x) => x.ml !== null);
+  const todayMl = lastDays[6].ml || 0;
+  const waterCard = el('div', { class: 'card stack' },
+    el('div', { class: 'row between' }, el('h2', {}, 'Water'), el('span', { class: 'pill ' + (water.byCoach ? 'teal' : '') }, water.byCoach ? 'Set by you' : 'Estimate')),
+    waterTracker(todayMl, water.ml, null),
+    el('p', { class: 'small soft', style: 'text-align:center' }, logged.length
+      ? `Today so far. Last 7 days: ${logged.length} day${logged.length === 1 ? '' : 's'} logged, average ${fmt(logged.reduce((a, x) => a + x.ml, 0) / logged.length, 0)} ml.`
+      : 'The athlete has not logged any water in the last 7 days.'),
+    el('details', {}, el('summary', { class: 'small', style: 'cursor:pointer;color:var(--accent-soft)' }, 'Change the water target'),
+      el('div', { class: 'stack', style: 'margin-top:10px' },
+        el('p', { class: 'tiny muted' }, water.byCoach ? `Your target replaces the estimate (${fmt(Calc.waterTarget(C.d.profile).ml, 0)} ml).`
+          : `Estimate: ${C.d.profile?.sex === 'female' ? '1.6' : '2.0'} L from drinks (EFSA adequate intake${C.d.profile?.sex ? '' : ', assuming male until the athlete enters their details'})${water.extra ? ' + 0.5 L because they train on most days' : ''}, rounded to 250 ml.`),
+        el('div', { class: 'row nowrap' }, waterIn, el('span', { class: 'small muted' }, 'ml a day'),
+          el('button', { class: 'btn small primary', type: 'button', onclick: () => { const v = num(waterIn.value); if (!v || v < 500 || v > 8000) { waterMsg.className = 'small msg err'; waterMsg.textContent = 'Enter 500 to 8000 ml.'; return; } saveWater(Math.round(v)); } }, 'Save'),
+          water.byCoach ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => saveWater(null) }, 'Use the estimate') : null),
+        waterMsg)));
+
+  // Meal plan (PRO)
+  const meals = C.d.meals ? clone(C.d.meals) : { client_id: C.current, plans: [], note: '' };
+  const legacy = isLegacyMealPlan(meals.plans);
+  const mealState = el('span', { class: 'save-state' });
+  const saveMeals = debounce(async () => {
+    try { await Data.upsert('coaching_meal_plans', { client_id: C.current, plans: meals.plans, note: meals.note || null, split: meals.split || null }); C.d.meals = meals; mealState.textContent = 'Saved, live'; mealState.className = 'save-state live'; }
+    catch (e) { mealState.textContent = 'Not saved: ' + e.message; }
+  }, 900);
+  const mealChanged = () => { mealState.textContent = 'Saving…'; mealState.className = 'save-state'; saveMeals(); };
+  const editorHost = el('div', {}, el('p', { class: 'muted' }, 'Loading foods…'));
+  loadOwnFoods().then(() => editorHost.replaceChildren(mealPlanEditor(meals, planTarget, mealChanged, blockFor(c))));
+
+  body.replaceChildren(el('div', { class: 'stack' },
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plan'), mealState),
     c.tier !== 'pro' ? el('div', { class: 'notice warn' }, `${c.name} is on REGULAR, so they cannot see meal plans. Switch them to PRO in Settings to show these.`) : null,
-    mealNote, ...planBlocks));
+    legacy ? el('div', { class: 'notice warn' }, 'This athlete had an older typed-in meal plan. It is replaced as soon as you add a food here.') : null,
+    editorHost,
+    waterCard,
+    targetsCard,
+    athleteSwaps()));
 }
 
 /* ---------- Settings ---------- */

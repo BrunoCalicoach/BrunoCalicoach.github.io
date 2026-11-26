@@ -148,6 +148,7 @@ create table public.coaching_daily (
   day date not null,
   weight numeric(5,2) check (weight between 30 and 300),
   steps integer check (steps between 0 and 150000),
+  water_ml integer check (water_ml between 0 and 10000),
   updated_at timestamptz not null default now(),
   primary key (client_id, day)
 );
@@ -167,6 +168,7 @@ create table public.coaching_targets (
   client_id uuid primary key references public.coaching_clients (user_id) on delete cascade,
   kcal integer check (kcal between 800 and 8000),
   protein integer, fat integer, carbs integer,
+  water_ml integer check (water_ml between 500 and 8000),
   note text check (char_length(note) <= 2000),
   updated_at timestamptz not null default now()
 );
@@ -187,6 +189,7 @@ create table public.coaching_foods (
 create table public.coaching_meal_plans (
   client_id uuid primary key references public.coaching_clients (user_id) on delete cascade,
   plans jsonb not null default '[]' check (jsonb_typeof(plans) = 'array' and pg_column_size(plans) < 200000),
+  split jsonb check (split is null or jsonb_typeof(split) = 'array'),
   note text check (char_length(note) <= 3000),
   updated_at timestamptz not null default now()
 );

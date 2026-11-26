@@ -10,6 +10,15 @@ const PAGE_URL = location.origin + location.pathname;
 
 /* ---------- Small DOM helpers ---------- */
 
+// Optional parts of a page are written as "condition ? part : null". The browser would print a left-over null as
+// the text "null", so these two skip empty slots everywhere in the app.
+for (const method of ['replaceChildren', 'append']) {
+  const original = Element.prototype[method];
+  Element.prototype[method] = function (...nodes) {
+    return original.apply(this, nodes.filter((n) => n !== null && n !== undefined && n !== false));
+  };
+}
+
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [name, value] of Object.entries(props || {})) {
@@ -602,6 +611,61 @@ function fitMealToTarget(meal, target) {
 // Plans saved before the food library (free-text rows) are shown as they were
 function isLegacyMealPlan(plans) { return Array.isArray(plans) && plans.some((p) => p && Array.isArray(p.rows)); }
 
+/* ---------- Macro summary: compact targets with thin progress bars (carbs, protein, fat, then calories) ---------- */
+
+// totals: { kcal, p, c, f }; target: { kcal, protein, carbs, fat } or null
+function macroSummary(totals, target) {
+  const bar = (key, value, goal) => {
+    const pct = goal ? Math.min(100, (value / goal) * 100) : 0;
+    const over = goal && value > goal * 1.05;
+    return el('div', { class: `mbar ${key}${over ? ' over' : ''}` }, el('span', { style: `width:${pct}%` }));
+  };
+  const col = (key, label, value, goal) => el('div', { class: 'mcol' },
+    el('div', { class: `mlabel ${key}` }, label),
+    bar(key, value, goal),
+    el('div', { class: `mval ${key}` }, `${fmt(value, 0)}${goal ? ` / ${fmt(goal, 0)}` : ''} g`));
+  return el('div', { class: 'msummary' },
+    el('div', { class: 'mcols' },
+      col('carb', 'Carbs', totals.c, num(target?.carbs)),
+      col('prot', 'Protein', totals.p, num(target?.protein)),
+      col('fat', 'Fat', totals.f, num(target?.fat))),
+    bar('kcal', totals.kcal, num(target?.kcal)),
+    el('div', { class: 'mval kcal', style: 'text-align:center' }, `${fmt(totals.kcal, 0)}${target?.kcal ? ` / ${fmt(num(target.kcal), 0)}` : ''} kcal`));
+}
+
+// Four coloured counters for one meal: carbs, protein, fat, calories, as "value / target" when there is a target
+function macroCounters(totals, target) {
+  const cell = (key, label, value, goal) => el('div', { class: 'mcount' },
+    el('div', { class: `mnum ${key}` }, fmt(value, 0) + (goal ? ` / ${fmt(goal, 0)}` : '')),
+    el('div', { class: `mlabel ${key}` }, label));
+  return el('div', { class: 'mcounters' },
+    cell('carb', 'Carbs', totals.c, target?.c),
+    cell('prot', 'Protein', totals.p, target?.p),
+    cell('fat', 'Fat', totals.f, target?.f),
+    cell('kcal', 'Calories', totals.kcal, target?.kcal));
+}
+
+// Thin three-colour bar under a meal's name: how its calories split between carbs, protein and fat
+function compositionBar(totals) {
+  const c = totals.c * 4, p = totals.p * 4, f = totals.f * 9, sum = c + p + f;
+  if (!sum) return el('div', { class: 'compbar empty' });
+  return el('div', { class: 'compbar', title: `Calories from carbs ${fmt((c / sum) * 100, 0)}%, protein ${fmt((p / sum) * 100, 0)}%, fat ${fmt((f / sum) * 100, 0)}%` },
+    el('span', { class: 'carb', style: `flex:${c}` }), el('span', { class: 'prot', style: `flex:${p}` }), el('span', { class: 'fat', style: `flex:${f}` }));
+}
+
+// Water: amount drunk against the day's target, with -/+ 250 ml buttons when onChange is given
+function waterTracker(ml, target, onChange) {
+  const pct = target ? Math.min(100, (ml / target) * 100) : 0;
+  return el('div', { class: 'water' },
+    el('div', { class: 'water-head' }, el('b', {}, `${fmt(pct, 0)} %`)),
+    el('div', { class: 'mbar water-bar' }, el('span', { style: `width:${pct}%` })),
+    el('div', { class: 'water-amount' }, `${fmt(ml, 0)} / ${fmt(target, 0)} ml`),
+    onChange ? el('div', { class: 'water-buttons' },
+      el('button', { class: 'round-btn', type: 'button', 'aria-label': 'Remove 250 ml', onclick: () => onChange(Math.max(0, ml - 250)) }, '−'),
+      el('span', { class: 'water-step' }, '250 ml'),
+      el('button', { class: 'round-btn', type: 'button', 'aria-label': 'Add 250 ml', onclick: () => onChange(Math.min(10000, ml + 250)) }, '+')) : null);
+}
+
 /* ---------- Calculations ---------- */
 
 const ACTIVITY_LEVELS = [
@@ -655,6 +719,14 @@ const Calc = {
   water(sex, trainingHours = 1) {
     const total = sex === 'female' ? 2.0 : 2.5;
     return { total, drinks: round(total * 0.8, 0.1), training: [round(0.5 * trainingHours, 0.1), round(1 * trainingHours, 0.1)] };
+  },
+  // Daily drinking target in ml: EFSA's adequate intake from drinks (2.0 L men, 1.6 L women), plus 0.5 L for
+  // athletes who train on most days (activity factor 1.55+), rounded to 250 ml. Bruno's own number wins.
+  waterTarget(profile, override) {
+    if (num(override)) return { ml: num(override), byCoach: true };
+    const base = profile?.sex === 'female' ? 1600 : 2000;
+    const extra = num(profile?.activity) >= 1.55 ? 500 : 0;
+    return { ml: round(base + extra, 250), byCoach: false, base, extra, known: Boolean(profile?.sex) };
   },
   // Weekly averages of the daily log (weeks start Monday)
   weeks(daily) {

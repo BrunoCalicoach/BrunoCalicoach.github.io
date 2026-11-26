@@ -775,7 +775,6 @@ function renderNutrition() {
   const byBruno = t && t.kcal;
   const kcal = byBruno ? t.kcal : est.kcal;
   const macros = byBruno ? { protein: t.protein, fat: t.fat, carbs: t.carbs } : est;
-  const water = Calc.water(p.sex);
 
   const targetsCard = el('div', { class: 'card stack', 'data-tour': 'targets' },
     el('div', { class: 'row between' }, el('h2', {}, 'Daily targets'), el('span', { class: 'pill ' + (byBruno ? 'teal' : '') }, byBruno ? 'Set by Bruno' : 'Estimate')),
@@ -796,12 +795,35 @@ function renderNutrition() {
         byBruno ? el('p', {}, `Bruno set your targets himself, so they replace the estimate.`) : null)),
     S.readOnly ? null : el('button', { class: 'btn small', onclick: () => { const m = modal('My details', profileForm(() => { m.close(); renderNutrition(); })); } }, 'Edit my details'));
 
+  // Water tracker: today's drinks with -/+ 250 ml, against Bruno's target or the estimate
+  const waterGoal = Calc.waterTarget(p, S.targets?.water_ml);
+  const waterHost = el('div');
+  const waterMsg = el('p', { class: 'msg', style: 'text-align:center' });
+  const drawWater = () => {
+    const ml = num(S.daily.find((d) => d.day === today())?.water_ml) || 0;
+    waterHost.replaceChildren(waterTracker(ml, waterGoal.ml, S.readOnly ? null : async (next) => {
+      const prev = ml;
+      const at = S.daily.findIndex((d) => d.day === today());
+      if (at >= 0) S.daily[at] = { ...S.daily[at], water_ml: next }; else S.daily.push({ client_id: S.client.user_id, day: today(), water_ml: next });
+      drawWater();
+      try { await saveRow('coaching_daily', { client_id: S.client.user_id, day: today(), water_ml: next }); waterMsg.textContent = ''; }
+      catch (e) {
+        const back = S.daily.findIndex((d) => d.day === today());
+        if (back >= 0) S.daily[back].water_ml = prev;
+        drawWater();
+        waterMsg.className = 'msg err';
+        waterMsg.textContent = /water_ml/.test(e.message) ? 'Water tracking is being set up. Please try again later.' : 'Not saved: ' + e.message;
+      }
+    }));
+  };
+  drawWater();
   const waterCard = el('div', { class: 'card stack' },
-    el('h2', {}, 'Water'),
-    el('div', { class: 'stats' },
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'From drinks'), el('div', { class: 'v' }, `${fmt(water.drinks)} L`), el('div', { class: 'tiny muted' }, 'a day')),
-      el('div', { class: 'stat' }, el('div', { class: 'k' }, 'Training days'), el('div', { class: 'v' }, `+${water.training[0]}–${water.training[1]} L`), el('div', { class: 'tiny muted' }, 'per hour of training'))),
-    el('p', { class: 'small soft' }, `The European Food Safety Authority sets an adequate total water intake of ${water.total} L a day for ${p.sex === 'female' ? 'women' : 'men'}, about 80% of it from drinks and the rest from food. Add more when you sweat: in training, in heat or on long walks. Pale yellow urine is a good sign.`));
+    el('div', { class: 'row between' }, el('h2', {}, 'Water'), el('span', { class: 'small muted' }, 'Today')),
+    waterHost, waterMsg,
+    el('details', {}, el('summary', { class: 'small', style: 'cursor:pointer;color:var(--accent-soft)' }, 'About your water target'),
+      el('p', { class: 'small soft', style: 'margin-top:8px' }, waterGoal.byCoach
+        ? 'Bruno set this target for you. Add more when you sweat a lot: in training, in heat or on long walks.'
+        : `Your target is the European Food Safety Authority's adequate intake from drinks (${p.sex === 'female' ? '1.6' : '2.0'} L a day for ${p.sex === 'female' ? 'women' : 'men'})${waterGoal.extra ? ', plus 0.5 L because you train on most days' : ''}. Food gives you roughly another 20%. On training days add about 0.5–1 L per hour of training, more in heat. Pale yellow urine is a good sign.`)));
 
   let mealsSection;
   if (isPro()) {

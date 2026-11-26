@@ -597,3 +597,31 @@ details[open] > summary.card-sum .card-head::after { transform: rotate(-135deg);
 .switch-row input:focus-visible + .switch { outline: 2px solid var(--accent); outline-offset: 2px; }
 .allergen-chip.avoid { cursor: default; background: rgba(229,83,75,0.16); border-color: rgba(229,83,75,0.55); color: #ffb3ae; }
 .save-bar { position: sticky; bottom: 12px; z-index: 5; display: flex; align-items: center; gap: 10px; background: rgba(24,24,24,0.95); backdrop-filter: blur(8px); border: 1px solid var(--line-strong); border-radius: 14px; padding: 10px 12px 10px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+
+/* Initial Form (athlete) */
+.intake h1 { margin-top: 2px; }
+.intake-steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.intake-steps span { height: 5px; border-radius: 3px; background: #2a2a2a; }
+.intake-steps span.done { background: var(--accent); }
+.intake-steps span.now { background: var(--accent-soft); }
+.q-label { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.q .msg.err:empty { display: none; }
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.choice-grid.wide { grid-template-columns: 1fr; }
+.choice-btn { text-align: left; background: #141414; border: 1.5px solid var(--line-strong); border-radius: 12px; padding: 10px 12px; color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color .15s, background .15s; }
+.choice-btn.active { border-color: var(--accent-soft); background: rgba(0,128,128,0.16); }
+.allergen-chip.pick:has(input:checked) { background: rgba(0,128,128,0.18); border-color: var(--accent-soft); color: var(--text); }
+.intake-nav { position: sticky; bottom: 12px; z-index: 5; background: rgba(11,11,11,0.92); backdrop-filter: blur(8px); padding: 8px; border-radius: 14px; border: 1px solid var(--line); }
+
+/* Coach Overview */
+.overview-grid { columns: 2 420px; column-gap: 16px; }
+.overview-grid > .card { break-inside: avoid; margin-bottom: 16px; }
+@media (max-width: 520px) { .overview-grid { columns: 1; } }
+.qa-list { display: grid; }
+.qa { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.qa:last-child { border-bottom: 0; }
+.qa .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.card.flagged { border-color: rgba(224,162,58,0.5); }
+a.chip { text-decoration: none; }
+.subtabs { overflow-x: auto; scrollbar-width: none; }
+.subtabs button { white-space: nowrap; }

@@ -307,6 +307,24 @@ create policy "PRO athlete manages own foods" on public.coaching_athlete_foods f
   using ((select auth.uid()) = client_id)
   with check ((select auth.uid()) = client_id and public.is_pro(client_id));
 
+-- ---------- Initial Form (filled in once inside the app before anything else) ----------
+create table if not exists public.coaching_intake (
+  client_id uuid primary key references public.coaching_clients (user_id) on delete cascade,
+  answers jsonb not null default '{}'::jsonb check (jsonb_typeof(answers) = 'object' and pg_column_size(answers) < 30000),
+  submitted_at timestamptz, -- empty while the athlete is still filling it in
+  updated_at timestamptz not null default now()
+);
+
+alter table public.coaching_intake enable row level security;
+revoke all on public.coaching_intake from anon;
+grant select, insert, update, delete on public.coaching_intake to authenticated;
+
+create policy "Coach manages intake" on public.coaching_intake for all to authenticated
+  using (public.is_coach()) with check (public.is_coach());
+create policy "Athlete manages own intake" on public.coaching_intake for all to authenticated
+  using ((select auth.uid()) = client_id)
+  with check ((select auth.uid()) = client_id and public.is_client());
+
 -- ---------- Progress photos (private storage, 3 MB max per photo) ----------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('coaching-photos', 'coaching-photos', false, 3145728, array['image/jpeg', 'image/webp'])

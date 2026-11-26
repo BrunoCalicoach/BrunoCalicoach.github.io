@@ -83,31 +83,123 @@ async function openAthlete(id) {
 
 async function loadAthlete() {
   const id = { client_id: C.current };
-  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile, choices, athleteFoods] = await Promise.all([
+  const [drafts, weeks, logs, feedback, daily, measurements, checkins, targets, meals, profile, choices, athleteFoods, intake] = await Promise.all([
     Data.select('coaching_drafts', id, ['week_start']), Data.select('coaching_weeks', id, ['week_start']),
     Data.select('coaching_logs', id), Data.select('coaching_feedback', id), Data.select('coaching_daily', id, ['day']),
     Data.select('coaching_measurements', id, ['day']), Data.select('coaching_checkins', id, ['week_start']),
     Data.select('coaching_targets', id), Data.select('coaching_meal_plans', id), Data.select('coaching_profiles', { user_id: C.current }),
     Data.select('coaching_meal_choices', id).catch(() => []),
-    Data.select('coaching_athlete_foods', id, ['name']).catch(() => [])]);
-  C.d = { loaded: C.current, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null, choices: choices[0]?.choices || {},
+    Data.select('coaching_athlete_foods', id, ['name']).catch(() => []),
+    Data.select('coaching_intake', id).catch(() => null)]);
+  C.d = { loaded: C.current, intake: intake ? intake[0] || null : undefined, drafts, weeks, logs, feedback, daily, measurements, checkins, targets: targets[0] || null, meals: meals[0] || null, profile: profile[0] || null, choices: choices[0]?.choices || {},
     athleteFoods: athleteFoods.map((r) => ({ id: r.id, name: r.name, cat: r.cat, athlete: true, note: r.note, ...r.per100, al: r.allergens || [] })) };
 }
 
 async function renderAthlete(content) {
   try { if (C.d.loaded !== C.current) await loadAthlete(); } catch (e) { return fatal(e); }
   const c = client();
-  const tabs = [['plan', 'Training plan'], ['progress', 'Progress'], ['nutrition', 'Nutrition'], ['settings', 'Settings']];
+  const tabs = [['overview', 'Overview'], ['plan', 'Training plan'], ['progress', 'Progress'], ['nutrition', 'Nutrition'], ['settings', 'Settings']];
   const body = el('div', { class: `athlete-tab tab-${C.tab}` });
   content.replaceChildren(
     el('div', { class: 'row', style: 'margin-bottom:10px' }, el('h1', {}, c.name), el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase()),
       c.active ? null : el('span', { class: 'pill warn' }, 'Inactive')),
     el('div', { class: 'subtabs' }, ...tabs.map(([k, l]) => el('button', { class: C.tab === k ? 'active' : '', onclick: () => { C.tab = k; render(); } }, l))),
     body);
+  if (C.tab === 'overview') renderOverview(body);
   if (C.tab === 'plan') renderPlan(body);
   if (C.tab === 'progress') renderProgress(body);
   if (C.tab === 'nutrition') renderNutrition(body);
   if (C.tab === 'settings') renderSettings(body);
+}
+
+/* ---------- Overview: the Initial Form and the athlete's key numbers in one place ---------- */
+
+function renderOverview(body) {
+  const c = client();
+  const intake = C.d.intake;
+  const a = intake?.answers || {};
+  const p = C.d.profile || {};
+  const sections = intakeSectionsFor(c.tier === 'pro');
+  const valueOf = (f) => (f.profile ? p[f.key] : a[f.key]);
+  const has = (v) => !(v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length));
+  const none = (t) => !t || /^\s*(no|none|nothing|ne|nema|-)\s*\.?\s*$/i.test(String(t));
+
+  // Form status, with a way to ask the athlete to look over their answers again
+  const sentBefore = Boolean(a._sentBefore);
+  const status = intake === undefined ? el('span', { class: 'pill' }, 'Form not set up')
+    : intake?.submitted_at ? el('span', { class: 'status-badge done' }, icon('check', 14), `Sent ${niceDate(ymd(intake.submitted_at))}`)
+    : intake ? el('span', { class: 'status-badge partial' }, sentBefore ? 'Asked to update' : `In progress · step ${(a._step || 0) + 1} of ${sections.length}`)
+    : el('span', { class: 'pill warn' }, 'Not started');
+  const askAgain = intake?.submitted_at ? el('button', { class: 'btn small ghost', type: 'button', onclick: async () => {
+    if (!confirm(`Ask ${c.name.split(' ')[0]} to look over the initial form again? The answers stay filled in; the app shows the form the next time they open it.`)) return;
+    try {
+      const row = { client_id: c.user_id, answers: { ...a, _sentBefore: true }, submitted_at: null };
+      await Data.upsert('coaching_intake', row); C.d.intake = row; render();
+    } catch (e) { alert('Not saved: ' + e.message); }
+  } }, 'Ask to update') : null;
+
+  // Contact and basics
+  const phone = String(a.phone || '').trim();
+  const wa = phone.replace(/[^\d]/g, '').replace(/^00/, '');
+  const age = p.birth_date ? Calc.age(p.birth_date) : null;
+  const weeksIn = c.start_date ? Math.floor((parseDay(today()) - parseDay(c.start_date)) / (7 * 86400000)) + 1 : null;
+  const contact = el('div', { class: 'chips' },
+    phone ? el('a', { class: 'chip teal-chip', href: `https://wa.me/${wa}`, target: '_blank', rel: 'noopener' }, 'WhatsApp ', el('b', {}, phone)) : null,
+    a.email ? el('a', { class: 'chip', href: `mailto:${a.email}` }, el('b', {}, a.email)) : null,
+    p.sex ? el('span', { class: 'chip' }, p.sex === 'male' ? 'Male' : 'Female') : null,
+    age !== null ? el('span', { class: 'chip' }, 'Age ', el('b', {}, String(age))) : null,
+    weeksIn > 0 ? el('span', { class: 'chip' }, 'Coaching week ', el('b', {}, String(weeksIn))) : null);
+
+  // Right now: numbers from the rest of the app
+  const weeks = Calc.weeks(C.d.daily).filter((w) => w.avgWeight);
+  const latest = weeks[weeks.length - 1];
+  const est = C.d.profile ? Calc.targets(C.d.profile, Calc.latestWeight(C.d.daily, C.d.profile)) : null;
+  const t = C.d.targets?.kcal ? C.d.targets : est;
+  const thisWeek = C.d.weeks.find((w) => w.week_start === mondayOf());
+  const doneThisWeek = C.d.logs.filter((l) => l.week_start === mondayOf() && l.completed_at).length;
+  const lastCheck = C.d.checkins.slice().sort((x, y) => (x.week_start < y.week_start ? 1 : -1))[0];
+  const stat = (label, value, sub) => el('div', { class: 'hero-stat', style: 'flex-direction:column;align-items:flex-start;gap:2px' },
+    el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, label), el('div', { class: 'hero-num', style: 'font-size:22px' }, value), sub ? el('div', { class: 'tiny muted' }, sub) : null);
+  const now = el('div', { class: 'stat-grid' },
+    stat('Height', p.height_cm ? `${fmt(num(p.height_cm), 0)} cm` : '–'),
+    stat('Start weight', p.start_weight ? `${fmt(num(p.start_weight), 1)} kg` : '–'),
+    stat('Weekly average', latest ? `${fmt(latest.avgWeight, 1)} kg` : '–', latest?.change != null ? `${latest.change > 0 ? '+' : ''}${fmt(latest.change, 2)} kg this week` : null),
+    stat('Goal', p.goal ? GOALS[p.goal] : '–', p.activity ? ACTIVITY_LEVELS.find((x) => x.value === Number(p.activity))?.label.split(':')[0] : null),
+    stat('Targets', t ? `${fmt(t.kcal, 0)} kcal` : '–', t ? `P ${fmt(t.protein, 0)} · C ${fmt(t.carbs, 0)} · F ${fmt(t.fat, 0)} g${C.d.targets?.kcal ? ' (yours)' : ' (estimate)'}` : null),
+    stat('This week', thisWeek ? `${doneThisWeek}/${thisWeek.content.days?.length || 0}` : '–', thisWeek ? 'workouts done' : 'no plan published'),
+    stat('Last check-in', lastCheck ? niceDate(lastCheck.week_start) : '–'));
+
+  // One card per form section, answers in reading order
+  const flags = [];
+  if (!none(a.injuries_now) && has(a.injuries_now)) flags.push('current injury');
+  if (a.medical === 'yes') flags.push('medical condition');
+  const allergyKeys = Array.isArray(a.allergies) ? a.allergies : [];
+  const missingAllergies = allergyKeys.filter((k) => !(c.allergies || []).includes(k));
+  const missingAvoid = String(a.avoid || '').split(',').map((w) => w.trim()).filter((w) => w && !String(c.avoid_foods || '').toLowerCase().includes(w.toLowerCase()));
+  const sectionCard = (s) => {
+    const rows = s.fields.filter((f) => !f.showIf || f.showIf(a)).map((f) => {
+      const v = valueOf(f);
+      const text = intakeAnswerText(f, v);
+      return el('div', { class: 'qa' }, el('div', { class: 'small muted' }, f.label), el('div', { class: 'pre' + (text ? '' : ' muted') }, text || '–'));
+    });
+    const extra = s.key === 'health' && flags.length ? el('span', { class: 'pill warn' }, `Check: ${flags.join(', ')}`)
+      : s.key === 'nutrition' && (missingAllergies.length || missingAvoid.length) ? el('span', { class: 'pill bad' }, 'Not in Settings yet') : null;
+    const apply = s.key === 'nutrition' && (missingAllergies.length || missingAvoid.length) ? el('button', { class: 'btn small primary', type: 'button', onclick: async () => {
+      const row = { user_id: c.user_id, allergies: [...new Set([...(c.allergies || []), ...missingAllergies])],
+        avoid_foods: [c.avoid_foods, ...missingAvoid].filter(Boolean).join(', ') || null };
+      try { await Data.upsert('coaching_clients', row); Object.assign(c, row); toast('Added to allergies and foods to avoid'); render(); } catch (e) { alert('Not saved: ' + e.message); }
+    } }, `Add ${[...missingAllergies.map(allergenLabel), ...missingAvoid].join(', ')} to Settings`) : null;
+    return el('div', { class: 'card stack' + (s.key === 'health' && flags.length ? ' flagged' : '') }, cardHead(s.icon, s.title, extra), el('div', { class: 'qa-list' }, ...rows), apply);
+  };
+
+  const empty = intake === undefined
+    ? el('div', { class: 'notice warn' }, 'The Initial Form needs the database update first: run supabase/coaching-update-2026-11-26-initial-form.sql in the Supabase SQL Editor.')
+    : !intake ? el('div', { class: 'notice' }, `${c.name.split(' ')[0]} hasn't started the initial form yet. The app asks for it the next time they open it.`) : null;
+
+  body.replaceChildren(el('div', { class: 'stack' },
+    el('div', { class: 'card stack' }, cardHead('users', a.name || c.name, el('div', { class: 'row nowrap', style: 'gap:8px' }, status, askAgain)), contact, now),
+    empty,
+    intake ? el('div', { class: 'overview-grid' }, ...sections.map(sectionCard)) : null));
 }
 
 /* ---------- Results text ---------- */
@@ -632,8 +724,8 @@ async function renderDashboard(content) {
   }
   const rows = await Promise.all(C.clients.filter((c) => c.active).map(async (c) => {
     const id = { client_id: c.user_id };
-    const [weeks, drafts, logs, daily, checkins] = await Promise.all([Data.select('coaching_weeks', id), Data.select('coaching_drafts', id),
-      Data.select('coaching_logs', id), Data.select('coaching_daily', id, ['day']), Data.select('coaching_checkins', id)]);
+    const [weeks, drafts, logs, daily, checkins, intake] = await Promise.all([Data.select('coaching_weeks', id), Data.select('coaching_drafts', id),
+      Data.select('coaching_logs', id), Data.select('coaching_daily', id, ['day']), Data.select('coaching_checkins', id), Data.select('coaching_intake', id).catch(() => null)]);
     const week = weeks.find((w) => w.week_start === thisWeek);
     const total = week?.content.days?.length || 0;
     const done = logs.filter((l) => l.week_start === thisWeek && l.completed_at).length;
@@ -642,7 +734,8 @@ async function renderDashboard(content) {
     const next = weeks.find((w) => w.week_start === nextWeek) ? 'Published' : drafts.find((d) => d.week_start === nextWeek) ? 'Draft' : 'Not started';
     const notes = logs.filter((l) => l.note && l.week_start >= addDays(thisWeek, -7)).length;
     const lastCheck = checkins.sort((a, b) => (a.week_start < b.week_start ? 1 : -1))[0];
-    return { c, total, done, week, last, lastWeigh, next, notes, lastCheck };
+    const form = intake === null ? 'n/a' : intake[0]?.submitted_at ? 'sent' : intake[0] ? 'started' : 'none';
+    return { c, total, done, week, last, lastWeigh, next, notes, lastCheck, form };
   }));
   const go = (c, tab = 'plan', week = thisWeek) => { C.tab = tab; C.week = week; openAthlete(c.user_id); };
   // One card per athlete: a ring for this week's workouts, then chips that open the right tab
@@ -659,6 +752,7 @@ async function renderDashboard(content) {
           el('div', { class: 'small muted' }, r.week ? (r.last ? `Last workout ${niceDate(ymd(r.last.completed_at), { weekday: 'short', day: 'numeric', month: 'short' })}` : 'No workout done yet') : 'No plan published this week')),
         el('button', { class: 'btn icon-btn ghost', 'aria-label': `Open ${r.c.name}`, onclick: () => go(r.c) }, icon('right'))),
       el('div', { class: 'chips' },
+        r.form === 'none' || r.form === 'started' ? chipBtn('warn', () => go(r.c, 'overview'), icon('clipboard', 14), r.form === 'none' ? ' Initial form not started' : ' Initial form in progress') : null,
         chipBtn(weighDays === null || weighDays > 3 ? 'warn' : '', () => go(r.c, 'progress'), icon('scale', 14), ' ',
           r.lastWeigh ? el('b', {}, `${fmt(num(r.lastWeigh.weight), 1)} kg`) : 'No weigh-in', r.lastWeigh ? ` · ${weighDays === 0 ? 'today' : weighDays === 1 ? 'yesterday' : niceDate(r.lastWeigh.day)}` : ''),
         chipBtn(r.lastCheck?.week_start === thisWeek ? 'good' : '', () => go(r.c, 'progress'), icon('clipboard', 14), ' Check-in ',

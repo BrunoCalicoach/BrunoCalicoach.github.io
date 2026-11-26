@@ -51,7 +51,7 @@ if (DEMO) {
           : el('p', { class: 'soft' }, 'Bruno will connect your account to your coaching plan. Once he has, this page shows your training, progress and nutrition.'),
         coach ? el('a', { class: 'btn primary', href: 'coach.html' }, 'Open the coach editor') : el('p', { class: 'muted small' }, `Logged in as ${user.email}`)));
     }
-    startFor(user.id, {});
+    startFor(user.id, { email: user.email });
   }, () => {
     signOutButton.classList.add('hidden');
     tabsNav.classList.add('hidden');
@@ -61,8 +61,9 @@ if (DEMO) {
 
 window.addEventListener('hashchange', route);
 
-async function startFor(clientId, { preview = false, coachView = false }) {
+async function startFor(clientId, { preview = false, coachView = false, email = '' }) {
   S.preview = preview;
+  S.email = email;
   S.readOnly = preview || coachView;
   if (!DEMO && !coachView) Data.setOwner(clientId);
   if (DEMO) Data.setOwner('demo:' + clientId);
@@ -70,7 +71,7 @@ async function startFor(clientId, { preview = false, coachView = false }) {
   try {
     await Data.flush();
     const id = { client_id: clientId };
-    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides, choices, athleteFoods] = await Promise.all([
+    const [client, profile, weeks, logs, feedback, daily, measurements, checkins, targets, meals, guides, choices, athleteFoods, intake] = await Promise.all([
       Data.select('coaching_clients', { user_id: clientId }),
       Data.select('coaching_profiles', { user_id: clientId }),
       Data.select(preview ? 'coaching_drafts' : 'coaching_weeks', id, ['week_start']),
@@ -83,10 +84,12 @@ async function startFor(clientId, { preview = false, coachView = false }) {
       Data.select('coaching_meal_plans', id).catch(() => []),
       loadGuides(),
       Data.select('coaching_meal_choices', id).catch(() => []),
-      Data.select('coaching_athlete_foods', id, ['name']).catch(() => [])
+      Data.select('coaching_athlete_foods', id, ['name']).catch(() => []),
+      // The Initial Form; if its table isn't set up yet, the app works as before instead of blocking everyone
+      Data.select('coaching_intake', id).catch(() => null)
     ]);
     Object.assign(S, { client: client[0], profile: profile[0] || { user_id: clientId }, weeks, logs, feedback, daily, measurements, checkins,
-      targets: targets[0] || null, meals: meals[0] || null, guides, choices: choices[0]?.choices || {}, athleteFoods });
+      targets: targets[0] || null, meals: meals[0] || null, guides, choices: choices[0]?.choices || {}, athleteFoods, intake: intake ? intake[0] || null : undefined });
   } catch (error) { return fatal(error); }
   if (!S.client) return fatal(new Error('No coaching account found.'));
   if (S.readOnly) {
@@ -94,6 +97,12 @@ async function startFor(clientId, { preview = false, coachView = false }) {
   }
   registerWorker();
   if (!S.readOnly && !S.profile.consent_at) return consentGate();
+  openApp();
+}
+
+// After consent: the Initial Form first (until it is sent), then the app and, the first time, the tour
+function openApp() {
+  if (!S.readOnly && S.intake !== undefined && !S.intake?.submitted_at) return intakeForm({ onDone: openApp });
   renderTabs();
   route();
   ready();
@@ -117,18 +126,147 @@ function consentGate() {
     const row = { user_id: S.client.user_id, consent_at: new Date().toISOString() };
     try { await Data.upsert('coaching_profiles', row); } catch (e) { go.disabled = false; return alert(e.message); }
     S.profile = { ...S.profile, ...row };
-    renderTabs(); route(); ready();
+    openApp();
   });
   show(el('div', { class: 'stack', style: 'margin-top:20px' },
     el('h1', {}, `Welcome, ${S.client.name.split(' ')[0]}`),
     el('div', { class: 'card stack' },
-      el('p', { class: 'soft' }, 'This app keeps your training plan, workout results, body weight, measurements, steps, check-ins and progress photos.'),
+      el('p', { class: 'soft' }, 'This app keeps your initial form (training history, goals, injuries and health), your training plan, workout results, body weight, measurements, steps, check-ins and progress photos.'),
       el('p', { class: 'soft' }, 'Only you and Bruno can see them. They are used only for your coaching, and you can ask Bruno to delete them at any time.'),
       el('label', { class: 'row nowrap', style: 'align-items:flex-start;gap:12px;font-weight:600', for: 'consent' }, box,
         el('span', {}, 'I agree that my health and training data is stored for my coaching.')),
       el('p', { class: 'small soft' }, 'Under 18? A parent or legal guardian must agree to your coaching and to this before you continue.'),
       el('p', { class: 'small' }, el('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'Read the privacy policy')),
       go)));
+}
+
+/* ---------- Initial Form: one section per step, saved as the athlete goes, sent to Bruno at the end ---------- */
+
+function intakeForm({ onDone, editing = false }) {
+  const sections = intakeSectionsFor(isPro());
+  const answers = clone(S.intake?.answers || {});
+  if (!answers.name) answers.name = S.client.name;
+  if (!answers.email && S.email) answers.email = S.email;
+  const profile = { ...S.profile };
+  // Profile answers (sex, birth date, height, weight, activity, goal) live in the athlete's profile
+  const get = (f) => (f.profile ? (profile[f.key] ?? '') : answers[f.key]);
+  const set = (f, v) => { if (f.profile) profile[f.key] = v; else answers[f.key] = v; };
+  let step = Math.max(0, Math.min(sections.length - 1, editing ? 0 : (S.intake?.answers?._step || 0)));
+  const reopened = !editing && S.intake && !S.intake.submitted_at && S.intake.answers?._sentBefore;
+  tabsNav.classList.add('hidden');
+
+  function control(f, onChange) {
+    const v = get(f);
+    if (f.type === 'choice') {
+      const box = el('div', { class: 'choice-grid' + (f.wide ? ' wide' : '') });
+      const draw = () => box.replaceChildren(...intakeOptions(f).map(([k, label]) => el('button', { type: 'button', class: 'choice-btn' + (String(get(f)) === String(k) ? ' active' : ''), 'aria-pressed': String(String(get(f)) === String(k)),
+        onclick: () => { set(f, k); draw(); onChange(); } }, label)));
+      draw();
+      return box;
+    }
+    if (f.type === 'multi') {
+      const chosen = new Set(Array.isArray(v) ? v : []);
+      return el('div', { class: 'allergen-chips' }, ...intakeOptions(f).map(([k, label]) => {
+        const box = el('input', { type: 'checkbox', checked: chosen.has(k) });
+        box.addEventListener('change', () => { if (box.checked) chosen.add(k); else chosen.delete(k); set(f, intakeOptions(f).map(([o]) => o).filter((o) => chosen.has(o))); onChange(); });
+        return el('label', { class: 'allergen-chip pick' }, box, label);
+      }));
+    }
+    if (f.type === 'textarea') {
+      const t = el('textarea', { class: 'field', value: v || '', placeholder: f.placeholder || '', rows: 3 });
+      t.addEventListener('input', () => { set(f, t.value); onChange(); });
+      return t;
+    }
+    const type = { number: 'text', tel: 'tel', email: 'email', date: 'date', time: 'time' }[f.type] || 'text';
+    const input = el('input', { class: 'field', type, value: v ?? '', placeholder: f.placeholder || '', inputMode: f.type === 'number' ? 'decimal' : null, max: f.type === 'date' ? today() : null,
+      autocomplete: f.type === 'tel' ? 'tel' : f.type === 'email' ? 'email' : f.key === 'name' ? 'name' : null });
+    input.addEventListener('input', () => { set(f, input.value); onChange(); });
+    return f.unit ? el('div', { class: 'row nowrap', style: 'gap:8px' }, el('div', { class: 'grow' }, input), el('span', { class: 'muted' }, f.unit)) : input;
+  }
+
+  // Saves what is there so far (the athlete can close the app and continue later)
+  async function saveDraft(submitted) {
+    const prof = { user_id: S.client.user_id };
+    for (const s of sections) for (const f of s.fields) if (f.profile && profile[f.key] !== '' && profile[f.key] !== undefined) {
+      prof[f.key] = ['height_cm', 'start_weight', 'activity'].includes(f.key) ? num(profile[f.key]) : profile[f.key];
+    }
+    // Answers to questions that no longer apply (e.g. "Please explain" after switching to No) are dropped
+    for (const s of sections) for (const f of s.fields) if (f.showIf && !f.showIf(answers)) delete answers[f.key];
+    const row = { client_id: S.client.user_id, answers: { ...answers, _step: step, _sentBefore: answers._sentBefore || Boolean(submitted) || undefined },
+      submitted_at: submitted ? new Date().toISOString() : (editing ? S.intake?.submitted_at || null : null) };
+    if (submitted) delete row.answers._step;
+    await saveRow('coaching_profiles', prof);
+    await saveRow('coaching_intake', row);
+    S.profile = { ...S.profile, ...prof };
+    S.intake = row;
+  }
+
+  function draw() {
+    const s = sections[step];
+    const errors = new Map();
+    const rows = [];
+    const drawFields = () => rows.forEach((r) => r());
+    const fieldsBox = el('div', { class: 'stack', style: 'gap:18px' });
+    const msg = el('p', { class: 'msg' });
+    const buildFields = () => {
+      rows.length = 0;
+      fieldsBox.replaceChildren(...s.fields.filter((f) => !f.showIf || f.showIf(answers)).map((f) => {
+        const err = el('p', { class: 'msg err small' });
+        rows.push(() => { err.textContent = errors.get(f.key) || ''; });
+        const onChange = () => {
+          if (errors.has(f.key)) { errors.delete(f.key); drawFields(); }
+          if (s.fields.some((x) => x.showIf)) { const before = fieldsBox.querySelectorAll('.q').length; const after = s.fields.filter((x) => !x.showIf || x.showIf(answers)).length; if (before !== after) buildFields(); }
+        };
+        return el('div', { class: 'q' },
+          el('div', { class: 'q-label' }, f.label, f.required ? null : el('span', { class: 'muted', style: 'font-weight:500' }, ' (optional)')),
+          f.hint ? el('p', { class: 'small muted', style: 'margin:2px 0 8px' }, f.hint) : null,
+          control(f, onChange), err);
+      }));
+      drawFields();
+    };
+    buildFields();
+
+    const back = step > 0 ? el('button', { class: 'btn', type: 'button', onclick: () => { step--; draw(); } }, 'Back')
+      : editing ? el('button', { class: 'btn', type: 'button', onclick: () => onDone() }, 'Cancel') : null;
+    const last = step === sections.length - 1;
+    const next = el('button', { class: 'btn primary grow', type: 'button' }, last ? (editing && S.intake?.submitted_at ? 'Save changes' : 'Send to Bruno') : 'Next');
+    next.addEventListener('click', async () => {
+      errors.clear();
+      for (const f of s.fields) {
+        if (f.showIf && !f.showIf(answers)) continue;
+        const p = intakeProblem(f, get(f));
+        if (p) errors.set(f.key, p);
+      }
+      drawFields();
+      if (errors.size) { msg.className = 'msg err'; msg.textContent = 'Please check the answers marked in red.'; fieldsBox.querySelector('.msg.err:not(:empty)')?.closest('.q')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      next.disabled = true; msg.className = 'msg'; msg.textContent = 'Saving…';
+      try {
+        if (last) step = sections.length - 1;
+        else step++;
+        await saveDraft(last);
+        if (last) { toast(editing ? 'Your answers are updated. Bruno can see them now.' : 'Thank you! Bruno has your answers.'); onDone(); return; }
+        draw();
+      } catch (e) {
+        if (!last) step--;
+        next.disabled = false; msg.className = 'msg err';
+        msg.textContent = navigator.onLine ? 'Not saved: ' + e.message : 'You are offline. Your answers are kept on this phone; connect to the internet to continue.';
+      }
+    });
+
+    show(el('div', { class: 'stack intake', style: 'margin-top:12px' },
+      el('div', {},
+        el('div', { class: 'mlabel', style: 'color:var(--accent-soft)' }, editing ? 'Your initial form' : 'Before you start'),
+        el('h1', {}, step === 0 && !editing ? `Hi ${(answers.name || S.client.name).split(' ')[0]}!` : s.title)),
+      step === 0 && !editing ? el('p', { class: 'soft' }, reopened
+        ? 'Bruno asked you to look over your initial form again. Your earlier answers are filled in: update anything that has changed and send it again.'
+        : 'Before your first plan, Bruno needs to get to know you. It takes about 5–10 minutes and your answers are saved after every step, so you can finish later. Please be thorough: the more Bruno knows, the better he can coach you.') : null,
+      el('div', { class: 'intake-steps', 'aria-label': `Step ${step + 1} of ${sections.length}` }, ...sections.map((x, i) => el('span', { class: i < step ? 'done' : i === step ? 'now' : '' }))),
+      el('div', { class: 'small muted' }, `Step ${step + 1} of ${sections.length} · ${s.title}`),
+      el('div', { class: 'card stack' }, cardHead(s.icon, s.title), el('p', { class: 'small soft' }, s.intro), fieldsBox),
+      msg,
+      el('div', { class: 'row nowrap intake-nav' }, back, next)));
+  }
+  draw();
 }
 
 function fatal(error) {
@@ -1258,7 +1396,10 @@ function renderLifestyle() {
         el('div', { class: 'grow' }, el('b', {}, weekRange(w.week)), el('div', { class: 'tiny muted' }, `${w.steps.length} day${w.steps.length === 1 ? '' : 's'} entered`)),
         el('b', {}, `${fmt(w.avgSteps, 0)}`), el('span', { class: 'tiny muted' }, 'a day'),
         changeChip(w.avgSteps >= STEP_GOAL ? 'On goal' : `${Math.round((w.avgSteps / STEP_GOAL) * 100)} %`, w.avgSteps >= STEP_GOAL ? 'good' : 'neutral')))) : null),
-    guideCard('lifestyle', true)));
+    guideCard('lifestyle', true),
+    S.intake?.submitted_at && !S.readOnly ? el('div', { class: 'card tight row nowrap', style: 'gap:12px' }, el('span', { class: 'head-icon' }, icon('clipboard', 18)),
+      el('div', { class: 'grow' }, el('b', {}, 'Your initial form'), el('div', { class: 'small muted' }, `Sent ${niceDate(ymd(S.intake.submitted_at))}. Update it when something changes, like a new injury, goal or schedule.`)),
+      el('button', { class: 'btn small', type: 'button', onclick: () => intakeForm({ editing: true, onDone: () => { renderTabs(); route(); } }) }, 'View or update')) : null));
 }
 
 /* ---------- Installing the app ---------- */

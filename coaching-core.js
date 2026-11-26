@@ -152,7 +152,7 @@ const KEYS = {
   coaching_weeks: ['client_id', 'week_start'], coaching_logs: ['client_id', 'week_start', 'day_index'],
   coaching_feedback: ['client_id', 'week_start', 'day_index'], coaching_checkins: ['client_id', 'week_start'],
   coaching_daily: ['client_id', 'day'], coaching_measurements: ['client_id', 'day'], coaching_targets: ['client_id'],
-  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id'], coaching_athlete_foods: ['client_id', 'id']
+  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id'], coaching_athlete_foods: ['client_id', 'id'], coaching_intake: ['client_id']
 };
 
 class OfflineError extends Error {}
@@ -210,7 +210,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v5';
+const DEMO_KEY = 'coaching-demo-db-v6';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -1175,7 +1175,18 @@ function demoSeed() {
         meal('Plan 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
           [['Tuna, canned in water, drained', 150], ['Tortilla (wheat)', 120], ['Cucumber', 150], ['Avocado', 60]],
           [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]])] }],
-      coaching_guides: []
+      coaching_guides: [],
+      // Demo PRO athlete has sent the Initial Form; the REGULAR one still has to fill it in
+      coaching_intake: [{ client_id: A, submitted_at: new Date(Date.now() - 20 * 86400000).toISOString(), answers: {
+        _sentBefore: true, name: 'Demo athlete', phone: '+385 91 000 0000', email: 'demo@example.com', job: 'desk',
+        days_per_week: '4', session_length: '60-90', experience: '1-3y',
+        sessions: 'Push/pull split: weighted dips 3x5 at +20 kg, pull-ups 4x8, rows, push-ups to failure; legs once a week (squats, RDL).',
+        where: ['gym', 'park'], equipment: 'Pull-up bar and rings at home, weight vest 10 kg.', weekdays: ['mon', 'tue', 'thu', 'sat'], train_time: 'evening',
+        long_term: 'Front lever, one-arm chin-up, staying lean all year.', priorities: '1. First muscle-up\n2. 15 strict pull-ups\n3. Lose about 4 kg of fat',
+        injuries_now: 'None', injuries_past: 'Left shoulder pain in 2023 (bench press), fine now.', medical: 'no',
+        diet: 'Mostly home-cooked, a lot of bread and pasta, little vegetables. No idea about calories, guess around 2,500.',
+        diet_type: 'all', allergies: [], avoid: 'mushrooms', cooking: 'prep', supplements: 'Whey protein, creatine',
+        wake: '06:30', bed: '23:00', routine_note: 'Office job, sometimes travel on Fridays.' } }]
     },
     files: {}
   };

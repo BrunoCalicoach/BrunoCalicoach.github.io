@@ -1,0 +1,37 @@
+/* The coaching app's phone screens on the plan detail pages (regular.html, pro.html).
+   The phone frame is the same as on challenge.html / app.html; the screens inside come from app-page.css. */
+
+.phone-wrap { width: 100%; }
+.phone-wrap figcaption { margin-top: 14px; font-size: .85rem; line-height: 1.55; color: var(--text-soft, #b4b4b4); text-align: center; }
+.phone-wrap figcaption strong { color: var(--text, #f2f2f2); }
+.phone {
+  position: relative; display: flex; flex-direction: column;
+  aspect-ratio: 9 / 18.5; padding: 16px 14px 14px; border-radius: 34px;
+  background: #111317; border: 7px solid #26282d;
+  box-shadow: 0 24px 50px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
+  overflow: hidden; font-size: 11px; color: #f3f4f6; line-height: 1.35;
+}
+.phone::before {
+  content: ''; position: absolute; top: 6px; left: 50%; width: 64px; height: 6px;
+  transform: translateX(-50%); border-radius: 6px; background: #26282d;
+}
+
+/* Three phones side by side; on narrow screens they scroll sideways, one at a time */
+.mini-phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) {
+  .mini-phones { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(250px, 78%); overflow-x: auto;
+    scroll-snap-type: x mandatory; padding-bottom: 10px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; scrollbar-width: thin; }
+  .mini-phones .phone-wrap { scroll-snap-align: center; }
+}
+
+.app-detail-list { display: grid; gap: 12px 24px; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .app-detail-list { grid-template-columns: 1fr 1fr; } }
+.app-detail-list li { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; line-height: 1.55; color: var(--text-soft, #b4b4b4); }
+.app-detail-list li svg { flex: none; width: 18px; height: 18px; margin-top: 2px; }
+.app-detail-list b { color: var(--text, #f2f2f2); font-weight: 700; }
+.app-detail-link { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; font-weight: 700;
+  border: 1px solid rgba(0,128,128,.55); background: rgba(0,128,128,.12); color: #7fdcdc; transition: background .25s; }
+.app-detail-link:hover { background: rgba(0,128,128,.25); }
+.app-detail { border-color: rgba(0,128,128,.4) !important; background: linear-gradient(160deg, rgba(0,128,128,.12), transparent 45%), var(--surface, #181818) !important; }
+/* The phones are narrower here than on app.html: scale the screen inside so it looks the same */
+@media (min-width: 761px) { .mini-phones .phone { zoom: .8; } }

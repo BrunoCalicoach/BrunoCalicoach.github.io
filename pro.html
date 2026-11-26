@@ -163,6 +163,8 @@ body{
 </style>
 <link rel="stylesheet" href="theme-dark.css?v=9">
 <link rel="stylesheet" href="compare.css?v=2">
+<link rel="stylesheet" href="app-page.css?v=1">
+<link rel="stylesheet" href="app-showcase.css?v=1">
 
 
 <link rel="alternate" hreflang="en" href="https://brunozgela.com/pro.html">
@@ -325,6 +327,7 @@ What's Included
 </h2>
 
 <div class="grid md:grid-cols-2 gap-6">
+<div class="flex gap-4"><i data-feather="smartphone" class="text-[#008080]"></i><div><h3 class="font-bold"><a href="app.html" class="underline decoration-[#4db8b8] underline-offset-4">Coaching app</a> <span class="text-[#4db8b8] text-xs font-extrabold">NEW</span></h3><p class="text-gray-500 text-sm">Your training plan, meal plans with swaps, shopping list and progress, all on your phone</p></div></div>
 
 <div class="flex gap-4">
 <i data-feather="check-circle" class="text-[#008080]"></i>
@@ -402,6 +405,115 @@ you can use in your meal plan
 </div>
 
 </div>
+
+</div>
+
+
+<!-- COACHING APP: the same screens as app.html (styles in app-showcase.css + app-page.css, animation in app-page.js) -->
+
+<div class="card p-10 app-detail">
+
+<span class="text-[#4db8b8] font-semibold text-sm tracking-wide">INCLUDED · THE COACHING APP</span>
+<h2 class="text-3xl font-bold mt-2">
+Training and nutrition, in one app
+</h2>
+
+<p class="text-gray-600 leading-8 mt-4">
+Your training plan, your meal plan, my feedback and your progress live in one app on your phone.
+Swap foods and meals whenever you like and your macros stay on target, and your shopping list
+updates itself.
+</p>
+
+<div class="mini-phones mt-8">
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="ui">
+            <div class="ui-muted">Week 6 · 23 – 29 Nov</div>
+            <div class="ui-title">DAY 4</div>
+            <div class="ui-card">
+              <div class="ui-row"><span class="ui-num">01</span><span class="ui-b ui-grow">Weighted pull-ups</span><span class="ui-chip teal">Rest</span></div>
+              <div class="ui-tiles" style="margin-top:6px"><span class="ui-tile"><i>SETS</i><b>4</b></span><span class="ui-tile"><i>REPS</i><b>6</b></span><span class="ui-tile"><i>WEIGHT</i><b>15 kg</b></span><span class="ui-tile"><i>REST</i><b>2–3 min</b></span><span class="ui-tile"><i>RPE</i><b>8</b></span></div>
+              <div class="ui-muted" style="margin:6px 0 4px">Last time: 6, 6, 5, 5 @ 12.5 kg · RPE 8</div>
+              <div class="ui-head"><span>#</span><span>REPS</span><span>KG</span><span>RPE</span></div>
+              <div class="ui-sets" data-sets>
+                <div class="ui-set"><span>1</span><span class="ui-in empty" data-v="6">6</span><span class="ui-in empty" data-v="15">15</span><span class="ui-in empty" data-v="8">8</span></div>
+                <div class="ui-set"><span>2</span><span class="ui-in empty" data-v="6">6</span><span class="ui-in empty" data-v="15">15</span><span class="ui-in empty" data-v="8">8</span></div>
+                <div class="ui-set"><span>3</span><span class="ui-in empty" data-v="6">6</span><span class="ui-in empty" data-v="15">15</span><span class="ui-in empty" data-v="8.5">8.5</span></div>
+                <div class="ui-set"><span>4</span><span class="ui-in empty" data-v="5">6</span><span class="ui-in empty" data-v="15">15</span><span class="ui-in empty" data-v="9">8</span></div>
+              </div>
+            </div>
+            <div class="ui-card"><div class="ui-row"><span class="ui-num">02</span><span class="ui-b ui-grow">Ring dips</span><span class="ui-chip teal">Rest</span></div><div class="ui-tiles" style="margin-top:6px"><span class="ui-tile"><i>SETS</i><b>3</b></span><span class="ui-tile"><i>REPS</i><b>10, 9, 8</b></span><span class="ui-tile"><i>REST</i><b>90 s</b></span></div><div class="ui-muted" style="margin-top:5px">Bruno: elbows close, full lockout at the top.</div></div>
+            <div class="ui-timer">
+              <div class="ui-ring" style="width:44px;height:44px" data-timer><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="track" style="stroke-width:11"/><circle cx="50" cy="50" r="40" class="fill" style="stroke-width:11;stroke:#b5473f" stroke-dasharray="0 251.3"/></svg><div class="ui-ring-text"><b style="font-size:10px" data-timer-text>3:00</b></div></div>
+              <div class="ui-grow"><div class="ui-muted" style="color:#b4b4b4">REST</div><div class="ui-b" style="font-size:9.5px">Weighted pull-ups</div><div class="ui-muted" data-timer-note>Ready in 2:00</div></div>
+              <span class="ui-btn primary">Done</span>
+            </div>
+          </div>
+        </div>
+        <figcaption><strong>Log every set in seconds.</strong> Reps, weight and effort, with last time's numbers beside them. The rest timer starts by itself and beeps when you're ready.</figcaption>
+      </figure>
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="ui" data-meal>
+            <div class="ui-row"><div class="ui-title ui-grow">Meal plan</div><span class="ui-chip" style="background:#e8c46a;color:#111;font-weight:800">PRO</span></div>
+            <div class="ui-card ui-row" style="gap:9px">
+              <div class="ui-ring" style="width:58px;height:58px" data-ring="2230/2230"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="track"/><circle cx="50" cy="50" r="40" class="fill" stroke-dasharray="0 251.3"/></svg><div class="ui-ring-text"><b style="font-size:11px">2,230</b><span>kcal</span></div></div>
+              <div class="ui-grow" style="display:grid;gap:5px">
+                <div class="ui-macro carb"><b>Carbs</b><span class="bar"><span data-w="100%"></span></span><em>256 g</em></div>
+                <div class="ui-macro prot"><b>Protein</b><span class="bar"><span data-w="100%"></span></span><em>162 g</em></div>
+                <div class="ui-macro fat"><b>Fat</b><span class="bar"><span data-w="100%"></span></span><em>62 g</em></div>
+              </div>
+            </div>
+            <div class="ui-card">
+              <div class="ui-row"><span class="ui-num">01</span><span class="ui-b ui-grow">Breakfast</span><span class="ui-muted">655 kcal</span></div>
+              <div class="ui-food"><span class="ui-gram">80 g</span><div class="ui-grow">Oats (rolled) <span class="ui-swap">⇄</span><div class="ui-mini"><span class="carb" style="flex:7"></span><span class="prot" style="flex:2"></span><span class="fat" style="flex:1"></span></div></div></div>
+              <div class="ui-food"><span class="ui-gram">200 g</span><div class="ui-grow">Greek yogurt, 0% <span class="ui-swap">⇄</span><div class="ui-mini"><span class="carb" style="flex:3"></span><span class="prot" style="flex:7"></span></div></div></div>
+              <div class="ui-food"><span class="ui-gram">150 g</span><div class="ui-grow">Blueberries <span class="ui-swap">⇄</span><div class="ui-mini"><span class="carb" style="flex:9"></span><span class="fat" style="flex:1"></span></div></div></div>
+              <div class="ui-food"><span class="ui-gram">15 g</span><div class="ui-grow">Walnuts <span class="ui-swap">⇄</span><div class="ui-mini"><span class="carb" style="flex:1"></span><span class="prot" style="flex:1"></span><span class="fat" style="flex:8"></span></div></div></div>
+            </div>
+            <div class="ui-card"><div class="ui-row"><span class="ui-num">02</span><span class="ui-b ui-grow">Lunch</span><span class="ui-muted">780 kcal</span></div></div>
+          </div>
+        </div>
+        <figcaption><strong>A meal plan built for you.</strong> Three plans to rotate, every meal weighed out and matched to your calories and macros.</figcaption>
+      </figure>
+      <figure class="phone-wrap">
+        <div class="phone" aria-hidden="true">
+          <div class="ui">
+            <div class="ui-title">Shopping list</div>
+            <div class="ui-card hero ui-row" style="gap:9px">
+              <div class="ui-ring" style="width:50px;height:50px" data-shop-ring><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="track"/><circle cx="50" cy="50" r="40" class="fill" stroke-dasharray="0 251.3"/></svg><div class="ui-ring-text"><b style="font-size:11px" data-shop-count>0/7</b><span>ticked</span></div></div>
+              <div><div class="ui-b">Everything for 7 days</div><div class="ui-muted">Your swaps included</div></div>
+            </div>
+            <div class="ui-card" data-shop>
+              <div class="ui-group">Vegetables</div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Broccoli</b></div><span class="ui-gram">1.4 kg</span></div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Tomato</b></div><span class="ui-gram">1.1 kg</span></div>
+              <div class="ui-group" style="margin-top:6px">Meat, fish and eggs</div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Chicken breast</b></div><span class="ui-gram">1.2 kg</span></div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Salmon</b></div><span class="ui-gram">450 g</span></div>
+              <div class="ui-group" style="margin-top:6px">Grains, bread and potatoes</div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Oats (rolled)</b></div><span class="ui-gram">560 g</span></div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Rice, white</b></div><span class="ui-gram">630 g</span></div>
+              <div class="ui-item"><span class="ui-box">✓</span><div class="ui-grow"><b>Potatoes</b></div><span class="ui-gram">1.1 kg</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption><strong>A shopping list that writes itself.</strong> Everything your meal plan needs for the days you shop for, grouped by aisle. Tick it off as you go.</figcaption>
+      </figure>
+</div>
+
+<ul class="app-detail-list mt-8">
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>Three personal meal plans</b>, every meal weighed out and matched to your calories and macros</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>Smart swaps</b>: change a food or a whole meal and stay on target, with your allergies filtered out</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>An automatic shopping list</b> for the days you shop for, grouped by aisle, with tick boxes</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>A barcode scanner</b> to add the local foods you have at home, so I can build them into your plan</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>Your weekly training plan</b> with set-by-set logging, last time's numbers and a rest timer</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>My feedback</b> on each training day and on your whole week</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>Weekly weight averages</b>, your real calorie deficit, check-ins, measurements and private photos</span></li>
+<li><i data-feather="check" class="text-[#008080]"></i><span><b>Water tracker and daily steps</b>, and it works without wifi on any phone</span></li>
+</ul>
+
+<a href="app.html" class="app-detail-link mt-6">See everything inside the app <i data-feather="arrow-right" class="w-4 h-4"></i></a>
 
 </div>
 
@@ -652,6 +764,7 @@ closeRegularPopup.addEventListener("click", function(event) {
 </script>
 
 <script src="coaching-status.js?v=3"></script>
+<script src="app-page.js?v=1"></script>
 <script src="site-motion.js?v=3"></script>
 <script src="compare.js?v=1" data-current="pro"></script>
 <script src="lang.js?v=1"></script>

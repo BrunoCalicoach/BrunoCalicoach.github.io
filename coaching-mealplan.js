@@ -442,7 +442,7 @@ const OFF_ALLERGENS = { 'en:gluten': 'gluten', 'en:crustaceans': 'crustaceans', 
 async function lookupBarcode(code) {
   let res;
   try {
-    res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_hr,product_name_en,brands,quantity,nutriments,allergens_tags,traces_tags`);
+    res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_hr,product_name_en,brands,quantity,serving_size,serving_quantity,nutriments,allergens_tags,traces_tags`);
   } catch (e) { throw new Error('No connection to the product database. Try again, or enter the food from the label.'); }
   if (res.status === 404) throw new Error(`Product ${code} not found in Open Food Facts.`);
   if (!res.ok) throw new Error(`The product database answered with an error (${res.status}). Try again in a minute.`);
@@ -450,13 +450,24 @@ async function lookupBarcode(code) {
   if (data.status === 0 || !data.product) throw new Error(`Product ${code} not found in Open Food Facts.`);
   const p = data.product, n = p.nutriments || {};
   const v = (k) => (n[k] === undefined || n[k] === '' ? undefined : Math.round(Number(n[k]) * 10) / 10);
-  const kcal = v('energy-kcal_100g') ?? (n['energy_100g'] ? Math.round(Number(n['energy_100g']) / 4.184) : undefined);
+  // Values for a reference amount: "_100g" (Open Food Facts' per-100 g figures) or "_serving" (per pack serving)
+  const valuesFor = (suffix) => ({
+    kcal: v(`energy-kcal${suffix}`) ?? (n[`energy${suffix}`] ? Math.round(Number(n[`energy${suffix}`]) / 4.184) : undefined),
+    p: v(`proteins${suffix}`), c: v(`carbohydrates${suffix}`), f: v(`fat${suffix}`), fib: v(`fiber${suffix}`), sug: v(`sugars${suffix}`),
+    sat: v(`saturated-fat${suffix}`), na: n[`sodium${suffix}`] !== undefined ? Math.round(Number(n[`sodium${suffix}`]) * 1000) : undefined
+  });
+  const per100 = valuesFor('_100g');
+  const servingQty = num(p.serving_quantity);
+  const perServing = servingQty ? valuesFor('_serving') : null;
+  // Some products only have per-serving values: then the form starts on the serving and saves them converted to per 100 g
+  const useServing = per100.kcal === undefined && perServing?.kcal !== undefined;
   const al = [...(p.allergens_tags || []), ...(p.traces_tags || [])].map((t) => OFF_ALLERGENS[t]).filter(Boolean);
   return {
     barcode: code,
     name: [p.brands?.split(',')[0]?.trim(), p.product_name_en || p.product_name || p.product_name_hr].filter(Boolean).join(' ') || `Product ${code}`,
-    per100: { kcal, p: v('proteins_100g'), c: v('carbohydrates_100g'), f: v('fat_100g'), fib: v('fiber_100g'), sug: v('sugars_100g'), sat: v('saturated-fat_100g'),
-      na: n['sodium_100g'] !== undefined ? Math.round(Number(n['sodium_100g']) * 1000) : undefined },
+    values: useServing ? perServing : per100,
+    per: useServing ? servingQty : 100,
+    serving: servingQty ? { qty: servingQty, label: p.serving_size || `${servingQty} g` } : null,
     allergens: [...new Set(al)],
     note: `Open Food Facts, barcode ${code}`
   };
@@ -488,16 +499,49 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
   const name = el('input', { class: 'field', placeholder: 'e.g. Zbregov protein shake (brand, product)', value: prefill.name || '' });
   const cat = el('select', { class: 'select field' }, ...Object.entries(FOOD_CATS).map(([k, l]) => el('option', { value: k }, l)));
   const fields = [['kcal', 'Calories (kcal)'], ['p', 'Protein (g)'], ['c', 'Carbohydrates (g)'], ['f', 'Fat (g)'], ['fib', 'Fibre (g)'], ['sug', 'Sugars (g)'], ['sat', 'Saturated fat (g)'], ['na', 'Sodium (mg) = salt g × 400']];
-  const inputs = Object.fromEntries(fields.map(([k]) => [k, el('input', { class: 'field', inputMode: 'decimal', value: prefill.per100?.[k] ?? '' })]));
+  const startValues = prefill.values || prefill.per100 || {};
+  const inputs = Object.fromEntries(fields.map(([k]) => [k, el('input', { class: 'field', inputMode: 'decimal', value: startValues[k] ?? '' })]));
   const source = el('input', { class: 'field', placeholder: 'Source, e.g. "label, 2026"', value: prefill.note || '' });
   const have = new Set(prefill.allergens || []);
   const alBoxes = ALLERGENS.map(([k, label]) => ({ k, box: el('input', { type: 'checkbox', value: k, checked: have.has(k) }), label }));
   const msg = el('p', { class: 'msg' });
   const save = el('button', { class: 'btn primary' }, 'Save food');
+
+  // "Values per": the amount the numbers below refer to. Changing it recalculates every value; saving always
+  // stores them per 100 g, so a label that only shows "per 32 g scoop" can be typed exactly as printed.
+  let perAmount = num(prefill.per) || 100;
+  const perIn = el('input', { class: 'field per-in', inputMode: 'decimal', value: String(perAmount), 'aria-label': 'Values per (grams)' });
+  const per100Line = el('p', { class: 'tiny muted' });
+  const roundFor = (k, x) => (k === 'kcal' || k === 'na' ? Math.round(x) : Math.round(x * 10) / 10);
+  const showPer100 = () => {
+    const kcal = num(inputs.kcal.value);
+    per100Line.textContent = perAmount !== 100 && kcal !== null
+      ? `Saved per 100 g: ${fmt((kcal * 100) / perAmount, 0)} kcal · C ${fmt(((num(inputs.c.value) || 0) * 100) / perAmount, 1)} g · P ${fmt(((num(inputs.p.value) || 0) * 100) / perAmount, 1)} g · F ${fmt(((num(inputs.f.value) || 0) * 100) / perAmount, 1)} g`
+      : 'The app always saves the values per 100 g, so meal plans stay accurate.';
+  };
+  const perButtons = el('div', { class: 'row small', style: 'gap:6px' });
+  const drawPerButtons = () => perButtons.replaceChildren(
+    perAmount !== 100 ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setPer(100) }, 'Show per 100 g') : null,
+    prefill.serving && prefill.serving.qty !== perAmount ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => setPer(prefill.serving.qty) }, `Show per serving (${prefill.serving.label})`) : null);
+  function setPer(next) {
+    next = num(next);
+    if (!next || next <= 0 || next > 5000) { perIn.value = String(perAmount); return; }
+    const k = next / perAmount;
+    for (const [key] of fields) { const x = num(inputs[key].value); if (x !== null) inputs[key].value = String(roundFor(key, x * k)); }
+    perAmount = next; perIn.value = String(next); showPer100(); drawPerButtons();
+  }
+  perIn.addEventListener('change', () => setPer(perIn.value));
+  for (const [key] of fields) inputs[key].addEventListener('input', showPer100);
+  showPer100(); drawPerButtons();
+
   const m = modal(prefill.barcode ? 'New product' : 'Add your own food',
-    prefill.per100 ? el('div', { class: 'notice' }, `Found in Open Food Facts (barcode ${prefill.barcode}). This is crowd-sourced label data: check it against the pack before saving.`)
+    prefill.values || prefill.per100 ? el('div', { class: 'notice' }, `Found in Open Food Facts (barcode ${prefill.barcode}). This is crowd-sourced label data: check it against the pack before saving.${prefill.serving ? ` Pack serving: ${prefill.serving.label}.` : ''}`)
       : el('p', { class: 'small soft' }, store.intro),
     el('label', { class: 'lab' }, 'Name', name), el('label', { class: 'lab' }, 'Group', cat),
+    el('div', { class: 'per-box' },
+      el('div', { class: 'row nowrap', style: 'gap:8px' }, el('b', {}, 'Values per'), perIn, el('span', { class: 'soft' }, 'g (or ml)')),
+      el('p', { class: 'tiny muted', style: 'margin-top:6px' }, 'Label shows values per serving (e.g. per 32 g scoop)? Enter that amount here first, then type the numbers as printed. Change it later and all values recalculate.'),
+      perButtons, per100Line),
     el('div', { class: 'form-grid' }, ...fields.map(([k, l]) => el('label', { class: 'lab' }, l, inputs[k]))),
     el('div', {}, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, 'Allergens (bold on the label, including "may contain")'),
       el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px' },
@@ -516,6 +560,8 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
       save.dataset.confirmed = '1';
       return;
     }
+    // Store per 100 g whatever amount the values were entered for
+    if (perAmount !== 100) for (const k of Object.keys(per100)) per100[k] = roundFor(k, (per100[k] * 100) / perAmount);
     const row = { id: prefill.barcode ? `${store.prefix}:bc:${prefill.barcode}` : `${store.prefix}:` + uid(), name: name.value.trim(), cat: cat.value, per100,
       note: source.value.trim() || null, allergens: alBoxes.filter((a) => a.box.checked).map((a) => a.k) };
     try {

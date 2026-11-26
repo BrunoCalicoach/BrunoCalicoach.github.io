@@ -432,3 +432,5 @@ table.meal-table td { vertical-align: middle; }
 .home-food:last-child { border-bottom: 0; }
 .home-food .fmacros span:first-child { margin-left: 0; }
 .btn .barcode-ic, .btn span svg { vertical-align: middle; }
+.per-box { background: #141c1c; border: 1px solid rgba(77,184,184,0.25); border-radius: 12px; padding: 12px; }
+.per-box .per-in { width: 90px; padding: 8px 10px; text-align: center; font-weight: 700; }

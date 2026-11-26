@@ -94,6 +94,7 @@ function popMenu(anchor, items) {
 function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athlete', foods: [] }) {
   if (!Array.isArray(meals.plans) || isLegacyMealPlan(meals.plans) || !meals.plans.length) meals.plans = [emptyMealDay(1)];
   let active = 0;
+  let settingsOpen = false; // keeps the settings card open while Bruno changes meals a day or the split
   const node = el('div', { class: 'stack' });
 
   // Every food in any plan that this athlete must not have
@@ -124,7 +125,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
 
     const planMenu = el('button', { class: 'kebab', type: 'button', 'aria-label': 'Plan options', onclick: (e) => popMenu(e.currentTarget, [
       ['Rename this plan', () => askText('Rename plan', 'Plan name', day.title, (n) => { day.title = n; onChange(); draw(); })],
-      ['Add an empty plan', () => { meals.plans.push(emptyMealDay(meals.plans.length + 1)); active = meals.plans.length - 1; onChange(); draw(); }],
+      ['Add an empty plan', () => { meals.plans.push(emptyMealDay(meals.plans.length + 1, layoutOf(meals.plans))); active = meals.plans.length - 1; onChange(); draw(); }],
       ['Duplicate this plan', () => {
         const copy = clone(day); copy.id = uid(); copy.title = `Plan ${meals.plans.length + 1}`;
         copy.meals.forEach((m) => { m.id = uid(); m.items.forEach((it) => { it.id = uid(); }); });
@@ -163,9 +164,20 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
       settingsCard(day, split)].filter(Boolean));
   }
 
-  // Less used settings, folded away: meal split, fibre/vitamins/minerals of this plan, note above the plans
+  // Less used settings, folded away: meals a day, meal split, fibre/vitamins/minerals of this plan, note above the plans
   function settingsCard(day, split) {
     const t = mealTotals(dayItems(day));
+    // Meals a day for this athlete: changes every plan at once, so swaps keep matching slot for slot
+    const count = layoutOf(meals.plans);
+    const layoutPick = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Meals a day' }, ...Object.entries(MEAL_LAYOUTS).map(([n, l]) =>
+      el('button', { type: 'button', role: 'radio', 'aria-checked': String(Number(n) === count), class: Number(n) === count ? 'active' : '', onclick: () => {
+        if (Number(n) === count) return;
+        const lost = setMealLayout(meals, Number(n), { dryRun: true });
+        if (lost && !confirm(`${lost} snack${lost > 1 ? 's' : ''} with foods will be removed from the plans. Continue?`)) return;
+        setMealLayout(meals, Number(n));
+        onChange(); draw();
+        toast(`${l.label} in every plan. The split is reset to ${l.split.join(' / ')}%.`);
+      } }, l.label)));
     const splitInputs = split.map((v) => el('input', { class: 'set-in', style: 'width:64px;padding:7px 4px', inputMode: 'numeric', value: String(v) }));
     const splitMsg = el('span', { class: 'small muted' });
     splitInputs.forEach((inp) => inp.addEventListener('change', () => {
@@ -176,9 +188,11 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     }));
     const note = el('textarea', { class: 'field', style: 'min-height:50px', value: meals.note || '', placeholder: 'Note above the meal plans, e.g. "Almonds, hazelnuts and cashews can be swapped"' });
     note.addEventListener('input', () => { meals.note = note.value; onChange(); });
-    return el('details', { class: 'card tight' },
-      el('summary', { style: 'cursor:pointer;font-weight:700' }, 'Plan settings, vitamins and minerals'),
+    return el('details', { class: 'card tight', open: settingsOpen, ontoggle: (e) => { settingsOpen = e.target.open; } },
+      el('summary', { style: 'cursor:pointer;font-weight:700' }, 'Meals a day, split, vitamins and minerals'),
       el('div', { class: 'stack', style: 'margin-top:12px' },
+        el('div', {}, el('div', { class: 'small', style: 'font-weight:700;margin-bottom:6px' }, 'Meals a day'), layoutPick,
+          el('p', { class: 'tiny muted', style: 'margin-top:6px' }, 'For athletes who do better on more, smaller meals. Applies to all plans of this athlete; breakfast, lunch and dinner keep their foods.')),
         el('div', { class: 'row small' }, el('b', {}, 'Meal split:'),
           ...day.meals.map((m, i) => el('label', { class: 'row nowrap', style: 'gap:4px' }, m.name || `Meal ${i + 1}`, splitInputs[i], '%')), splitMsg),
         el('p', { class: 'tiny muted' }, 'Every meal gets this share of the daily targets. A meal that fits its target can be swapped by the athlete for the same meal in any other plan.'),
@@ -282,7 +296,7 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     card.append(
       el('div', { class: 'meal-head' },
         el('span', { class: 'meal-num' }, String(index + 1).padStart(2, '0')),
-        mealIcon(index), title, headStats, menu),
+        mealIcon(mealKind(meal, index, layoutOf(meals.plans))), title, headStats, menu),
       list, noteLine, add, counters, fitLine);
     return card;
   }
@@ -530,7 +544,7 @@ function athleteSwaps() {
   if (Array.isArray(plans) && !isLegacyMealPlan(plans)) {
     for (const day of plans) {
       day.meals.forEach((meal, mi) => {
-        const ch = choices[day.id]?.[mi];
+        const ch = choices[day.id]?.[meal.id] ?? choices[day.id]?.[mi]; // saved by meal id (older swaps by position)
         if (!ch || ch.basedOn !== mealSignature(meal)) return;
         const what = [ch.from ? `uses ${ch.from}` : null, ...(ch.swaps || [])].filter(Boolean).join('; ');
         lines.push(el('li', {}, el('b', {}, `${day.title} · ${meal.name}: `), what));

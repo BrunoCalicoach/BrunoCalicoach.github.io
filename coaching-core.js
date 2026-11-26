@@ -438,10 +438,72 @@ const MICROS = [
   ['ca', 'Calcium', 'mg'], ['fe', 'Iron', 'mg'], ['mg', 'Magnesium', 'mg'], ['zn', 'Zinc', 'mg'], ['vc', 'Vitamin C', 'mg'],
   ['vd', 'Vitamin D', 'µg'], ['b12', 'Vitamin B12', 'µg'], ['va', 'Vitamin A', 'µg'], ['fol', 'Folate', 'µg']
 ];
-const MEAL_NAMES = ['Breakfast', 'Lunch', 'Dinner'];
+// Meal setups, chosen per athlete: 3 meals, or 3 meals plus 1 or 2 snacks. All plans of one athlete share the same
+// slots, so any meal or snack can be swapped for the same slot in another plan. The setup lives in the plans themselves.
+const MEAL_LAYOUTS = {
+  3: { label: '3 meals', kinds: ['breakfast', 'lunch', 'dinner'], names: ['Breakfast', 'Lunch', 'Dinner'], split: [30, 35, 35] },
+  4: { label: '3 meals + 1 snack', kinds: ['breakfast', 'lunch', 'snack', 'dinner'], names: ['Breakfast', 'Lunch', 'Afternoon snack', 'Dinner'], split: [25, 35, 10, 30] },
+  5: { label: '3 meals + 2 snacks', kinds: ['breakfast', 'snack', 'lunch', 'snack', 'dinner'], names: ['Breakfast', 'Morning snack', 'Lunch', 'Afternoon snack', 'Dinner'], split: [25, 10, 30, 10, 25] }
+};
+const MEAL_NAMES = MEAL_LAYOUTS[3].names;
 
-function emptyMealDay(n) {
-  return { id: uid(), title: `Plan ${n}`, note: '', meals: MEAL_NAMES.map((name) => ({ id: uid(), name, note: '', items: [] })) };
+// How many meals a day this athlete's plans have (3, 4 or 5)
+function layoutOf(plans) {
+  const n = Array.isArray(plans) ? plans[0]?.meals?.length : 0;
+  return MEAL_LAYOUTS[n] ? n : 3;
+}
+
+// breakfast, lunch, dinner or snack: stored on new meals, guessed from the name or position for older ones
+function mealKind(meal, index, count = 3) {
+  if (meal?.kind) return meal.kind;
+  const name = String(meal?.name || '').toLowerCase();
+  for (const k of ['snack', 'breakfast', 'lunch', 'dinner']) if (name.includes(k)) return k;
+  return (MEAL_LAYOUTS[count] || MEAL_LAYOUTS[3]).kinds[index] || 'lunch';
+}
+
+function emptyMealDay(n, count = 3) {
+  const layout = MEAL_LAYOUTS[count] || MEAL_LAYOUTS[3];
+  return { id: uid(), title: `Plan ${n}`, note: '', meals: layout.names.map((name, i) => ({ id: uid(), kind: layout.kinds[i], name, note: '', items: [] })) };
+}
+
+// Switches every plan of an athlete to another setup. Breakfast, lunch and dinner keep their foods; snacks are
+// kept in order, added empty, or (when fewer) removed. Returns how many removed snacks still had foods.
+function setMealLayout(row, count, { dryRun = false } = {}) {
+  const layout = MEAL_LAYOUTS[count];
+  if (!layout) return 0;
+  let lost = 0;
+  const defaultSnackName = (name) => /^(morning |afternoon |evening )?snack$/i.test(String(name || '').trim());
+  for (const day of row.plans || []) {
+    const n = day.meals.length;
+    // Each existing snack remembers which main meal it comes after (morning snack: after breakfast, afternoon: after lunch)
+    const mains = {}; const snacks = []; let lastMain = null;
+    day.meals.forEach((m, i) => {
+      const k = mealKind(m, i, n);
+      if (k === 'snack' || mains[k]) snacks.push({ meal: m, after: lastMain });
+      else { mains[k] = m; lastMain = k; }
+    });
+    // Each snack slot of the new setup takes the snack from the same place in the day, otherwise the nearest one left
+    const slots = []; lastMain = null;
+    layout.kinds.forEach((kind, i) => { if (kind === 'snack') slots.push({ i, after: lastMain }); else lastMain = kind; });
+    const order = ['breakfast', 'lunch', 'dinner'];
+    const picked = new Map();
+    for (const slot of slots) {
+      const left = snacks.filter((s) => !s.used);
+      const best = left.find((s) => s.after === slot.after)
+        || left.sort((a, b) => Math.abs(order.indexOf(a.after) - order.indexOf(slot.after)) - Math.abs(order.indexOf(b.after) - order.indexOf(slot.after)))[0];
+      if (best) { best.used = true; picked.set(slot.i, best.meal); }
+    }
+    lost += snacks.filter((s) => !s.used && s.meal.items.length).length;
+    if (dryRun) continue;
+    day.meals = layout.kinds.map((kind, i) => {
+      const keep = kind === 'snack' ? picked.get(i) : mains[kind];
+      if (!keep) return { id: uid(), kind, name: layout.names[i], note: '', items: [] };
+      // A snack keeps its own name unless it was one of the standard names: then it is named for its new slot
+      return { ...keep, kind, name: kind === 'snack' && defaultSnackName(keep.name) ? layout.names[i] : keep.name };
+    });
+  }
+  if (!dryRun) row.split = [...layout.split];
+  return lost;
 }
 
 // The food's values per 100 g (and its allergens) are copied into the plan, so a published plan never shifts
@@ -500,9 +562,12 @@ const dayItems = (day) => day.meals.flatMap((m) => m.items);
 /* Stage 2: every meal has its own share of the day's targets, so any breakfast can replace any other breakfast */
 
 const DEFAULT_SPLIT = [30, 35, 35];
-function mealSplit(plan) {
-  const s = plan?.split;
-  return Array.isArray(s) && s.length === 3 && s.every((x) => num(x) > 0) && Math.abs(s.reduce((a, b) => a + num(b), 0) - 100) < 0.5 ? s.map(num) : DEFAULT_SPLIT;
+// The athlete's split (one share per meal, adding up to 100), or the default for their setup
+function mealSplit(row) {
+  const count = layoutOf(row?.plans);
+  const s = row?.split;
+  const ok = Array.isArray(s) && s.length === count && s.every((x) => num(x) > 0) && Math.abs(s.reduce((a, b) => a + num(b), 0) - 100) < 0.5;
+  return ok ? s.map(num) : [...MEAL_LAYOUTS[count].split];
 }
 
 // dayTarget: { kcal, protein, carbs, fat } -> the share for one meal
@@ -734,14 +799,17 @@ function macroMiniBar(totals) {
     el('span', { class: 'carb', style: `flex:${c}` }), el('span', { class: 'prot', style: `flex:${p}` }), el('span', { class: 'fat', style: `flex:${f}` })] : []));
 }
 
-// Sunrise, sun and moon for the three meals of the day
-const MEAL_ICONS = [
-  '<path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 4v4M5.6 9.6l1.4 1.4M18.4 9.6 17 11"/>',
-  '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'
-];
-function mealIcon(index) {
-  return el('span', { class: 'meal-icon', html: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MEAL_ICONS[index] || MEAL_ICONS[1]}</svg>` });
+// Sunrise, sun and moon for breakfast, lunch and dinner, an apple for snacks
+const MEAL_ICONS = {
+  breakfast: '<path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 4v4M5.6 9.6l1.4 1.4M18.4 9.6 17 11"/>',
+  lunch: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  dinner: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  snack: '<path d="M12 8c-2-2-6.5-1.5-6.5 3.2 0 4.3 3 8.8 6.5 8.8s6.5-4.5 6.5-8.8C18.5 6.5 14 6 12 8z"/><path d="M12 8c0-2.2 1-3.8 3-4.8"/>'
+};
+// kind: 'breakfast' | 'lunch' | 'dinner' | 'snack' (a number still works: 0, 1, 2 = breakfast, lunch, dinner)
+function mealIcon(kind) {
+  const k = typeof kind === 'number' ? MEAL_LAYOUTS[3].kinds[kind] : kind;
+  return el('span', { class: 'meal-icon', html: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MEAL_ICONS[k] || MEAL_ICONS.lunch}</svg>` });
 }
 
 // Four coloured counters for one meal: carbs, protein, fat, calories, as "value / target" when there is a target

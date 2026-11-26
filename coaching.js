@@ -1068,11 +1068,12 @@ function mealPlansCard(plans, note, dayTarget) {
   return isLegacyMealPlan(plans) ? legacyMealPlansCard(plans, note) : mealDaysCard(plans, note, dayTarget);
 }
 
-// Days of 3 meals with foods and grams, totals per meal and per day
-// The athlete's version of a meal: their swap if Bruno has not changed that meal since, otherwise Bruno's meal
+// Days of 3 to 5 meals (snacks optional per athlete) with foods and grams, totals per meal and per day
+// The athlete's version of a meal: their swap if Bruno has not changed that meal since, otherwise Bruno's meal.
+// Swaps are saved by the meal's id, so adding or removing snacks never moves them to another meal (older ones by position).
 function effectiveMeal(day, mi) {
   const original = day.meals[mi];
-  const choice = S.choices?.[day.id]?.[mi];
+  const choice = S.choices?.[day.id]?.[original.id] ?? S.choices?.[day.id]?.[mi];
   if (choice && choice.basedOn === mealSignature(original)) return { ...original, items: choice.items, choice };
   return original;
 }
@@ -1092,7 +1093,9 @@ function mealDaysCard(days, note, dayTarget) {
 
   function setChoice(day, mi, choice) {
     S.choices = { ...S.choices, [day.id]: { ...(S.choices[day.id] || {}) } };
-    if (choice) S.choices[day.id][mi] = choice; else delete S.choices[day.id][mi];
+    const key = day.meals[mi].id;
+    delete S.choices[day.id][mi]; // older swaps were saved by position
+    if (choice) S.choices[day.id][key] = choice; else delete S.choices[day.id][key];
     saveChoices().catch((e) => alert('Not saved: ' + e.message));
     draw();
   }
@@ -1101,8 +1104,10 @@ function mealDaysCard(days, note, dayTarget) {
     const current = effectiveMeal(day, mi);
     const target = mealTargetFor(dayTarget, split[mi]);
     const ref = swapReference(current.items, target);
+    const count = day.meals.length;
+    const kind = mealKind(day.meals[mi], mi, count);
     const options = days.map((d, i) => ({ d, i, meal: d.meals[mi] }))
-      .filter((o) => o.d.id !== day.id && o.meal?.items.length && mealSignature(o.meal) !== mealSignature(current))
+      .filter((o) => o.d.id !== day.id && o.meal?.items.length && mealKind(o.meal, mi, o.d.meals.length) === kind && mealSignature(o.meal) !== mealSignature(current))
       .filter((o) => mealFit(mealTotals(o.meal.items), ref).ok && mealAllowed(o.meal, block));
     const m = modal(`Swap ${current.name.toLowerCase()}`,
       el('p', { class: 'small soft' }, `These ${current.name.toLowerCase()}s from your other plans have about the same calories and macros, so your day stays on target.`),
@@ -1147,7 +1152,7 @@ function mealDaysCard(days, note, dayTarget) {
         return el('div', { class: 'card meal-card' },
           el('div', { class: 'meal-head' },
             el('span', { class: 'meal-num' }, String(mi + 1).padStart(2, '0')),
-            mealIcon(mi), el('h3', {}, m.name),
+            mealIcon(mealKind(m, mi, meals.length)), el('h3', {}, m.name),
             el('div', { class: 'meal-stats' }, el('span', { class: 'meal-kcal' }, `${fmt(t.kcal, 0)} kcal`), macroDonut(t, 30))),
           m.choice ? el('div', { class: 'row small', style: 'margin:-4px 0 6px' }, el('span', { class: 'pill teal' }, 'Your swap'),
             m.choice.from ? el('span', { class: 'muted' }, `Using ${m.choice.from}`) : null) : null,

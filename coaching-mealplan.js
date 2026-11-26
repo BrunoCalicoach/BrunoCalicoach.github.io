@@ -78,6 +78,8 @@ function toast(text) {
 // A copied meal (foods, amounts, note), kept while the coach page is open, so it can be pasted into any meal,
 // in another plan or even another athlete's plan
 let MEAL_CLIPBOARD = null;
+// A copied whole plan (all its meals), the same way: paste it as a new plan or over a plan, for any athlete
+let PLAN_CLIPBOARD = null;
 
 function popMenu(anchor, items) {
   document.getElementById('pop-menu')?.remove();
@@ -111,6 +113,29 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
     return out;
   }
 
+  // The copied plan, ready for this athlete: new ids everywhere, and switched to this athlete's meals a day
+  // (e.g. a plan with snacks pasted for an athlete on 3 meals). Returns null if Bruno cancels.
+  function pastedPlan() {
+    const copy = clone(PLAN_CLIPBOARD.plan);
+    copy.id = uid();
+    copy.meals.forEach((m) => { m.id = uid(); m.items.forEach((it) => { it.id = uid(); }); });
+    const count = layoutOf(meals.plans);
+    if (copy.meals.length !== count) {
+      const tmp = { plans: [copy] };
+      const lost = setMealLayout(tmp, count, { dryRun: true });
+      if (lost && !confirm(`This athlete has ${MEAL_LAYOUTS[count].label.toLowerCase()} a day. ${lost} snack${lost > 1 ? 's' : ''} with foods from the copied plan will be left out. Continue?`)) return null;
+      setMealLayout(tmp, count);
+    }
+    return copy;
+  }
+  // After pasting: say how many meals are off this athlete's targets (their calories and split may differ)
+  function pastedNote(plan) {
+    if (!target) { toast('Pasted. This athlete has no calorie targets yet, so the meals could not be checked.'); return; }
+    const split = mealSplit(meals);
+    const off = target ? plan.meals.filter((m, i) => m.items.length && !mealFit(mealTotals(m.items), mealTargetFor(target, split[i])).ok).length : 0;
+    toast(off ? `Pasted. ${off} meal${off > 1 ? 's are' : ' is'} off this athlete's targets: use Fit to target on ${off > 1 ? 'them' : 'it'}.` : 'Pasted, and every meal fits this athlete\'s targets.');
+  }
+
   // The piece size a plan item could use (library food, Bruno's own food or the athlete's food), even when it is in grams now
   function availablePiece(it) {
     const src = FOOD_LIBRARY.find((f) => f.id === it.food) || OWN_FOODS.find((f) => f.id === it.food) || (athlete.foods || []).find((f) => f.id === it.food);
@@ -141,6 +166,21 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         copy.meals.forEach((m) => { m.id = uid(); m.items.forEach((it) => { it.id = uid(); }); });
         meals.plans.push(copy); active = meals.plans.length - 1; onChange(); draw();
       }],
+      ['Copy plan', () => {
+        PLAN_CLIPBOARD = { title: day.title, from: athlete?.name ? athlete.name.split(' ')[0] : '', plan: clone(day) };
+        toast(`Copied ${day.title}. Open ⋮ next to the plans of any athlete and choose Paste.`);
+      }],
+      PLAN_CLIPBOARD ? [`Paste ${PLAN_CLIPBOARD.title}${PLAN_CLIPBOARD.from ? ` (${PLAN_CLIPBOARD.from})` : ''} as a new plan`, () => {
+        const copy = pastedPlan(); if (!copy) return;
+        copy.title = `Plan ${meals.plans.length + 1}`;
+        meals.plans.push(copy); active = meals.plans.length - 1; onChange(); draw(); pastedNote(copy);
+      }] : null,
+      PLAN_CLIPBOARD ? [`Paste ${PLAN_CLIPBOARD.title}${PLAN_CLIPBOARD.from ? ` (${PLAN_CLIPBOARD.from})` : ''} over ${day.title}`, () => {
+        if (dayItems(day).length && !confirm(`Replace every meal in ${day.title} with the copied ${PLAN_CLIPBOARD.title}?`)) return;
+        const copy = pastedPlan(); if (!copy) return;
+        day.meals = copy.meals; if (!day.note && copy.note) day.note = copy.note;
+        onChange(); draw(); pastedNote(day);
+      }] : null,
       meals.plans.length > 1 ? ['Delete this plan', () => { if (confirm(`Delete ${day.title}?`)) { meals.plans.splice(active, 1); onChange(); draw(); } }, true] : null
     ]) }, '⋮');
     const tabs = el('div', { class: 'row nowrap' },

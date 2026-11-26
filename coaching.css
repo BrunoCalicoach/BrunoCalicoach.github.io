@@ -545,3 +545,22 @@ details[open] > summary.card-sum .card-head::after { transform: rotate(-135deg);
 .shop-item.done .sname { text-decoration: line-through; color: var(--text-muted); }
 .shop-item.done .gram-chip { opacity: .5; }
 @media (max-width: 380px) { .tabs button { font-size: 11px; padding-left: 2px; padding-right: 2px; } }
+
+/* Food groups in the Add food window */
+.group-chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.group-chips::-webkit-scrollbar { display: none; }
+.group-chip { --c: var(--accent-soft); flex: none; border: 1px solid var(--line-strong); background: transparent; color: var(--text-soft); font: inherit; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+.group-chip::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px; }
+.group-chip.all::before { display: none; }
+.group-chip.active { background: color-mix(in srgb, var(--c) 22%, transparent); border-color: var(--c); color: var(--text); }
+.group-chip.protein, .group-tag.protein { --c: var(--prot); }
+.group-chip.protfat, .group-tag.protfat { --c: #d9a0c8; }
+.group-chip.protcarb, .group-tag.protcarb { --c: #c8b45a; }
+.group-chip.carbs, .group-tag.carbs { --c: var(--carb); }
+.group-chip.fats, .group-tag.fats { --c: var(--fat); }
+.group-chip.fibre, .group-tag.fibre { --c: #7bc4a4; }
+.group-chip.light, .group-tag.light { --c: var(--water); }
+.group-chip.produce, .group-tag.produce { --c: #e07a5f; }
+.group-hint { font-size: 12px; color: var(--text-muted); padding: 2px 4px 6px; }
+.group-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border-radius: 6px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
+.group-chip.dairy, .group-tag.dairy { --c: #d8d2c4; }

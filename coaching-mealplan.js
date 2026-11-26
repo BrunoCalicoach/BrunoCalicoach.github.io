@@ -26,6 +26,38 @@ function searchFoods(query, block, hiddenOut, pool = [...OWN_FOODS, ...FOOD_LIBR
   }).filter(Boolean).sort((a, b) => (words.length ? a.score - b.score : a.f.name.localeCompare(b.f.name))).slice(0, limit).map((x) => x.f);
 }
 
+// Food groups by dominating nutrient, worked out from the values per 100 g, so own and athlete foods join in too.
+// Shares are of the energy from macros (4 kcal/g protein and carbs, 9 kcal/g fat). A food can sit in more than one group.
+function macroShares(f) {
+  const P = 4 * (f.p || 0), C = 4 * (f.c || 0), F = 9 * (f.f || 0), E = P + C + F || 1;
+  return { p: P / E, c: C / E, f: F / E, fibPer100kcal: ((f.fib || 0) / (f.kcal || 1)) * 100 };
+}
+const groupPct = (x) => `${Math.round(x * 100)}%`;
+const FOOD_GROUPS = [
+  { key: 'protein', label: 'Protein', hint: 'At least half the calories from protein: lean meat, fish, egg whites, whey, skyr, cottage cheese.',
+    test: (s) => s.p >= 0.5, sort: (s) => -s.p, tag: (s) => `${groupPct(s.p)} protein` },
+  { key: 'protfat', label: 'Protein + fat', hint: 'Protein with plenty of fat: whole eggs, salmon, fattier meat, cheese, tofu.',
+    test: (s) => s.p >= 0.25 && s.p < 0.5 && s.f >= 0.4, sort: (s) => -s.p, tag: (s) => `${groupPct(s.p)} protein · ${groupPct(s.f)} fat` },
+  { key: 'protcarb', label: 'Protein + carbs', hint: 'Protein with plenty of carbs: lentils, beans, chickpeas, peas.',
+    test: (s, f) => s.p >= 0.2 && s.c >= 0.45 && (f.kcal || 0) >= 60, sort: (s) => -s.p, tag: (s) => `${groupPct(s.p)} protein · ${groupPct(s.c)} carbs` },
+  { key: 'carbs', label: 'Carbs', hint: 'Mostly carbohydrate and energy-dense: rice, oats, pasta, bread, potatoes, banana, dried fruit.',
+    test: (s, f) => s.c >= 0.65 && s.p < 0.2 && (f.kcal || 0) >= 70, sort: (s, f) => (f.cat === 'carbs' && (f.sug || 0) < 40 ? 0 : (f.sug || 0) >= 40 ? 2 : 1), tag: (s) => `${groupPct(s.c)} carbs` },
+  { key: 'fats', label: 'Fats', hint: 'At least half the calories from fat: oils, nuts, seeds, nut butters, avocado.',
+    test: (s) => s.f >= 0.5 && s.p < 0.25, sort: (s) => -s.f, tag: (s) => `${groupPct(s.f)} fat` },
+  { key: 'fibre', label: 'Fibre-rich', hint: 'At least 2 g fibre per 100 g and 3 g per 100 kcal, or 7 g per 100 g: vegetables, berries, legumes, oats, chia, flax.',
+    test: (s, f) => ((f.fib || 0) >= 2 && s.fibPer100kcal >= 3) || (f.fib || 0) >= 7, sort: (s, f) => -(f.fib || 0), tag: (s, f) => `${fmt(f.fib || 0, 1)} g fibre` },
+  { key: 'light', label: 'Low calorie', hint: '45 kcal or less per 100 g: lots of volume for few calories, handy on a cut.',
+    test: (s, f) => (f.kcal || 0) <= 45, sort: (s, f) => f.kcal || 0, tag: () => '' },
+  { key: 'dairy', label: 'Dairy', hint: 'Milk, yogurt, kefir, skyr and cheese.', test: (s, f) => f.cat === 'dairy', sort: (s) => -s.p, tag: (s) => `${groupPct(s.p)} protein` },
+  { key: 'produce', label: 'Fruit & veg', hint: 'All fruit and vegetables.',
+    test: (s, f) => f.cat === 'fruit' || f.cat === 'veg', sort: () => 0, tag: () => '' }
+];
+const inFoodGroup = (f, group) => !group || group.test(macroShares(f), f);
+function sortByGroup(list, group) {
+  if (!group) return list;
+  return list.slice().sort((a, b) => (group.sort(macroShares(a), a) - group.sort(macroShares(b), b)) || a.name.localeCompare(b.name));
+}
+
 function macroLine(v, digits = 0) {
   return `${fmt(v.kcal, 0)} kcal · P ${fmt(v.p, digits)} g · C ${fmt(v.c, digits)} g · F ${fmt(v.f, digits)} g`;
 }
@@ -268,6 +300,14 @@ function openFoodSheet(meal, block, recent, athlete, onAdded) {
   const search = el('input', { type: 'search', placeholder: 'Search foods', autocomplete: 'off', 'aria-label': 'Search foods' });
   const body = el('div', { class: 'sheet-body' });
   const tabs = el('div', { class: 'sheet-tabs' });
+  // Food groups by dominating nutrient (Protein, Carbs, Fats, Fibre-rich…): a filter on top of the tab and the search
+  let group = null;
+  const groupBar = el('div', { class: 'group-chips', role: 'group', 'aria-label': 'Food groups' });
+  // The foods of a pool that pass the search, the athlete's allergies and the chosen group; without a search, best of the group first
+  const pick = (q, pool, limit) => {
+    const found = searchFoods(q, block, hidden, pool.filter((f) => inFoodGroup(f, group)), limit);
+    return q ? found : sortByGroup(found, group);
+  };
   const close = () => { sheet.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', esc); };
   const esc = (e) => { if (e.key === 'Escape' && !document.querySelector('.modal-back')) close(); };
 
@@ -279,15 +319,17 @@ function openFoodSheet(meal, block, recent, athlete, onAdded) {
         el('h2', {}, `Add to ${meal.name}`),
         el('button', { class: 'btn small primary', type: 'button', onclick: close }, 'Done')),
       el('div', { class: 'search-box' }, icon('info', 0), search, scanBtn),
-      tabs),
+      tabs, groupBar),
     body);
   sheet.querySelector('.search-box span')?.remove(); // keep the box clean: the search field says what it is
 
   function row(food, defaultG) {
     const per = { kcal: food.kcal || 0, p: food.p || 0, c: food.c || 0, f: food.f || 0 };
+    const tag = group ? group.tag(macroShares(food), food) : '';
     const btn = el('button', { class: 'food-pick', type: 'button', onclick: () => { open = open === food.id ? null : food.id; draw(); } },
       el('div', { class: 'top' }, el('b', {}, food.name, food.own ? el('span', { class: 'pill teal', style: 'margin-left:6px' }, 'Own') : null), el('span', { class: 'k' }, `${fmt(per.kcal, 0)} kcal`)),
-      el('div', { class: 'sub' }, el('span', {}, food.athlete ? `Added by ${athlete.name.split(' ')[0]}` : food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g'), coloredMacros(per)));
+      el('div', { class: 'sub' }, el('span', {}, food.athlete ? `Added by ${athlete.name.split(' ')[0]}` : food.own ? (food.note || 'Your food') : 'USDA', ' · per 100 g'), coloredMacros(per),
+        tag ? el('span', { class: `group-tag ${group.key}` }, tag) : null));
     if (open !== food.id) return [btn];
     const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: String(defaultG || 100), 'aria-label': `Grams of ${food.name}` });
     const preview = el('div', { class: 'small' });
@@ -316,28 +358,34 @@ function openFoodSheet(meal, block, recent, athlete, onAdded) {
   function draw() {
     tabs.replaceChildren(...[['mine', 'My foods'], ['library', 'Food library'], ['athlete', `${athlete.name.split(' ')[0]}'s foods`]].map(([k, l]) =>
       el('button', { type: 'button', class: tab === k ? 'active' : '', onclick: () => { tab = k; open = null; draw(); } }, l)));
+    groupBar.replaceChildren(...[null, ...FOOD_GROUPS].map((g) => el('button', { type: 'button', class: `group-chip ${g ? g.key : 'all'}${group === g ? ' active' : ''}`, 'aria-pressed': String(group === g),
+      onclick: () => { group = g; open = null; draw(); body.scrollTop = 0; groupBar.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } }, g ? g.label : 'All')));
     const q = search.value.trim();
     const out = [];
+    if (group) out.push(el('p', { class: 'group-hint' }, group.hint));
     if (tab === 'athlete') {
       // Foods the athlete scanned or typed in at home (local brands); they appear here as soon as they are saved
-      const theirs = searchFoods(q, block, hidden, athlete.foods, 200);
+      const theirs = pick(q, athlete.foods, 200);
       out.push(el('div', { class: 'sheet-section' }, `Added by ${athlete.name}`));
       if (theirs.length) theirs.forEach((f) => out.push(...row(f)));
       else out.push(el('p', { class: 'small muted', style: 'padding:4px' }, athlete.foods.length ? 'No match.'
         : `${athlete.name.split(' ')[0]} hasn't added any foods yet. PRO athletes can scan or type in foods they have at home from their Nutrition tab, and they show up here.`));
     } else if (tab === 'mine') {
-      const recents = recent.filter((r) => isAllowed(r.food, block) && (!q || r.food.name.toLowerCase().includes(q.toLowerCase()))).slice(0, 8);
+      const recents = recent.filter((r) => isAllowed(r.food, block) && inFoodGroup(r.food, group) && (!q || r.food.name.toLowerCase().includes(q.toLowerCase()))).slice(0, 8);
       if (recents.length) { out.push(el('div', { class: 'sheet-section' }, 'Recent')); recents.forEach((r) => out.push(...row(r.food, r.g))); }
-      const own = searchFoods(q, block, hidden, OWN_FOODS, 200);
+      const own = pick(q, OWN_FOODS, 200);
       out.push(el('div', { class: 'sheet-section' }, 'My foods'));
       if (own.length) own.forEach((f) => out.push(...row(f)));
-      else out.push(el('p', { class: 'small muted', style: 'padding:4px' }, OWN_FOODS.length ? 'No match in your foods.' : 'No own foods yet. Scan a barcode or add one from a label.'));
+      else out.push(el('p', { class: 'small muted', style: 'padding:4px' }, !OWN_FOODS.length ? 'No own foods yet. Scan a barcode or add one from a label.'
+        : group ? `None of your own foods is in ${group.label}.` : 'No match in your foods.'));
       out.push(el('div', { class: 'row', style: 'margin-top:12px' },
         el('button', { class: 'btn small', type: 'button', onclick: () => ownFoodDialog((food) => { open = food.id; draw(); }) }, '+ Add your own food'),
-        q ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => { tab = 'library'; draw(); } }, `Search "${q}" in the Food library →`) : null));
+        q || group ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => { tab = 'library'; draw(); } },
+          q ? `Search "${q}" in the Food library →` : `${group.label} in the Food library →`) : null));
     } else {
-      const lib = searchFoods(q, block, hidden, FOOD_LIBRARY, q ? 60 : 200);
-      out.push(el('div', { class: 'sheet-section' }, q ? `${lib.length} result${lib.length === 1 ? '' : 's'}` : `Food library · ${FOOD_LIBRARY.length} foods, per 100 g raw or dry`));
+      const lib = pick(q, FOOD_LIBRARY, q ? 60 : 200);
+      out.push(el('div', { class: 'sheet-section' }, q || group ? `${lib.length} food${lib.length === 1 ? '' : 's'}${group ? ` in ${group.label}` : ''}${q ? ` matching "${q}"` : ''} · per 100 g raw or dry`
+        : `Food library · ${FOOD_LIBRARY.length} foods, per 100 g raw or dry`));
       lib.forEach((f) => out.push(...row(f)));
       if (!lib.length) out.push(el('p', { class: 'small muted', style: 'padding:4px' }, 'Nothing found. Try another word, or scan the product\'s barcode.'));
     }

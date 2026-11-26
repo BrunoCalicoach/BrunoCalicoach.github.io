@@ -115,11 +115,12 @@
     const dots = document.createElement('div');
     dots.className = 'mini-dots';
     dots.setAttribute('role', 'tablist');
-    dots.setAttribute('aria-label', 'App screens');
+    const hr = (document.documentElement.lang || '').startsWith('hr');
+    dots.setAttribute('aria-label', hr ? 'Zasloni aplikacije' : 'App screens');
     const buttons = screens.map((screen, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.setAttribute('aria-label', `Screen ${i + 1} of ${screens.length}`);
+      b.setAttribute('aria-label', hr ? `Zaslon ${i + 1} od ${screens.length}` : `Screen ${i + 1} of ${screens.length}`);
       b.addEventListener('click', () => strip.scrollTo({ left: screen.offsetLeft - strip.offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' }));
       dots.append(b);
       return b;

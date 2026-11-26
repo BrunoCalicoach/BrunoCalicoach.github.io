@@ -611,7 +611,7 @@ function fitMealToTarget(meal, target) {
 // Plans saved before the food library (free-text rows) are shown as they were
 function isLegacyMealPlan(plans) { return Array.isArray(plans) && plans.some((p) => p && Array.isArray(p.rows)); }
 
-/* ---------- Macro summary: compact targets with thin progress bars (carbs, protein, fat, then calories) ---------- */
+/* ---------- Macro summary: a calorie ring with the three macros beside it ---------- */
 
 // totals: { kcal, p, c, f }; target: { kcal, protein, carbs, fat } or null
 function macroSummary(totals, target) {
@@ -620,17 +620,59 @@ function macroSummary(totals, target) {
     const over = goal && value > goal * 1.05;
     return el('div', { class: `mbar ${key}${over ? ' over' : ''}` }, el('span', { style: `width:${pct}%` }));
   };
-  const col = (key, label, value, goal) => el('div', { class: 'mcol' },
-    el('div', { class: `mlabel ${key}` }, label),
-    bar(key, value, goal),
-    el('div', { class: `mval ${key}` }, `${fmt(value, 0)}${goal ? ` / ${fmt(goal, 0)}` : ''} g`));
-  return el('div', { class: 'msummary' },
-    el('div', { class: 'mcols' },
-      col('carb', 'Carbs', totals.c, num(target?.carbs)),
-      col('prot', 'Protein', totals.p, num(target?.protein)),
-      col('fat', 'Fat', totals.f, num(target?.fat))),
-    bar('kcal', totals.kcal, num(target?.kcal)),
-    el('div', { class: 'mval kcal', style: 'text-align:center' }, `${fmt(totals.kcal, 0)}${target?.kcal ? ` / ${fmt(num(target.kcal), 0)}` : ''} kcal`));
+  const row = (key, label, value, goal) => el('div', { class: 'mrow' },
+    el('div', { class: 'mrow-top' }, el('span', { class: `mlabel ${key}` }, label),
+      el('span', { class: `mval ${key}` }, `${fmt(value, 0)}${goal ? ` / ${fmt(goal, 0)}` : ''} g`)),
+    bar(key, value, goal));
+  const goal = num(target?.kcal);
+  const pct = goal ? Math.min(1, totals.kcal / goal) : 0;
+  const over = goal && totals.kcal > goal * 1.05;
+  const R = 52, CIRC = 2 * Math.PI * R;
+  const ring = el('div', { class: 'kring' + (over ? ' over' : ''), html:
+    `<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="track"/>` +
+    `<circle cx="60" cy="60" r="${R}" class="fill" stroke-dasharray="${(pct * CIRC).toFixed(1)} ${CIRC.toFixed(1)}" transform="rotate(-90 60 60)"/></svg>` },
+    el('div', { class: 'kring-text' }, el('b', {}, fmt(totals.kcal, 0)), el('span', {}, goal ? `/ ${fmt(goal, 0)} kcal` : 'kcal')));
+  ring.setAttribute('aria-label', `${fmt(totals.kcal, 0)}${goal ? ` of ${fmt(goal, 0)}` : ''} kcal`);
+  return el('div', { class: 'msummary' }, ring,
+    el('div', { class: 'mrows' },
+      row('carb', 'Carbs', totals.c, num(target?.carbs)),
+      row('prot', 'Protein', totals.p, num(target?.protein)),
+      row('fat', 'Fat', totals.f, num(target?.fat))));
+}
+
+// Small donut showing how a meal's (or food's) calories split between carbs, protein and fat
+function macroDonut(totals, size = 30) {
+  const parts = [['carb', totals.c * 4], ['prot', totals.p * 4], ['fat', totals.f * 9]];
+  const sum = parts.reduce((a, [, v]) => a + v, 0);
+  const R = 15, CIRC = 2 * Math.PI * R;
+  let offset = 0;
+  const arcs = sum ? parts.map(([k, v]) => {
+    const len = (v / sum) * CIRC;
+    const arc = `<circle cx="20" cy="20" r="${R}" class="seg ${k}" stroke-dasharray="${len.toFixed(2)} ${CIRC.toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 20 20)"/>`;
+    offset += len;
+    return arc;
+  }).join('') : '';
+  const span = el('span', { class: 'mdonut', style: `width:${size}px;height:${size}px`,
+    html: `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="${R}" class="track"/>${arcs}</svg>` });
+  if (sum) span.title = `Calories from carbs ${fmt((parts[0][1] / sum) * 100, 0)}%, protein ${fmt((parts[1][1] / sum) * 100, 0)}%, fat ${fmt((parts[2][1] / sum) * 100, 0)}%`;
+  return span;
+}
+
+// Slim stacked bar under a food: its macro mix by calories
+function macroMiniBar(totals) {
+  const c = totals.c * 4, p = totals.p * 4, f = totals.f * 9;
+  return el('div', { class: 'minibar' }, ...(c + p + f ? [
+    el('span', { class: 'carb', style: `flex:${c}` }), el('span', { class: 'prot', style: `flex:${p}` }), el('span', { class: 'fat', style: `flex:${f}` })] : []));
+}
+
+// Sunrise, sun and moon for the three meals of the day
+const MEAL_ICONS = [
+  '<path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 4v4M5.6 9.6l1.4 1.4M18.4 9.6 17 11"/>',
+  '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'
+];
+function mealIcon(index) {
+  return el('span', { class: 'meal-icon', html: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MEAL_ICONS[index] || MEAL_ICONS[1]}</svg>` });
 }
 
 // Four coloured counters for one meal: carbs, protein, fat, calories, as "value / target" when there is a target

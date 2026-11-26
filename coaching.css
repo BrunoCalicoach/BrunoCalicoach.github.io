@@ -383,3 +383,46 @@ table.meal-table td { vertical-align: middle; }
 .set-in.gram { width: 80px; min-width: 0; flex: none; }
 .amount-panel .grow { min-width: 0; }
 .amount-panel .fmacros span:first-child { margin-left: 0; }
+
+/* ---------- Own look for the nutrition screens (ring, numbered meals, gram chips, dashed add row) ---------- */
+.msummary { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 18px; align-items: center; }
+.kring { position: relative; width: 118px; height: 118px; }
+.kring svg { width: 100%; height: 100%; display: block; }
+.kring circle { fill: none; stroke-width: 10; }
+.kring .track { stroke: #242424; }
+.kring .fill { stroke: var(--kcal); stroke-linecap: round; transition: stroke-dasharray .4s ease; }
+.kring.over .fill { stroke: #e5534b; }
+.kring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.kring-text b { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.kring-text span { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.mrows { display: grid; gap: 12px; min-width: 0; }
+.mrow-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mrow .mlabel { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.mrow .mval { font-size: 14px; margin-top: 0; }
+.mrow .mbar { margin-top: 5px; }
+@media (max-width: 360px) { .msummary { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; } .kring { width: 96px; height: 96px; } .kring-text b { font-size: 18px; } }
+
+.mdonut { display: inline-block; flex: none; }
+.mdonut svg { width: 100%; height: 100%; display: block; }
+.mdonut circle { fill: none; stroke-width: 7; }
+.mdonut .track { stroke: #262626; }
+.mdonut .seg { stroke: var(--c); }
+
+.meal-head { gap: 10px; }
+.meal-num { font-size: 13px; font-weight: 800; letter-spacing: .08em; color: var(--accent-soft); background: rgba(0,128,128,0.14); border-radius: 8px; padding: 3px 7px; font-variant-numeric: tabular-nums; }
+.meal-icon { display: inline-flex; color: var(--text-muted); }
+.meal-stats { display: flex; align-items: center; gap: 8px; }
+.meal-kcal { font-size: 13px; font-weight: 700; color: var(--text-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.meal-card .meal-items { margin-top: 2px; }
+.meal-items li.food-row { gap: 12px; padding: 11px 0; }
+.food-row.open { background: linear-gradient(90deg, rgba(0,128,128,0.10), transparent); }
+.gram-chip { flex: none; min-width: 58px; text-align: center; font-size: 13px; font-weight: 700; color: var(--text); background: var(--surface-hi); border: 1px solid var(--line-strong); border-radius: 999px; padding: 4px 9px; font-variant-numeric: tabular-nums; }
+.minibar { display: flex; gap: 2px; height: 4px; width: 100%; max-width: 160px; margin-top: 6px; border-radius: 4px; overflow: hidden; }
+.minibar span { background: var(--c); min-width: 0; }
+.food-row .fkcal { flex: none; width: auto; min-width: 44px; font-size: 15px; }
+.food-edit .fmacros span:first-child { margin-left: 0; }
+.add-food { border: 1.5px dashed rgba(77,184,184,0.45); border-radius: 14px; padding: 12px; margin-top: 12px; font-size: 15px; transition: background .2s, border-color .2s; }
+.add-food:hover { background: rgba(0,128,128,0.08); border-color: var(--accent-soft); }
+.add-food .plus { width: 22px; height: 22px; font-size: 16px; }
+.meal-card .mcounters { margin-top: 12px; }
+.seg button.active { box-shadow: 0 0 0 1px rgba(77,184,184,0.35), 0 4px 16px rgba(0,128,128,0.35); }

@@ -160,7 +160,7 @@ function mealPlanEditor(meals, target, onChange, block) {
   function mealCard(meal, changed, dayTarget, index, share) {
     const target = mealTargetFor(dayTarget, share);
     const counters = el('div');
-    const comp = el('div');
+    const headStats = el('div', { class: 'meal-stats' });
     const fitLine = el('div', { class: 'meal-fit' });
     const list = el('ul', { class: 'meal-items' });
     const card = el('div', { class: 'card meal-card' });
@@ -169,51 +169,63 @@ function mealPlanEditor(meals, target, onChange, block) {
     const update = () => {
       const t = mealTotals(meal.items);
       counters.replaceChildren(macroCounters(t, target));
-      comp.replaceChildren(compositionBar(t));
+      headStats.replaceChildren(el('span', { class: 'meal-kcal' }, `${fmt(t.kcal, 0)} kcal`), macroDonut(t, 30));
       const fit = target && meal.items.length ? mealFit(t, target) : null;
       fitLine.replaceChildren(...[
         fit ? el('span', { class: 'pill ' + (fit.ok ? 'good' : 'warn') }, fit.ok ? '✓ Fits its target, swappable' : 'Off: ' + fit.issues.join(', ')) : null,
         target ? el('span', { class: 'muted' }, `Target ${share}% of the day`) : null].filter(Boolean));
     };
-    // Each food: name and amount on the left, calories and C/P/F on the right. Tap a food to change its amount.
+    // Each food: grams as a chip, the name with a slim macro bar underneath, calories on the right.
+    // Tap a food to see its exact carbs, protein and fat and to change the amount.
     const drawRows = () => {
       list.replaceChildren(...meal.items.flatMap((it, i) => {
         const t = mealTotals([it]);
         const why = blockedReasons(it, block);
         const own = OWN_FOODS.find((f) => f.id === it.food);
-        const source = it.food?.startsWith('usda:') ? '' : (own?.note && !/^Open Food Facts/.test(own.note) ? `${own.note}, ` : '');
-        const rowEl = el('li', { class: 'food-row', role: 'button', tabindex: 0, 'aria-expanded': String(editing === it.id),
+        const source = it.food?.startsWith('usda:') ? '' : (own?.note && !/^Open Food Facts/.test(own.note) ? own.note : '');
+        const chip = el('span', { class: 'gram-chip' }, `${fmt(num(it.g), 0)} g`);
+        const kcal = el('div', { class: 'fkcal' }, fmt(t.kcal, 0));
+        const bar = el('div', {}, macroMiniBar(t));
+        const rowEl = el('li', { class: 'food-row' + (editing === it.id ? ' open' : ''), role: 'button', tabindex: 0, 'aria-expanded': String(editing === it.id),
           title: it.food?.startsWith('usda:') ? `USDA FoodData Central ${it.food.slice(5)}` : 'Own food',
           onclick: () => { editing = editing === it.id ? null : it.id; drawRows(); },
           onkeydown: (e) => { if (e.key === 'Enter') { editing = editing === it.id ? null : it.id; drawRows(); } } },
+          chip,
           el('div', { class: 'info' },
             el('div', { class: 'fname' }, it.name, why.length ? el('span', { class: 'pill bad', style: 'margin-left:6px' }, `Allergy: ${why.join(', ')}`) : null),
-            el('div', { class: 'fsub' }, `${source}${fmt(num(it.g), 1)} g`)),
-          el('div', { class: 'right' }, el('div', { class: 'fkcal' }, fmt(t.kcal, 0)), coloredMacros(t)));
+            source ? el('div', { class: 'fsub' }, source) : null,
+            bar),
+          kcal);
         if (editing !== it.id) return [rowEl];
         const g = el('input', { class: 'set-in gram', inputMode: 'decimal', value: it.g ?? '', 'aria-label': `Grams of ${it.name}` });
+        const exact = el('div', {}, coloredMacros(t));
         g.addEventListener('input', () => {
           it.g = num(g.value) || 0;
           const nt = mealTotals([it]);
-          rowEl.querySelector('.fsub').textContent = `${source}${fmt(num(it.g), 1)} g`;
-          rowEl.querySelector('.right').replaceChildren(el('div', { class: 'fkcal' }, fmt(nt.kcal, 0)), coloredMacros(nt));
+          chip.textContent = `${fmt(num(it.g), 0)} g`;
+          kcal.textContent = fmt(nt.kcal, 0);
+          bar.replaceChildren(macroMiniBar(nt));
+          exact.replaceChildren(coloredMacros(nt));
           update(); changed();
         });
         g.addEventListener('keydown', (e) => { if (e.key === 'Enter') { editing = null; drawRows(); } });
         setTimeout(() => { g.focus(); g.select(); }, 0);
         return [rowEl, el('li', { class: 'food-edit' },
           el('div', { class: 'row nowrap', style: 'gap:4px' }, g, el('span', { class: 'small muted' }, 'g')),
-          i > 0 ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => { meal.items.splice(i - 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↑ Up') : null,
-          i < meal.items.length - 1 ? el('button', { class: 'btn small ghost', type: 'button', onclick: () => { meal.items.splice(i + 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↓ Down') : null,
+          exact,
           el('div', { class: 'grow' }),
+          i > 0 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move up', onclick: () => { meal.items.splice(i - 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↑') : null,
+          i < meal.items.length - 1 ? el('button', { class: 'btn small ghost', type: 'button', 'aria-label': 'Move down', onclick: () => { meal.items.splice(i + 1, 0, meal.items.splice(i, 1)[0]); drawRows(); changed(); } }, '↓') : null,
           el('button', { class: 'btn small danger', type: 'button', onclick: () => { meal.items.splice(i, 1); editing = null; drawRows(); update(); changed(); } }, 'Remove'),
           el('button', { class: 'btn small primary', type: 'button', onclick: () => { editing = null; drawRows(); } }, 'Done'))];
       }));
     };
     drawRows(); update();
 
+    const title = el('h3', {}, meal.name);
+    const addLabel = el('span', {}, `Add food to ${meal.name}`);
     const menu = el('button', { class: 'kebab', type: 'button', 'aria-label': `Options for ${meal.name}`, onclick: (e) => popMenu(e.currentTarget, [
-      ['Rename', () => { const n = prompt('Meal name', meal.name); if (n && n.trim()) { meal.name = n.trim(); card.querySelector('h3').textContent = meal.name; changed(); } }],
+      ['Rename', () => { const n = prompt('Meal name', meal.name); if (n && n.trim()) { meal.name = n.trim(); title.textContent = meal.name; addLabel.textContent = `Add food to ${meal.name}`; changed(); } }],
       target && meal.items.length ? ['Fit to target (adjust grams)', () => {
         const ok = fitMealToTarget(meal, target);
         drawRows(); update(); changed();
@@ -232,9 +244,13 @@ function mealPlanEditor(meals, target, onChange, block) {
     drawNote();
 
     const add = el('button', { class: 'add-food', type: 'button', onclick: () => openFoodSheet(meal, block, recentFoods(), () => { drawRows(); update(); changed(); }) },
-      el('span', { class: 'plus', 'aria-hidden': 'true' }, '+'), 'Add food');
+      el('span', { class: 'plus', 'aria-hidden': 'true' }, '+'), addLabel);
 
-    card.append(el('div', { class: 'meal-head' }, el('h3', {}, meal.name), menu), comp, list, noteLine, counters, fitLine, add);
+    card.append(
+      el('div', { class: 'meal-head' },
+        el('span', { class: 'meal-num' }, String(index + 1).padStart(2, '0')),
+        mealIcon(index), title, headStats, menu),
+      list, noteLine, add, counters, fitLine);
     return card;
   }
 

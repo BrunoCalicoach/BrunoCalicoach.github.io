@@ -48,3 +48,6 @@
    pushing the whole page wider than the phone. The phones scroll sideways inside the card instead. */
 .grid > :has(> .app-detail), .app-detail, .mini-phones { min-width: 0; max-width: 100%; }
 @media (max-width: 640px) { .app-detail.p-10 { padding: 26px 20px; } .app-detail h2 { font-size: 1.6rem; line-height: 1.2; } }
+
+/* "What's Included" on the plan pages: icons keep one size (they used to shrink next to longer text) */
+.grid.md\:grid-cols-2 > .flex.gap-4 > svg { flex: none; width: 24px; height: 24px; margin-top: 1px; }

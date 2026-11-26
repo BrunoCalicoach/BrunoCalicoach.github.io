@@ -75,6 +75,10 @@ function toast(text) {
 }
 
 // Small pop-up menu next to a button (the ⋮ menus)
+// A copied meal (foods, amounts, note), kept while the coach page is open, so it can be pasted into any meal,
+// in another plan or even another athlete's plan
+let MEAL_CLIPBOARD = null;
+
 function popMenu(anchor, items) {
   document.getElementById('pop-menu')?.remove();
   const menu = el('div', { class: 'ctx', id: 'pop-menu' }, ...items.filter(Boolean).map(([label, fn, danger]) =>
@@ -307,6 +311,19 @@ function mealPlanEditor(meals, target, onChange, block, athlete = { name: 'Athle
         const left = replaceBlockedFoods(meal, target, block);
         drawRows(); update(); changed();
         if (left.length) alert(`No safe swap kept the meal on target for: ${left.join(', ')}. Change it by hand.`);
+      }] : null,
+      meal.items.length ? ['Copy meal', () => {
+        MEAL_CLIPBOARD = { name: meal.name, from: `${meals.plans[active]?.title || 'this plan'}${athlete?.name ? `, ${athlete.name.split(' ')[0]}` : ''}`, note: meal.note || '', items: clone(meal.items) };
+        toast(`Copied ${meal.name}. Open ⋮ on any meal and choose Paste.`);
+      }] : null,
+      MEAL_CLIPBOARD ? [`Paste ${MEAL_CLIPBOARD.name} (${MEAL_CLIPBOARD.from})`, () => {
+        if (meal.items.length && !confirm(`Replace the ${meal.items.length} food${meal.items.length > 1 ? 's' : ''} in ${meal.name} with the copied ${MEAL_CLIPBOARD.name}?`)) return;
+        // Same foods and amounts (and locks), each with a new id so the two meals stay independent
+        meal.items = clone(MEAL_CLIPBOARD.items).map((it) => ({ ...it, id: uid() }));
+        if (MEAL_CLIPBOARD.note && !meal.note) meal.note = MEAL_CLIPBOARD.note;
+        onChange(); draw();
+        const fits = target ? mealFit(mealTotals(meal.items), target).ok : true;
+        toast(fits ? `Pasted into ${meal.name}` : `Pasted into ${meal.name}. It's off this meal's target: use Fit to target.`);
       }] : null,
       ['Note for this meal', () => askText('Note for this meal', 'Preparation, swaps… (leave empty to remove)', meal.note || '', (n) => { meal.note = n; changed(); drawNote(); }, { allowEmpty: true })],
       meal.items.length ? ['Remove all foods', () => { if (confirm(`Remove every food from ${meal.name}?`)) { meal.items = []; drawRows(); update(); changed(); } }, true] : null

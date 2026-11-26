@@ -529,3 +529,19 @@ details[open] > summary.card-sum .card-head::after { transform: rotate(-135deg);
 .rate-dots i.on { background: var(--accent-soft); }
 .data .delta { font-size: 11px; }
 .pring .fill[stroke-dasharray^="0.0 "] { opacity: 0; }
+
+/* Shopping list */
+.day-count { display: flex; align-items: center; gap: 10px; background: #141414; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.day-count .count { min-width: 62px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.day-count .icon-btn { width: 36px; height: 36px; font-size: 18px; font-weight: 700; }
+.shop-group h3 { font-size: 16px; }
+.shop-item { position: relative; display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.shop-item:last-child { border-bottom: 0; }
+.shop-item input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.shop-box { flex: none; width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--line-strong); display: inline-flex; align-items: center; justify-content: center; color: transparent; transition: background .15s, border-color .15s; }
+.shop-item input:checked + .shop-box { background: var(--good); border-color: var(--good); color: #0b0b0b; }
+.shop-item input:focus-visible + .shop-box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.shop-item .sname { display: block; font-weight: 600; }
+.shop-item.done .sname { text-decoration: line-through; color: var(--text-muted); }
+.shop-item.done .gram-chip { opacity: .5; }
+@media (max-width: 380px) { .tabs button { font-size: 11px; padding-left: 2px; padding-right: 2px; } }

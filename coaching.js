@@ -16,6 +16,7 @@ const TABS = [
   { id: 'training', label: 'Training', icon: 'dumbbell' },
   { id: 'progress', label: 'Progress', icon: 'chart' },
   { id: 'nutrition', label: 'Nutrition', icon: 'apple' },
+  { id: 'shopping', label: 'Shopping', icon: 'cart', pro: true },
   { id: 'lifestyle', label: 'Lifestyle', icon: 'leaf' }
 ];
 
@@ -143,7 +144,7 @@ function show(...nodes) { app.replaceChildren(...nodes); window.scrollTo(0, 0); 
 
 function renderTabs() {
   tabsNav.classList.remove('hidden');
-  tabsNav.replaceChildren(...TABS.map((t) => el('button', { type: 'button', 'data-tab': t.id, onclick: () => { location.hash = t.id; } }, icon(t.icon), t.label)));
+  tabsNav.replaceChildren(...TABS.filter((t) => !t.pro || isPro()).map((t) => el('button', { type: 'button', 'data-tab': t.id, onclick: () => { location.hash = t.id; } }, icon(t.icon), t.label)));
 }
 
 function route() {
@@ -158,6 +159,7 @@ function route() {
     if (view === 'workout') return renderWorkout(a, Number(b));
     if (view === 'progress') return renderProgress();
     if (view === 'nutrition') return renderNutrition();
+    if (view === 'shopping') return renderShopping();
     if (view === 'lifestyle') return renderLifestyle();
     return renderTraining(view === 'week' ? a : null);
   } catch (error) {
@@ -867,6 +869,7 @@ function renderNutrition() {
 
   show(el('div', { class: 'stack' }, el('h1', {}, 'Nutrition'), targetsCard, mealsSection, isPro() ? homeFoodsCard() : null, waterCard,
     guideCard('nutrition_basics'), isPro() ? guideCard('food_lists') : null, isPro() ? guideCard('supplements') : null));
+  if (isPro()) refreshMealPlan('nutrition');
 }
 
 /* ---------- Foods the athlete has at home (PRO): scanned or typed in, so Bruno can use them in the meal plan ---------- */
@@ -1060,6 +1063,149 @@ function legacyMealPlansCard(plans, note) {
     el('div', { class: 'row between' }, el('h2', {}, 'Meal plans'), el('span', { class: 'pill pro' }, 'PRO')),
     el('p', { class: 'small soft', style: 'margin:6px 0 12px' }, note || 'The plans are interchangeable: pick the one that suits your day.'),
     seg, body);
+}
+
+/* ---------- Shopping list (PRO): every food of the meal plan, with the athlete's swaps, for the days they shop for ---------- */
+
+// Bruno may have changed the plan since the app opened: fetch it again quietly and redraw if it differs
+async function refreshMealPlan(view) {
+  if (!navigator.onLine || !S.client) return;
+  try {
+    const rows = await Data.select('coaching_meal_plans', { client_id: S.client.user_id });
+    const fresh = rows[0] || null;
+    if (JSON.stringify(fresh) === JSON.stringify(S.meals)) return;
+    S.meals = fresh;
+    if (location.hash.slice(1).split('/')[0] === view) route();
+  } catch (e) { /* keep what we have */ }
+}
+
+const SHOP_ORDER = ['veg', 'fruit', 'protein', 'dairy', 'carbs', 'legumes', 'fats', 'other'];
+const SHOP_LABELS = { veg: 'Vegetables', fruit: 'Fruit', protein: 'Meat, fish and eggs', dairy: 'Dairy', carbs: 'Grains, bread and potatoes', legumes: 'Legumes', fats: 'Nuts, seeds and oils', other: 'Other' };
+let LIBRARY_CATS = null;
+function shopCategory(it) {
+  if (it.cat && SHOP_LABELS[it.cat]) return it.cat;
+  LIBRARY_CATS = LIBRARY_CATS || new Map(FOOD_LIBRARY.map((f) => [f.id, f.cat]));
+  return LIBRARY_CATS.get(it.food) || S.athleteFoods.find((f) => f.id === it.food)?.cat || 'other';
+}
+const shopAmount = (g) => g >= 1000 ? `${fmt(Math.round(g / 100) / 10, 1)} kg` : `${g >= 50 ? Math.round(g / 5) * 5 : Math.round(g)} g`;
+
+function shoppingPlans() {
+  const plans = S.meals?.plans;
+  if (!Array.isArray(plans) || isLegacyMealPlan(plans)) return [];
+  return plans.filter((d) => d.meals?.some((m) => m.items.length));
+}
+
+// Days per plan: the athlete's own numbers, or a week spread evenly over the plans
+function shoppingDays(plans) {
+  const saved = S.choices?._shop?.days || {};
+  const base = Math.floor(7 / plans.length), extra = 7 % plans.length;
+  return Object.fromEntries(plans.map((d, i) => [d.id, Number.isFinite(saved[d.id]) ? saved[d.id] : base + (i < extra ? 1 : 0)]));
+}
+
+function shoppingLines(plans, days) {
+  const lines = new Map();
+  plans.forEach((day, pi) => {
+    const times = days[day.id] || 0;
+    if (!times) return;
+    day.meals.forEach((_, mi) => {
+      const meal = effectiveMeal(day, mi);
+      for (const it of meal.items) {
+        const g = num(it.g) || 0;
+        if (!g) continue;
+        const key = it.food || it.name.trim().toLowerCase();
+        const line = lines.get(key) || { key, name: it.name, cat: shopCategory(it), g: 0, uses: new Set() };
+        line.g += g * times;
+        line.uses.add(`${day.title || `Plan ${pi + 1}`} ${meal.name.toLowerCase()}`);
+        lines.set(key, line);
+      }
+    });
+  });
+  return [...lines.values()];
+}
+
+function renderShopping() {
+  if (!isPro()) { location.hash = 'nutrition'; return; }
+  const plans = shoppingPlans();
+  if (!plans.length) {
+    show(el('div', { class: 'stack' }, el('h1', {}, 'Shopping list'),
+      el('div', { class: 'card stack' }, cardHead('cart', 'Nothing to buy yet'),
+        el('p', { class: 'soft' }, isLegacyMealPlan(S.meals?.plans || []) ? 'Your shopping list works with the new meal plans. It appears here as soon as Bruno moves your plan over.'
+          : 'Bruno is preparing your meal plan. Your shopping list fills in by itself as soon as it is ready.'))));
+    refreshMealPlan('shopping');
+    return;
+  }
+  const shop = () => { S.choices = { ...S.choices, _shop: { days: {}, have: {}, ...(S.choices._shop || {}) } }; return S.choices._shop; };
+  const save = debounce(() => saveChoices().catch((e) => toast(navigator.onLine ? 'Not saved: ' + e.message : 'Saved on this phone. It syncs when you are online.')), 600);
+
+  const host = el('div', { class: 'stack' });
+  let daysOpen = !S.choices?._shop?.days;
+  function draw() {
+    const days = shoppingDays(plans);
+    const totalDays = Object.values(days).reduce((a, b) => a + b, 0);
+    const have = S.choices?._shop?.have || {};
+    const lines = shoppingLines(plans, days);
+    // Ticked = bought with at least today's amount; if the plan now needs more, the tick comes off with a note
+    const isTicked = (l) => have[l.key] !== undefined && have[l.key] >= Math.round(l.g) - 1;
+    const done = lines.filter(isTicked).length;
+
+    const tick = (l, on) => {
+      const s = shop();
+      s.have = { ...s.have };
+      if (on) s.have[l.key] = Math.round(l.g); else delete s.have[l.key];
+      save(); draw();
+    };
+    const setDays = (id, n) => { const s = shop(); s.days = { ...shoppingDays(plans), ...s.days, [id]: Math.max(0, Math.min(14, n)) }; save(); draw(); };
+
+    const hero = el('div', { class: 'card week-hero' },
+      el('div', { class: 'week-ring-row', style: 'margin-top:0;padding-top:0;border-top:0' },
+        progressRing(done, lines.length, { size: 84, big: `${done}/${lines.length}`, small: 'ticked', color: lines.length && done === lines.length ? 'var(--good)' : 'var(--kcal)' }),
+        el('div', { class: 'grow' },
+          el('div', { style: 'font-weight:700;font-size:1.05rem' }, lines.length && done === lines.length ? 'You have everything!' : `${lines.length - done} item${lines.length - done === 1 ? '' : 's'} to get`),
+          el('div', { class: 'small muted', style: 'margin-top:2px' }, `For ${totalDays} day${totalDays === 1 ? '' : 's'} of your meal plan`))));
+
+    const daysCard = el('details', { class: 'card', open: daysOpen, ontoggle: (e) => { daysOpen = e.target.open; } },
+      el('summary', { class: 'card-sum' }, cardHead('calendar', 'Days to shop for', el('span', { class: 'pill teal' }, `${totalDays} days`))),
+      el('div', { class: 'stack', style: 'margin-top:12px;gap:8px' },
+        el('p', { class: 'small soft' }, 'How many days you will eat each plan until your next shopping trip. The amounts below follow.'),
+        ...plans.map((d, i) => el('div', { class: 'day-count' },
+          numTag(i + 1), el('b', { class: 'grow' }, d.title || `Plan ${i + 1}`),
+          el('button', { class: 'btn icon-btn', type: 'button', 'aria-label': `One day less of ${d.title || `Plan ${i + 1}`}`, disabled: S.readOnly || !days[d.id], onclick: () => setDays(d.id, days[d.id] - 1) }, '−'),
+          el('span', { class: 'count' }, `${days[d.id]} day${days[d.id] === 1 ? '' : 's'}`),
+          el('button', { class: 'btn icon-btn', type: 'button', 'aria-label': `One day more of ${d.title || `Plan ${i + 1}`}`, disabled: S.readOnly || days[d.id] >= 14, onclick: () => setDays(d.id, days[d.id] + 1) }, '+')))));
+
+    const groups = SHOP_ORDER.map((cat) => [cat, lines.filter((l) => l.cat === cat)]).filter(([, ls]) => ls.length);
+    const groupCards = groups.map(([cat, ls]) => {
+      ls.sort((a, b) => (isTicked(a) - isTicked(b)) || a.name.localeCompare(b.name));
+      const left = ls.filter((l) => !isTicked(l)).length;
+      return el('div', { class: 'card shop-group' },
+        el('div', { class: 'row between', style: 'margin-bottom:4px' }, el('h3', {}, SHOP_LABELS[cat]), el('span', { class: 'small muted' }, left ? `${left} to get` : 'All done')),
+        ...ls.map((l) => {
+          const on = isTicked(l);
+          const more = !on && have[l.key] !== undefined;
+          const box = el('input', { type: 'checkbox', checked: on, disabled: S.readOnly, 'aria-label': `${l.name}, ${shopAmount(l.g)}` });
+          box.addEventListener('change', () => tick(l, box.checked));
+          return el('label', { class: 'shop-item' + (on ? ' done' : '') }, box, el('span', { class: 'shop-box', 'aria-hidden': 'true' }, icon('check', 14)),
+            el('span', { class: 'grow', style: 'min-width:0' }, el('span', { class: 'sname' }, l.name),
+              el('span', { class: 'tiny ' + (more ? 'accent-warn' : 'muted'), style: 'display:block' },
+                more ? `Your plan changed: you ticked ${shopAmount(have[l.key])}, now ${shopAmount(l.g)}` : [...l.uses].join(', '))),
+            el('span', { class: 'gram-chip' }, shopAmount(l.g)));
+        }));
+    });
+
+    const asText = () => groups.map(([cat, ls]) => `${SHOP_LABELS[cat]}\n` + ls.map((l) => `${isTicked(l) ? '[x]' : '[ ]'} ${l.name}: ${shopAmount(l.g)}`).join('\n')).join('\n\n');
+    host.replaceChildren(hero, daysCard,
+      ...groupCards,
+      el('div', { class: 'row' },
+        S.readOnly || !done ? null : el('button', { class: 'btn', type: 'button', onclick: () => { if (confirm('Untick everything for a new shopping trip?')) { shop().have = {}; save(); draw(); } } }, 'New shopping trip'),
+        el('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+          try { await navigator.clipboard.writeText(`Shopping list (${totalDays} days)\n\n${asText()}`); toast('Copied. Paste it into a note or a message.'); }
+          catch (e) { toast('Copying is not allowed in this browser.'); }
+        } }, 'Copy list')),
+      el('p', { class: 'tiny muted' }, 'Amounts are raw or dry weight, as in your meal plan; buy a little extra for peeling and trimming. The list updates by itself when Bruno changes your plan or you swap a meal or a food.'));
+  }
+  draw();
+  show(el('div', { class: 'stack', 'data-tour': 'shopping' }, el('h1', {}, 'Shopping list'), host));
+  refreshMealPlan('shopping');
 }
 
 /* ---------- Lifestyle: steps and healthy habits ---------- */

@@ -57,6 +57,8 @@ const ICONS = {
   clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
   steps: '<path d="M7 16c-1.5 0-2.5-1.5-2.5-4S5.5 6 7 6s2.5 2.5 2.5 5-1 5-2.5 5zM5 19h4M17 13c-1.5 0-2.5-1.5-2.5-4S15.5 3 17 3s2.5 2.5 2.5 5-1 5-2.5 5zM15 16h4"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  cart: '<path d="M3 4h2.5l2.2 10.5h10.6L20.5 7H7"/><circle cx="9.5" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/>',
+  calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'
 };
 
@@ -437,7 +439,7 @@ function emptyMealDay(n) {
 function newMealItem(food, grams) {
   const per100 = {};
   for (const k of NUTRIENT_KEYS) if (food[k] !== undefined && food[k] !== null) per100[k] = food[k];
-  return { id: uid(), food: food.id, name: food.name, g: grams, per100, al: [...(food.al || [])] };
+  return { id: uid(), food: food.id, name: food.name, cat: food.cat || undefined, g: grams, per100, al: [...(food.al || [])] };
 }
 
 /* ---------- Allergies: the 14 EU label allergens plus any foods Bruno lists for an athlete ---------- */

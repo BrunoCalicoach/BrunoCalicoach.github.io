@@ -845,7 +845,7 @@ function athleteFoodStore() {
     prefix: 'ath',
     foods: () => S.athleteFoods.map((r) => ({ id: r.id, name: r.name, ...r.per100 })),
     found: 'You already added this food',
-    intro: `Values per 100 g (or 100 ml) from the nutrition label. Bruno sees the foods you add and can use them in your meal plan.`,
+    intro: 'Type the values from the nutrition label. Bruno sees the foods you add and can use them in your meal plan.',
     async save(row) {
       const full = { client_id: S.client.user_id, ...row };
       await saveRow('coaching_athlete_foods', full);

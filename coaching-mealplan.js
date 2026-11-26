@@ -378,7 +378,7 @@ const COACH_FOOD_STORE = {
   prefix: 'own',
   foods: () => OWN_FOODS,
   found: 'Found in your foods',
-  intro: 'Values per 100 g (or 100 ml) from the nutrition label. Your foods appear first in the search.',
+  intro: 'Type the values from the nutrition label. Your foods appear first in the search.',
   async save(row) { await Data.upsert('coaching_foods', row); await loadOwnFoods(); return OWN_FOODS.find((f) => f.id === row.id); }
 };
 
@@ -530,9 +530,30 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
     for (const [key] of fields) { const x = num(inputs[key].value); if (x !== null) inputs[key].value = String(roundFor(key, x * k)); }
     perAmount = next; perIn.value = String(next); showPer100(); drawPerButtons();
   }
-  perIn.addEventListener('change', () => setPer(perIn.value));
-  for (const [key] of fields) inputs[key].addEventListener('input', showPer100);
-  showPer100(); drawPerButtons();
+  // One row per value: coloured marker, name, box, unit
+  function macroInput(k, label, unit, cls = '', hint = '') {
+    inputs[k].classList.add('minput');
+    inputs[k].setAttribute('aria-label', `${label} (${unit})`);
+    return el('label', { class: `macro-input ${cls}` }, el('span', { class: 'dot' }),
+      el('span', { class: 'mname' }, label, hint ? el('span', { class: 'tiny muted', style: 'display:block;font-weight:400' }, hint) : null),
+      inputs[k], el('span', { class: 'unit' }, unit));
+  }
+  // Live check: do protein, carbs and fat add up to the calories? (same rule as when saving)
+  const check = el('div', { class: 'macro-check' });
+  const updateCheck = () => {
+    const v = (k) => num(inputs[k].value);
+    if (v('p') === null || v('c') === null || v('f') === null) { check.replaceChildren(el('span', { class: 'tiny muted' }, 'Fill in calories, carbs, protein and fat to check they add up.')); return; }
+    const t = { c: v('c'), p: v('p'), f: v('f') };
+    const calc = 4 * t.p + 4 * (t.c - (v('fib') || 0)) + 2 * (v('fib') || 0) + 9 * t.f;
+    const kcal = v('kcal');
+    const off = kcal !== null && Math.abs(calc - kcal) > Math.max(25 * (perAmount / 100), kcal * 0.15);
+    check.replaceChildren(macroDonut(t, 34),
+      el('span', { class: 'small ' + (off ? 'accent-warn' : 'soft') },
+        kcal === null ? `Macros add up to about ${fmt(calc, 0)} kcal.` : off ? `Macros add up to about ${fmt(calc, 0)} kcal, not ${fmt(kcal, 0)}. Check the label.` : `✓ Macros add up to about ${fmt(calc, 0)} kcal.`));
+  };
+  perIn.addEventListener('change', () => { setPer(perIn.value); updateCheck(); });
+  for (const [key] of fields) inputs[key].addEventListener('input', () => { showPer100(); updateCheck(); });
+  showPer100(); drawPerButtons(); updateCheck();
 
   const m = modal(prefill.barcode ? 'New product' : 'Add your own food',
     prefill.values || prefill.per100 ? el('div', { class: 'notice' }, `Found in Open Food Facts (barcode ${prefill.barcode}). This is crowd-sourced label data: check it against the pack before saving.${prefill.serving ? ` Pack serving: ${prefill.serving.label}.` : ''}`)
@@ -542,10 +563,19 @@ function ownFoodDialog(onSaved, prefill = {}, store = COACH_FOOD_STORE) {
       el('div', { class: 'row nowrap', style: 'gap:8px' }, el('b', {}, 'Values per'), perIn, el('span', { class: 'soft' }, 'g (or ml)')),
       el('p', { class: 'tiny muted', style: 'margin-top:6px' }, 'Label shows values per serving (e.g. per 32 g scoop)? Enter that amount here first, then type the numbers as printed. Change it later and all values recalculate.'),
       perButtons, per100Line),
-    el('div', { class: 'form-grid' }, ...fields.map(([k, l]) => el('label', { class: 'lab' }, l, inputs[k]))),
-    el('div', {}, el('div', { class: 'small', style: 'font-weight:600;margin-bottom:6px' }, 'Allergens (bold on the label, including "may contain")'),
-      el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px' },
-        ...alBoxes.map((a) => el('label', { class: 'row nowrap small', style: 'gap:6px' }, a.box, a.label.replace(/ \(.*\)/, ''))))),
+    // Main values one below the other, each in its macro colour, with a live check that they add up
+    el('div', { class: 'macro-inputs' },
+      macroInput('kcal', 'Calories', 'kcal', 'kcal'), macroInput('c', 'Carbs', 'g', 'carb'),
+      macroInput('p', 'Protein', 'g', 'prot'), macroInput('f', 'Fat', 'g', 'fat')),
+    check,
+    el('details', { class: 'more-nutrients', open: ['fib', 'sug', 'sat', 'na'].some((k) => startValues[k] !== undefined && startValues[k] !== null) },
+      el('summary', {}, 'More details: fibre, sugars, saturated fat, sodium (optional)'),
+      el('div', { class: 'macro-inputs', style: 'margin-top:10px' },
+        macroInput('fib', 'Fibre', 'g'), macroInput('sug', 'Sugars', 'g'), macroInput('sat', 'Saturated fat', 'g'),
+        macroInput('na', 'Sodium', 'mg', '', 'salt g × 400'))),
+    el('div', {}, el('div', { class: 'small', style: 'font-weight:700;margin-bottom:8px' }, 'Allergens', el('span', { class: 'muted', style: 'font-weight:400' }, ' · bold on the label, including "may contain"')),
+      el('div', { class: 'allergen-chips' },
+        ...alBoxes.map((a) => el('label', { class: 'allergen-chip' }, a.box, a.label.replace(/ \(.*\)/, ''))))),
     el('label', { class: 'lab' }, 'Source', source), save, msg);
   save.addEventListener('click', async () => {
     const per100 = {};

@@ -210,7 +210,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v6';
+const DEMO_KEY = 'coaching-demo-db-v7';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -1174,7 +1174,10 @@ function demoSeed() {
           [['Beef, lean (top round), raw', 180], ['Bulgur, dry', 70], ['Zucchini', 200], ['Banana', 120], ['Olive oil', 10]]),
         meal('Plan 3', [['Cottage cheese, 1% fat', 250], ['Rice cakes', 30], ['Strawberries', 200], ['Almonds', 15]],
           [['Tuna, canned in water, drained', 150], ['Tortilla (wheat)', 120], ['Cucumber', 150], ['Avocado', 60]],
-          [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]])] }],
+          [['Chicken thigh, raw', 200], ['Sweet potato, raw', 300], ['Green beans', 200], ['Olive oil', 10]]),
+        meal('Plan 4', [['Egg, whole, raw', 100], ['Bread, rye', 70], ['Kefir, low fat, plain', 250], ['Banana', 120]],
+          [['Salmon (wild), raw', 150], ['Quinoa, dry', 80], ['Spinach', 150], ['Olive oil', 10]],
+          [['Turkey breast, raw', 200], ['Pasta, whole wheat, dry', 90], ['Tomato passata (canned puree)', 150], ['Zucchini', 200]])] }],
       coaching_guides: [],
       // Demo PRO athlete has sent the Initial Form; the REGULAR one still has to fill it in
       coaching_intake: [{ client_id: A, submitted_at: new Date(Date.now() - 20 * 86400000).toISOString(), answers: {

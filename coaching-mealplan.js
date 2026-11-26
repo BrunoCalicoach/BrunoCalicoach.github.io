@@ -255,7 +255,7 @@ function openFoodSheet(meal, block, recent, onAdded) {
   const esc = (e) => { if (e.key === 'Escape' && !document.querySelector('.modal-back')) close(); };
 
   const scanBtn = el('button', { class: 'btn ghost icon-btn', type: 'button', 'aria-label': 'Scan a barcode', title: 'Scan a barcode', onclick: () => scanBarcode((food) => { tab = 'mine'; open = food.id; search.value = ''; draw(); }) }, barcodeIcon());
-  const sheet = el('div', { class: 'sheet', role: 'dialog', 'aria-label': `Add food to ${meal.name}` },
+  const sheet = el('div', { class: 'food-sheet', role: 'dialog', 'aria-label': `Add food to ${meal.name}` },
     el('div', { class: 'sheet-top' },
       el('div', { class: 'sheet-bar' },
         el('button', { class: 'btn ghost icon-btn', type: 'button', 'aria-label': 'Back', onclick: close }, icon('left')),

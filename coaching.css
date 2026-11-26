@@ -302,7 +302,7 @@ table.sheet th.did { color: #86e0b5; padding: 8px; }
 .round-btn:active { transform: scale(.94); }
 
 /* Full-screen "Add food" window */
-.sheet { position: fixed; inset: 0; z-index: 75; background: var(--page); display: flex; flex-direction: column; }
+.food-sheet { position: fixed; inset: 0; z-index: 75; background: var(--page); display: flex; flex-direction: column; }
 .sheet-top { background: #111; border-bottom: 1px solid var(--line); padding: 10px 12px 0; }
 .sheet-bar { display: flex; align-items: center; gap: 8px; }
 .sheet-bar h2 { flex: 1; text-align: center; font-size: 17px; }

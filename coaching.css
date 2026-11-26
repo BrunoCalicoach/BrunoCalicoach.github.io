@@ -191,7 +191,7 @@ table.data td.wrap { white-space: pre-wrap; min-width: 180px; }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 
 /* ---------- Dialog ---------- */
-.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 85; display: flex; align-items: flex-end; justify-content: center; }
 .modal { background: #151515; border: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; width: 100%; max-width: 560px; max-height: 88vh; overflow: auto; padding: 20px 18px 28px; }
 @media (min-width: 700px) { .modal-back { align-items: center; } .modal { border-radius: 18px; } }
 

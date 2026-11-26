@@ -252,7 +252,7 @@ table.sheet th.did { color: #86e0b5; padding: 8px; }
 @media (max-width: 600px) { .day-head { grid-template-columns: 1fr; } }
 
 /* ---------- Macro colours, summary bars, meal counters, water ---------- */
-:root { --carb: #ff6b8b; --prot: #7d95ff; --fat: #f5c04e; --kcal: #4db8b8; --water: #5aa9ff; }
+:root { --carb: #56B04A; --prot: #EA691A; --fat: #5C95B7; --kcal: #4db8b8; --water: #5aa9ff; }
 .carb { --c: var(--carb); } .prot { --c: var(--prot); } .fat { --c: var(--fat); } .kcal { --c: var(--kcal); }
 .msummary { display: grid; gap: 8px; }
 .mcols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }

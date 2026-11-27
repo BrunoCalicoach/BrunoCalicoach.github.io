@@ -506,6 +506,7 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
   const count = Math.max(setCount(row), entry.sets.length);
   while (entry.sets.length < count) entry.sets.push({ reps: '', weight: '', rpe: '' });
   const rest = restSeconds(row.c.rest);
+  const interval = intervalSeconds(row.c.rest);   // "int 60": a timer that starts again every 60 s
   const prev = previousResult(weekStart, row);
 
   // Targets as small labelled tiles: SETS 4 · REPS 30, 28, 26 · WEIGHT 40kg …
@@ -542,7 +543,8 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
 
   return el('div', { class: 'card ex' },
     el('div', { class: 'ex-head' }, numTag(number), el('div', { class: 'grow' }, el('div', { class: 'ex-name' }, row.c.name)),
-      rest ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null),
+      rest ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null,
+      interval ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: `Start the interval timer (every ${clock(interval)})`, onclick: () => startInterval(interval, row.c.name, setCount(row)) }, icon('timer', 16), 'Interval') : null),
     chips,
     row.c.notes ? el('div', { class: 'ex-notes' }, row.c.notes) : null,
     row.c.video ? el('a', { class: 'small', href: row.c.video, target: '_blank', rel: 'noopener' }, 'Watch the video') : null,
@@ -588,15 +590,54 @@ function startTimer(rest, name) {
     if (left <= 0) { buzz(2); stopTimer(); }
   }, 250) };
 }
-function stopTimer() { if (timer) { clearInterval(timer.tick); timer.box.remove(); timer = null; } }
+/* Interval timer ("int 60" in the rest column): counts down from 60, beeps 3-2-1, then starts the next round at once.
+   It keeps looping until "Done"; the round number shows how far along you are (of the number of sets, when known). */
+function startInterval(seconds, name, rounds) {
+  stopTimer();
+  let started = Date.now(), pausedAt = null, lastBeep = null, lastRound = 1;
+  const ring = progressRing(0, 1000, { size: 64, big: clock(seconds), color: 'var(--good)', stroke: 10 });
+  const label = el('div', { class: 'small muted' });
+  const pause = el('button', { class: 'btn small', type: 'button', onclick: () => {
+    if (pausedAt) { started += Date.now() - pausedAt; pausedAt = null; pause.textContent = 'Pause'; }
+    else { pausedAt = Date.now(); pause.textContent = 'Resume'; }
+  } }, 'Pause');
+  const box = el('div', { class: 'timer', role: 'timer' },
+    el('div', { class: 'row nowrap', style: 'gap:12px' }, ring,
+      el('div', { class: 'grow' }, el('div', { class: 'mlabel', style: 'color:var(--text-muted)' }, `Interval · every ${clock(seconds)}`), el('div', { class: 'small', style: 'font-weight:700' }, name), label),
+      el('div', { class: 'stack', style: 'gap:6px' }, pause,
+        el('button', { class: 'btn small primary', type: 'button', onclick: stopTimer }, 'Done'))));
+  document.body.append(box);
+  buzz(1);
+  const draw = () => {
+    const t = ((pausedAt || Date.now()) - started) / 1000;
+    const round = Math.floor(t / seconds) + 1;
+    const left = seconds - (t % seconds);
+    ring.update(((t % seconds) / seconds) * 1000, clock(left), undefined, left <= 3 ? '#e8c46a' : 'var(--good)');
+    label.textContent = `Round ${round}${rounds > 1 ? ` of ${rounds}` : ''}${pausedAt ? ' · paused' : ''}`;
+    if (pausedAt) return;
+    // short beeps at 3, 2, 1 and a double beep when the next round starts
+    const whole = Math.ceil(left);
+    const key = `${round}-${whole}`;
+    if (whole <= 3 && whole >= 1 && key !== lastBeep) { lastBeep = key; beep(1, 660); }
+    if (round > lastRound) { lastRound = round; buzz(2); }
+  };
+  timer = { box, extra: 0, tick: setInterval(draw, 200) };
+  // keep the phone screen on while the intervals run
+  try { navigator.wakeLock?.request('screen').then((l) => { if (timer?.box === box) timer.lock = l; else l.release(); }).catch(() => {}); } catch (e) { /* not supported */ }
+  draw();
+}
+function beep(times, freq) { buzz(times, freq, true); }   // a short, lower beep for the 3-2-1 countdown
+
+function stopTimer() { if (timer) { clearInterval(timer.tick); timer.box.remove(); timer.lock?.release().catch(() => {}); timer = null; } }
 function clock(s) { s = Math.ceil(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
-function buzz(times) {
-  try { navigator.vibrate?.(times > 1 ? [200, 120, 200] : 200); } catch (e) { /* ignore */ }
+function buzz(times, freq = 880, short = false) {
+  try { navigator.vibrate?.(short ? 60 : times > 1 ? [200, 120, 200] : 200); } catch (e) { /* ignore */ }
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = buzz.ctx = buzz.ctx || new (window.AudioContext || window.webkitAudioContext)();   // one sound context, reused (phones allow only a few)
+    if (ctx.state === 'suspended') ctx.resume();
     for (let i = 0; i < times; i++) {
       const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq; o.connect(g); g.connect(ctx.destination);
       g.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.3); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.3 + 0.25);
       o.start(ctx.currentTime + i * 0.3); o.stop(ctx.currentTime + i * 0.3 + 0.26);
     }

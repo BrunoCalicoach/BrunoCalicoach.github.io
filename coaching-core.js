@@ -419,9 +419,18 @@ function targetForSet(text, index, count) {
 }
 
 // "2 - 3 min", "<90 sec", "1,5 min", "45 sec", "5 - 6 min" -> seconds; "Complete rest" / "EMOM" -> null
+/* "int 60", "int 45 s", "int 1 min", "interval 90": an interval timer that starts again every N seconds (null when it is a normal rest) */
+function intervalSeconds(text) {
+  const m = String(text || '').toLowerCase().replace(/(\d),(\d)/g, '$1.$2').match(/^\s*int(?:erval)?\.?\s*(\d+(?:\.\d+)?)\s*(s|sec|secs|seconds?|m|min|mins|minutes?)?\b/);
+  if (!m) return null;
+  const s = Math.round(Number(m[1]) * (m[2] && m[2][0] === 'm' ? 60 : 1));
+  return s >= 5 ? s : null;
+}
+
 function restSeconds(text) {
   const t = String(text || '').toLowerCase().replace(/(\d),(\d)/g, '$1.$2');
-  if (!/\d/.test(t) || /emom|interval/.test(t) && !/sec|min/.test(t)) return null;
+  if (/^\s*int/.test(t)) return null;   // "int 60" is an interval, not a rest
+  if (!/\d/.test(t) ||/emom|interval/.test(t) && !/sec|min/.test(t)) return null;
   const unit = /min/.test(t) ? 60 : 1;
   const range = t.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/);
   if (range) return { min: Math.round(Number(range[1]) * unit), max: Math.round(Number(range[2]) * unit) };

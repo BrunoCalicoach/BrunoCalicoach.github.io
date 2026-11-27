@@ -10,7 +10,7 @@
     regular: {
       name: 'Coaching REGULAR',
       tagline: 'Calisthenics Plan',
-      photo: 'folder/img9.jpeg',
+      photo: 'folder/regular-wide.webp', photoStyle: 'transform:scale(2.4);transform-origin:50% 50%',
       page: 'regular.html',
       apply: 'apply.html?plan=regular',
       monthly: 200,
@@ -21,7 +21,7 @@
     pro: {
       name: 'Coaching PRO',
       tagline: 'Calisthenics + Nutrition',
-      photo: 'folder/img7.jpeg',
+      photo: 'folder/pro-wide.webp', photoStyle: 'transform:scale(2);transform-origin:50% 48%',
       page: 'pro.html',
       apply: 'apply.html?plan=pro',
       monthly: 300,
@@ -142,7 +142,7 @@
     const program = PROGRAMS[key];
     return `
       <div class="cmp-head">
-        <div class="cmp-photo"><img src="${base}${program.photo}" alt=""></div>
+        <div class="cmp-photo"><img src="${base}${program.photo}" alt="" style="${program.photoStyle || ''}"></div>
         <div>
           ${key === current ? `<span class="cmp-badge">${t('You are viewing')}</span>` : `<span class="cmp-badge cmp-badge-other">${t('Comparing with')}</span>`}
           <div class="cmp-name">${escape(program.name)}</div>

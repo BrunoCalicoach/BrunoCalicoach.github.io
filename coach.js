@@ -69,6 +69,53 @@ function pastedDay(content) {
   return copy;
 }
 
+/* ---------- Download all data: a backup file of every coaching table ---------- */
+// Everything the coach can read, table by table, in one JSON file (also answers an athlete's GDPR request for their data).
+// Photos stay in storage: the file lists their names only.
+const BACKUP_TABLES = ['coaching_clients', 'coaching_profiles', 'coaching_intake', 'coaching_drafts', 'coaching_weeks', 'coaching_logs',
+  'coaching_feedback', 'coaching_checkins', 'coaching_daily', 'coaching_measurements', 'coaching_targets', 'coaching_meal_plans',
+  'coaching_meal_choices', 'coaching_foods', 'coaching_athlete_foods', 'coaching_guides'];
+
+async function allRows(table) {
+  if (DEMO) return Data.select(table, {});
+  const rows = [];
+  for (let from = 0; ; from += 1000) {   // the database hands out at most 1000 rows per request
+    const { data, error } = await supa.from(table).select('*').range(from, from + 999);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < 1000) return rows;
+  }
+}
+
+async function downloadAllData() {
+  const box = el('p', { class: 'soft' }, 'Collecting…');
+  const m = modal('Download all data', box);
+  const backup = { app: 'Bruno Zgela Coaching', made: new Date().toISOString(), tables: {}, skipped: {}, photos: {} };
+  try {
+    for (const t of BACKUP_TABLES) {
+      box.textContent = `Collecting ${t.replace('coaching_', '').replace(/_/g, ' ')}…`;
+      try { backup.tables[t] = await allRows(t); }
+      catch (e) { if (e?.code === 'PGRST205' || e?.code === '42P01') backup.skipped[t] = 'table not set up'; else throw e; }
+    }
+    if (!DEMO) for (const c of backup.tables.coaching_clients || []) {
+      try { backup.photos[c.name || c.user_id] = await Photos.list(c.user_id); } catch (e) { /* photos are optional in the file */ }
+    }
+    const rows = Object.values(backup.tables).reduce((n, r) => n + r.length, 0);
+    const blob = new Blob([JSON.stringify(backup, null, 1)], { type: 'application/json' });
+    const name = `coaching-backup-${ymd(new Date())}.json`;
+    const a = el('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    box.replaceChildren(
+      el('p', {}, `Saved ${name}: ${(backup.tables.coaching_clients || []).length} athletes, ${rows} entries in total.`),
+      el('p', { class: 'small muted' }, 'Keep it somewhere safe (it holds health data). Progress photos are not in the file, only their names; they stay in the app.'),
+      Object.keys(backup.skipped).length ? el('p', { class: 'small muted' }, `Not set up yet, so not included: ${Object.keys(backup.skipped).join(', ')}.`) : null);
+  } catch (e) {
+    box.replaceChildren(el('p', { class: 'error' }, 'Could not make the file: ' + (e.message || e)), el('p', { class: 'small muted' }, 'Check the connection and try again.'));
+  }
+  return m;
+}
+
 /* ---------- Layout ---------- */
 
 function render() {
@@ -85,7 +132,8 @@ function render() {
       onclick: pick(() => openAthlete(c.user_id)) }, el('span', { class: 'grow' }, c.name), el('span', { class: 'pill ' + (c.tier === 'pro' ? 'pro' : '') }, c.tier.toUpperCase()))),
     el('button', { class: 'ath', onclick: pick(addAthlete) }, '+ Add athlete'),
     el('div', { class: 'section-title', style: 'margin:14px 12px 6px' }, 'Content'),
-    el('button', { class: 'ath' + (C.view === 'guides' ? ' active' : ''), onclick: pick(() => { C.view = 'guides'; render(); }) }, 'Guide texts')));
+    el('button', { class: 'ath' + (C.view === 'guides' ? ' active' : ''), onclick: pick(() => { C.view = 'guides'; render(); }) }, 'Guide texts'),
+    el('button', { class: 'ath', title: 'Save every athlete\'s data to one file on this device', onclick: pick(downloadAllData) }, 'Download all data')));
   const content = el('section', { class: 'grow', style: 'min-width:0' }, el('p', { class: 'muted' }, 'Loading…'));
   app.replaceChildren(el('div', { class: 'coach-layout' }, side, content));
   if (C.view === 'dashboard') renderDashboard(content);

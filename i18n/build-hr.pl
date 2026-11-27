@@ -30,6 +30,22 @@ my %ATTR = (
   'Your name' => 'Tvoje ime',
   'Back to home page' => 'Natrag na početnu stranicu',
   'Subscription length' => 'Trajanje pretplate',
+
+  # Page descriptions and share-preview titles (<meta content="...">)
+  '1-on-1 online calisthenics coaching with Bruno Zgela: a personal training plan, weekly feedback and nutrition guidance, wherever you train.'
+    => '1-na-1 online calisthenics coaching s Brunom Zgelom: osobni plan treninga, tjedne povratne informacije i smjernice za prehranu, gdje god treniraš.',
+  'Meet Bruno Zgela, the coach behind Bruno Zgela Coaching: how calisthenics changed his life, and how he now helps others build strength through it.'
+    => 'Upoznaj Bruna Zgelu, trenera iza Bruno Zgela Coachinga: kako mu je calisthenics promijenio život i kako danas pomaže drugima da kroz njega izgrade snagu.',
+  'Coaching REGULAR: a personal calisthenics training plan, weekly training feedback and check-ins, coach availability 3 times a week and basic nutrition guidance.'
+    => 'Coaching REGULAR: osobni calisthenics plan treninga, tjedne povratne informacije i check-inovi, dostupnost trenera 3 puta tjedno i osnovne smjernice za prehranu.',
+  'Coaching PRO: a personal calisthenics training plan plus a nutrition plan with customisable sample menus, coach availability 5 times a week and weekly feedback.'
+    => 'Coaching PRO: osobni calisthenics plan treninga uz plan prehrane s prilagodljivim primjerima jelovnika, dostupnost trenera 5 puta tjedno i tjedne povratne informacije.',
+  'Apply for 1-on-1 calisthenics coaching with Bruno Zgela. A short form about your goals and experience, so your plan fits you from day one.'
+    => 'Prijavi se za 1-na-1 calisthenics coaching s Brunom Zgelom. Kratki obrazac o tvojim ciljevima i iskustvu, kako bi ti plan odgovarao od prvog dana.',
+  'About Me | Bruno Zgela Coaching' => 'O meni | Bruno Zgela Coaching',
+  'Regular Plan | Bruno Zgela Coaching' => 'Plan REGULAR | Bruno Zgela Coaching',
+  'Pro Plan | Bruno Zgela Coaching' => 'Plan PRO | Bruno Zgela Coaching',
+  'Coaching Application | Bruno Zgela Coaching' => 'Prijava za coaching | Bruno Zgela Coaching',
 );
 
 # Messages written by the pages' scripts (exact text inside the quotes).
@@ -86,7 +102,7 @@ sub fix_paths {
 
 sub translate_tag {
   my $tag = shift;
-  $tag =~ s{\b(alt|placeholder|aria-label|title)="([^"]*)"}{
+  $tag =~ s{\b(alt|placeholder|aria-label|title|content)="([^"]*)"}{
     exists $ATTR{$2} ? qq{$1="$ATTR{$2}"} : qq{$1="$2"}
   }ge;
   return fix_paths($tag);

@@ -154,7 +154,7 @@ const KEYS = {
   coaching_weeks: ['client_id', 'week_start'], coaching_logs: ['client_id', 'week_start', 'day_index'],
   coaching_feedback: ['client_id', 'week_start', 'day_index'], coaching_checkins: ['client_id', 'week_start'],
   coaching_daily: ['client_id', 'day'], coaching_measurements: ['client_id', 'day'], coaching_targets: ['client_id'],
-  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id'], coaching_athlete_foods: ['client_id', 'id'], coaching_intake: ['client_id']
+  coaching_meal_plans: ['client_id'], coaching_guides: ['key'], coaching_foods: ['id'], coaching_meal_choices: ['client_id'], coaching_athlete_foods: ['client_id', 'id'], coaching_meal_templates: ['id'], coaching_intake: ['client_id']
 };
 
 class OfflineError extends Error {}
@@ -758,7 +758,8 @@ function foodSwapOptions(items, itemIndex, target, block) {
 // countable foods (eggs, fruit, slices…) to whole or half pieces, after which the gram foods are fitted again around them.
 // Returns whether the result fits. Foods are never added or removed: that stays Bruno's choice.
 // keepPieces: countable foods stay exactly as they are and only the gram foods move (used after a food swap)
-function fitMealToTarget(meal, target, { keepPieces = false } = {}) {
+// bounds (optional, used by automatic plans): { [item id]: [min g, max g] } keeps each amount sensible
+function fitMealToTarget(meal, target, { keepPieces = false, bounds = null } = {}) {
   const items = meal.items.filter((it) => num(it.g) > 0);
   if (!target?.kcal || !items.length) return false;
   const keys = [['kcal', 25], ['p', 5], ['c', 10], ['f', 5]].filter(([k]) => target[k]);
@@ -767,8 +768,8 @@ function fitMealToTarget(meal, target, { keepPieces = false } = {}) {
   // One least-squares run; `fixed` holds the amounts that must not move (pieces already rounded)
   const solve = (fixed) => {
     let g = start.map((x, i) => fixed[i] ?? x * (target.kcal / Math.max(1, mealTotals(items).kcal)));
-    const lo = start.map((x, i) => fixed[i] ?? (items[i].pc ? pieceStep(items[i].pc) * items[i].pc.g : 5));
-    const hi = start.map((x, i) => fixed[i] ?? Math.max(30, x * 3, items[i].pc ? items[i].pc.g * 3 : 0));
+    const lo = start.map((x, i) => fixed[i] ?? bounds?.[items[i].id]?.[0] ?? (items[i].pc ? pieceStep(items[i].pc) * items[i].pc.g : 5));
+    const hi = start.map((x, i) => fixed[i] ?? bounds?.[items[i].id]?.[1] ?? Math.max(30, x * 3, items[i].pc ? items[i].pc.g * 3 : 0));
     const cost = (gs) => keys.reduce((s, [k, sc], j) => s + ((gs.reduce((acc, x, i) => acc + a[i][j] * x, 0) - target[k]) / sc) ** 2, 0)
       + gs.reduce((s, x, i) => s + 0.02 * ((x - start[i]) / start[i]) ** 2, 0);
     for (let iter = 0; iter < 4000; iter++) {

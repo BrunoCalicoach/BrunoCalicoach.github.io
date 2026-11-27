@@ -74,7 +74,7 @@ function pastedDay(content) {
 // Photos stay in storage: the file lists their names only.
 const BACKUP_TABLES = ['coaching_clients', 'coaching_profiles', 'coaching_intake', 'coaching_drafts', 'coaching_weeks', 'coaching_logs',
   'coaching_feedback', 'coaching_checkins', 'coaching_daily', 'coaching_measurements', 'coaching_targets', 'coaching_meal_plans',
-  'coaching_meal_choices', 'coaching_foods', 'coaching_athlete_foods', 'coaching_guides'];
+  'coaching_meal_choices', 'coaching_foods', 'coaching_athlete_foods', 'coaching_meal_templates', 'coaching_guides'];
 
 async function allRows(table) {
   if (DEMO) return Data.select(table, {});

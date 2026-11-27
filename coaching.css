@@ -57,6 +57,9 @@ p { margin: 0; }
 .coach .topbar-inner, .coach main { max-width: 1920px; }
 .brand { font-weight: 800; letter-spacing: 0.04em; font-size: 13px; color: var(--text); text-decoration: none; }
 .brand span { color: var(--accent-soft); }
+.brand { display: inline-flex; align-items: center; }
+.brand-mark { width: 26px; height: 26px; flex-shrink: 0; display: block; margin-right: 9px; }   /* the BZ logo, as on the website */
+.brand span { margin-left: .3em; }
 .topbar .grow { text-align: right; }
 .demo-bar { background: #3a2c0b; color: #f3d28b; font-size: 13px; text-align: center; padding: 6px 16px; }
 .demo-bar button { margin-left: 8px; }

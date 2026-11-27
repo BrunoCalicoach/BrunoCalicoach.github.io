@@ -8,13 +8,13 @@ use warnings;
 use utf8;
 use open qw(:std :encoding(UTF-8));
 
-my @PAGES = qw(index.html about.html regular.html pro.html apply.html);
+my @PAGES = qw(index.html about.html regular.html pro.html apply.html app.html);
 my %IS_PAGE = map { $_ => 1 } @PAGES;
 my $SITE = 'https://brunozgela.com/';
 
 # Text that stays the same in Croatian (names, brand, email).
 my %KEEP = map { $_ => 1 } ('BRUNO ZGELA COACHING', 'Coaching PRO', 'Coaching REGULAR',
-  'bruno.calicoach@gmail.com', 'PROGRAM');
+  'bruno.calicoach@gmail.com', 'PROGRAM', 'PRO', '(PRO)', 'REGULAR');
 
 # Alt texts, placeholders and labels inside tags.
 my %ATTR = (
@@ -46,6 +46,9 @@ my %ATTR = (
   'Regular Plan | Bruno Zgela Coaching' => 'Plan REGULAR | Bruno Zgela Coaching',
   'Pro Plan | Bruno Zgela Coaching' => 'Plan PRO | Bruno Zgela Coaching',
   'Coaching Application | Bruno Zgela Coaching' => 'Prijava za coaching | Bruno Zgela Coaching',
+  'Email' => 'E-mail',
+  'Every 1-on-1 coaching client gets my coaching app: your weekly plan on your phone, set-by-set logging, my feedback on every workout, progress tracking and, in PRO, meal plans you can swap and an automatic shopping list.'
+    => 'Svaki klijent 1-na-1 coachinga dobiva moju coaching aplikaciju: tjedni plan na mobitelu, bilježenje svake serije, moju povratnu informaciju za svaki trening, praćenje napretka i, u PRO planu, planove prehrane koje možeš mijenjati i automatski popis za kupnju.',
 );
 
 # Messages written by the pages' scripts (exact text inside the quotes).
@@ -81,6 +84,7 @@ sub translate_text {
   if (exists $TEXT{$key}) {
     $used{$key} = 1;
     my ($lead) = $text =~ /^(\s*)/;
+    $lead = '' if $TEXT{$key} =~ /^[,.:;!?)]/;   # no space before punctuation (": ponavljanja")
     my ($trail) = $text =~ /(\s*)$/;
     return $lead . $TEXT{$key} . $trail;
   }
@@ -125,8 +129,12 @@ for my $page (@PAGES) {
 
   # English page: language links in <head>, switch script before </body>.
   my $en = $html;
+  # Language links stay where the page already has them, otherwise they go before </head>.
+  my $links_at = qq{<!--hreflang-->\n};
+  $en =~ s{(?:<link rel="alternate" hreflang="[^"]+" href="[^"]*">\n)+}{$links_at};
   $en =~ s{<link rel="alternate" hreflang="[^"]+" href="[^"]*">\n}{}g;
-  $en =~ s{</head>}{head_links($page) . '</head>'}e;
+  $en =~ s{</head>}{$links_at</head>} unless $en =~ /\Q$links_at\E/;
+  $en =~ s{\Q$links_at\E}{head_links($page)}e;
   $en =~ s{<script src="lang\.js[^"]*"></script>\n}{}g;
   $en =~ s{</body>}{<script src="lang.js?v=1"></script>\n</body>};
   if ($en ne $html) {
@@ -135,9 +143,18 @@ for my $page (@PAGES) {
 
   # Croatian copy.
   my $hr = '';
+  # The phone mockups (<div class="phone">) show the app's own screens, which are in English,
+  # so their text stays English. $phone counts the open <div>s inside one.
+  my $phone = 0;
   for my $part (split /(<!--.*?-->|<script\b.*?<\/script>|<style\b.*?<\/style>|<[^>]+>)/s, $en) {
     next unless defined $part && length $part;
-    if ($part =~ /^<!--/) { $hr .= $part; }
+    if ($phone) {
+      $phone++ if $part =~ /^<div\b/;
+      $phone-- if $part =~ /^<\/div>/;
+      $hr .= $part =~ /^</ ? fix_paths($part) : $part;
+    }
+    elsif ($part =~ /^<div\b[^>]*\bclass="phone"/) { $phone = 1; $hr .= translate_tag($part); }
+    elsif ($part =~ /^<!--/) { $hr .= $part; }
     elsif ($part =~ /^<script/) {
       my $script = $part;
       for my $en_text (keys %SCRIPT) {
@@ -156,6 +173,14 @@ for my $page (@PAGES) {
     else { $hr .= translate_text($part, $page); }
   }
   $hr =~ s{<html lang="en"}{<html lang="hr"};
+  # The Croatian page is its own canonical page.
+  $hr =~ s{<link rel="canonical" href="\Q$SITE\E(?!hr/)}{<link rel="canonical" href="${SITE}hr/};
+
+  # The privacy policy is only in English: say so next to the link on the app page.
+  if ($page eq 'app.html') {
+    $hr =~ s{(<a href="\.\./privacy\.html" class="text-\[#4db8b8\] underline">Pravila privatnosti</a>)(</p>)}{$1 (na engleskom)$2}
+      or die "Privacy policy link not found in hr/app.html";
+  }
 
   # The English level question isn't needed on the Croatian form. Its answer is still sent,
   # so every application email shows the same fields.

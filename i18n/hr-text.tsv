@@ -260,3 +260,181 @@ Join the list	Pridruži se listi
 By joining, you agree to receive emails about the topics you picked. You can unsubscribe at any time. Your details are stored by Brevo, my email service.	Prijavom pristaješ primati e-mailove o temama koje odabereš. Odjaviti se možeš u bilo kojem trenutku. Tvoje podatke čuva Brevo, servis koji koristim za e-mailove.
 Privacy policy	Pravila privatnosti
 Your answers are sent to my email and used only to reply to you.	Tvoji odgovori stižu na moj e-mail i koristim ih samo da ti odgovorim.
+
+# Coaching app sections, index.html (moved here from the hand-made hr/ pages, 2026-11-27)
+Fill in a short starting form in the coaching app, and your personal plan appears right there.	Ispuni kratki početni upitnik u coaching aplikaciji i tvoj osobni plan pojavi se upravo tamo.
+NEW · INCLUDED IN EVERY PLAN	NOVO · UKLJUČENO U SVAKI PLAN
+Your coaching, in one app	Tvoj coaching, u jednoj aplikaciji
+No more PDFs, spreadsheets and lost messages. Your plan, your results, my feedback, your progress and your nutrition live in one app on your phone, and it works even without wifi at the park or the gym.	Bez PDF-ova, tablica i izgubljenih poruka. Tvoj plan, tvoji rezultati, moje povratne informacije, tvoj napredak i tvoja prehrana žive u jednoj aplikaciji na mobitelu, a radi i bez interneta u parku ili teretani.
+See inside the app	Pogledaj aplikaciju
+Choose your plan	Izaberi svoj plan
+Your plan, live	Tvoj plan, odmah
+On your phone the moment I publish it, with every past week saved.	Na mobitelu čim ga objavim, a svaki prošli tjedan ostaje spremljen.
+Log every set	Bilježiš svaku seriju
+Reps, weight and effort in seconds, with last time's numbers and a rest timer.	Ponavljanja, kilaža i napor u sekundi, uz brojke od prošlog puta i tajmer odmora.
+Progress that makes sense	Napredak koji ima smisla
+Weekly weight averages, your real calorie deficit, check-ins and photos.	Tjedni prosjeci težine, tvoj stvarni kalorijski deficit, check-inovi i fotografije.
+Meals you can swap	Obroci koje mijenjaš
+Swap foods and meals on target, plus a shopping list that writes itself.	Zamijeni namirnice i obroke bez izlaska iz cilja, uz popis za kupnju koji se sam piše.
+Coaching app	Coaching aplikacija
+new	novo
+# Coaching app sections, regular.html (moved here from the hand-made hr/ pages, 2026-11-27)
+Built around you	Prilagođeno tebi
+Your goals	Tvoji ciljevi
+Your level	Tvoja razina
+Your equipment	Tvoja oprema
+Your schedule	Tvoje vrijeme
+NEW	NOVO
+Your plan, set-by-set logging, my feedback and your progress, all on your phone	Tvoj plan, bilježenje serija, moje povratne informacije i tvoj napredak, sve na mobitelu
+INCLUDED · THE COACHING APP	UKLJUČENO · COACHING APLIKACIJA
+Your plan, your results, my feedback and your progress live in one app on your phone. I publish your week, you log every set, and I see everything before I plan the next one.	Tvoj plan, tvoji rezultati, moje povratne informacije i tvoj napredak žive u jednoj aplikaciji na mobitelu. Ja objavim tvoj tjedan, ti upišeš svaku seriju, a ja sve vidim prije nego što isplaniram sljedeći.
+Your week, written by me.	Tvoj tjedan, koji pišem ja.
+It appears the moment I publish it, and every past week stays in your history.	Pojavi se čim ga objavim, a svaki prošli tjedan ostaje u tvojoj povijesti.
+Log every set in seconds.	Svaku seriju upišeš u sekundi.
+Reps, weight and effort, with last time's numbers beside them. The rest timer starts by itself and beeps when you're ready.	Ponavljanja, kilaža i napor, uz brojke od prošlog puta. Tajmer odmora krene sam i oglasi se kad si spreman.
+See what's really happening.	Vidi što se stvarno događa.
+Morning weigh-ins become a weekly average and an estimate of your real calorie deficit, next to measurements, check-ins and private photos.	Jutarnja vaganja postaju tjedni prosjek i procjena tvog stvarnog kalorijskog deficita, uz mjere, check-inove i privatne fotografije.
+Your weekly plan	Tvoj tjedni plan
+, on your phone the moment I publish it, with every past week saved	 na mobitelu čim ga objavim, a svaki prošli tjedan ostaje spremljen
+Set-by-set logging	Bilježenje svake serije
+of reps, weight and effort, with last time's numbers beside each exercise	: ponavljanja, kilaža i napor, uz brojke od prošlog puta pored svake vježbe
+A rest timer	Tajmer odmora
+that starts by itself and beeps when you're ready	koji krene sam i oglasi se kad si spreman
+My feedback	Moje povratne informacije
+on each training day and on your whole week	za svaki trening i za cijeli tjedan
+Weekly weight averages	Tjedni prosjeci težine
+and your estimated calorie deficit or surplus	i procjena tvog kalorijskog deficita ili suficita
+, measurements and private progress photos	, mjere i privatne fotografije napretka
+Calorie, macro and water targets	Ciljevi kalorija, makronutrijenata i vode
+, plus daily steps	, uz dnevne korake
+Works without wifi	Radi bez interneta
+at the park or the gym, on any phone	u parku ili teretani, na svakom mobitelu
+Want meal plans you can swap and a shopping list that writes itself? That's in	Želiš planove prehrane koje možeš mijenjati i popis za kupnju koji se sam piše? To dobivaš u paketu
+See everything inside the app	Pogledaj sve u aplikaciji
+# Coaching app sections, pro.html (moved here from the hand-made hr/ pages, 2026-11-27)
+Your training plan, meal plans with swaps, shopping list and progress, all on your phone	Tvoj plan treninga, planovi prehrane sa zamjenama, popis za kupnju i napredak, sve na mobitelu
+Training and nutrition, in one app	Trening i prehrana, u jednoj aplikaciji
+Your training plan, your meal plan, my feedback and your progress live in one app on your phone. Swap foods and meals whenever you like and your macros stay on target, and your shopping list updates itself.	Tvoj plan treninga, tvoj plan prehrane, moje povratne informacije i tvoj napredak žive u jednoj aplikaciji na mobitelu. Mijenjaj namirnice i obroke kad god želiš, makronutrijenti ostaju u cilju, a popis za kupnju se sam ažurira.
+A meal plan built for you.	Plan prehrane napravljen za tebe.
+Four plans to rotate, every meal weighed out and matched to your calories and macros.	Četiri plana koja izmjenjuješ, svaki obrok odvagan i usklađen s tvojim kalorijama i makronutrijentima.
+A shopping list that writes itself.	Popis za kupnju koji se sam piše.
+Everything your meal plan needs for the days you shop for, grouped by aisle. Tick it off as you go.	Sve što tvoj plan prehrane traži za dane za koje kupuješ, složeno po odjeljcima. Označi kvačicom dok kupuješ.
+Four personal meal plans	Četiri osobna plana prehrane
+, every meal weighed out and matched to your calories and macros	, svaki obrok odvagan i usklađen s tvojim kalorijama i makronutrijentima
+Smart swaps	Pametne zamjene
+: change a food or a whole meal and stay on target, with your allergies filtered out	: promijeni namirnicu ili cijeli obrok i ostani u cilju, bez tvojih alergena
+An automatic shopping list	Automatski popis za kupnju
+for the days you shop for, grouped by aisle, with tick boxes	za dane za koje kupuješ, složen po odjeljcima, s kvačicama
+A barcode scanner	Skener barkoda
+to add the local foods you have at home, so I can build them into your plan	za lokalne namirnice koje imaš kod kuće, da ih mogu uvrstiti u tvoj plan
+Your weekly training plan	Tvoj tjedni plan treninga
+with set-by-set logging, last time's numbers and a rest timer	s bilježenjem serija, brojkama od prošlog puta i tajmerom odmora
+, your real calorie deficit, check-ins, measurements and private photos	, tvoj stvarni kalorijski deficit, check-inovi, mjere i privatne fotografije
+Water tracker and daily steps	Praćenje vode i dnevnih koraka
+, and it works without wifi on any phone	, a radi i bez interneta, na svakom mobitelu
+# Coaching app sections, app.html (moved here from the hand-made hr/ pages, 2026-11-27)
+The Coaching App | Bruno Zgela Coaching	Coaching aplikacija | Bruno Zgela Coaching
+THE COACHING APP · INCLUDED IN 1&#8209;ON&#8209;1 COACHING	COACHING APLIKACIJA · UKLJUČENA U 1&#8209;NA&#8209;1 COACHING
+Your coach,	Tvoj trener,
+in your pocket	u tvom džepu
+Your plan, your results, my feedback, your progress and your nutrition in one app on your phone. No spreadsheets, no lost messages, no guessing what to do next.	Tvoj plan, tvoji rezultati, moje povratne informacije, tvoj napredak i tvoja prehrana u jednoj aplikaciji na mobitelu. Bez tablica, bez izgubljenih poruka, bez pogađanja što dalje.
+Apply for coaching	Prijavi se za coaching
+Plan written by me	Plan pišem ja
+Every set logged	Bilježiš svaku seriju
+Only you and I see it	Vidimo ga samo ti i ja
+Online coaching, minus the chaos	Online coaching, bez kaosa
+Most online coaching lives in a PDF, a spreadsheet and a chat. Here everything we do together is in one place, and nothing gets lost.	Većina online coachinga živi u PDF-u, tablici i chatu. Ovdje je sve što radimo zajedno na jednom mjestu i ništa se ne gubi.
+Typical online coaching	Uobičajeni online coaching
+A PDF or spreadsheet you scroll through at the bar	PDF ili tablica koju listaš između serija
+Your results scribbled in a notes app, or not at all	Rezultati zapisani u bilješkama na mobitelu, ili nigdje
+Feedback buried somewhere in a chat	Povratne informacije zakopane negdje u chatu
+One calorie number, then you're on your own	Jedan broj kalorija, a dalje se snalaziš sam
+A fixed meal plan you get bored of in a week	Fiksni plan prehrane koji ti dosadi za tjedan dana
+With my app	Uz moju aplikaciju
+Everything in one place	Sve na jednom mjestu
+Your week on your phone the moment I publish it	Tvoj tjedan na mobitelu čim ga objavim
+Log every set in seconds, with last time's numbers beside it	Svaku seriju upišeš u sekundi, uz brojke od prošlog puta
+My feedback right on each workout	Moja povratna informacija točno uz trening na koji se odnosi
+Weekly weight averages that show your real calorie deficit	Tjedni prosjeci težine koji pokazuju tvoj stvarni kalorijski deficit
+Meal plans you can swap and a shopping list that writes itself	Planovi prehrane koje možeš mijenjati i popis za kupnju koji se sam piše
+INSIDE THE APP	UNUTAR APLIKACIJE
+Made for the gym, the park and the kitchen	Napravljena za teretanu, park i kuhinju
+The app's own screens, shown here with example data.	Prave stranice aplikacije, ovdje s primjerima podataka. Aplikacija je zasad na engleskom.
+Swap anything, stay on target.	Zamijeni bilo što i ostani u cilju.
+Tap a food or a whole meal and pick from options that keep your day's macros right. Allergies are filtered out.	Dodirni namirnicu ili cijeli obrok i izaberi zamjenu koja čuva makronutrijente dana. Tvoji alergeni se automatski izbacuju.
+How we work together	Kako radimo zajedno
+From your first login to your next personal best, the app is where it happens.	Od prve prijave do novog osobnog rekorda, sve se događa u aplikaciji.
+Tell me about you	Reci mi nešto o sebi
+When you first log in, a short starting form asks about your training, goals, injuries, schedule and eating habits, so I know exactly where you're starting from.	Kad se prvi put prijaviš, kratki početni upitnik pita o treningu, ciljevima, ozljedama, rasporedu i prehrambenim navikama, da točno znam odakle krećeš.
+I write your training plan week by week. The moment I publish it, it's on your phone, with my notes on every exercise.	Plan treninga pišem tjedan po tjedan. Čim ga objavim, imaš ga na mobitelu, s mojim bilješkama za svaku vježbu.
+Train and log	Treniraj i bilježi
+Follow the plan, enter your reps, weight and effort, and leave a note. It works without wifi and syncs when you're back online.	Prati plan, upiši ponavljanja, kilažu i napor te ostavi bilješku. Radi i bez interneta i sve se pošalje kad se ponovno spojiš.
+Check in weekly	Tjedni check-in
+Rate your week, add your measurements and ask your questions. Your weigh-ins and steps are already there.	Ocijeni svoj tjedan, dodaj mjere i postavi pitanja. Vaganja i koraci su već tu.
+Get feedback, level up	Povratna informacija i napredak
+I read everything, reply on your workouts and adjust next week's plan, so every week builds on the last.	Pročitam sve, odgovorim na tvoje treninge i prilagodim plan za sljedeći tjedan, tako da se svaki tjedan nadovezuje na prethodni.
+Everything inside	Sve što je unutra
+Weekly plan and full history	Tjedni plan i cijela povijest
+This week at a glance with a ring for workouts done, and every past week a tap away.	Ovaj tjedan na prvi pogled, s krugom odrađenih treninga, a svaki prošli tjedan na jedan dodir.
+Reps, weight and RPE for every set, with your previous results shown beside each exercise.	Ponavljanja, kilaža i RPE za svaku seriju, uz tvoje prethodne rezultate pored svake vježbe.
+Rest timer	Tajmer odmora
+Starts when you log a set, turns green at your minimum rest, and vibrates and beeps when it's time.	Krene kad upišeš seriju, pozeleni kad prođe minimalni odmor, a zavibrira i oglasi se kad je vrijeme.
+Feedback on your workouts	Povratne informacije na treninge
+My notes on each training day and on your whole week, right where you'll see them.	Moje bilješke za svaki trening i za cijeli tjedan, točno tamo gdje ćeš ih vidjeti.
+Weight that makes sense	Težina koja ima smisla
+Daily weigh-ins turned into weekly averages and an estimate of your real calorie deficit or surplus.	Dnevna vaganja pretvorena u tjedne prosjeke i procjenu tvog stvarnog kalorijskog deficita ili suficita.
+Check-ins, measurements, photos	Check-in, mjere, fotografije
+A weekly check-in, tape measurements with changes since day one, and progress photos only we can see.	Tjedni check-in, mjere s promjenom od prvog dana i fotografije napretka koje vidimo samo ti i ja.
+Calculated from your details and goal, then fine-tuned by me. A water tracker and daily steps included.	Izračunati iz tvojih podataka i cilja, a onda ih ja fino podesim. Uz to praćenje vode i dnevni koraci.
+Meal plans you can swap	Planovi prehrane koje možeš mijenjati
+Four personal plans to rotate. Swap a single food or a whole meal and your macros stay on target, with your allergies filtered out.	Četiri osobna plana koja izmjenjuješ. Zamijeni jednu namirnicu ili cijeli obrok, a makronutrijenti ostaju u cilju, bez tvojih alergena.
+Shopping list and barcode scanner	Popis za kupnju i skener barkoda
+An automatic shopping list for the days you shop for, and a scanner to add the local foods you have at home.	Automatski popis za kupnju za dane za koje kupuješ i skener za lokalne namirnice koje imaš kod kuće.
+Works on any phone in the browser: add it to your home screen and it opens like an app. Download a workout as a PDF or an image for the gym.	Radi na svakom mobitelu u pregledniku: dodaj je na početni zaslon i otvara se kao aplikacija. Trening možeš preuzeti i kao PDF ili sliku za teretanu.
+What's in your plan	Što je u tvom planu
+Every coaching client gets the app. PRO adds the full nutrition side.	Svaki klijent dobiva aplikaciju. PRO dodaje cijeli dio o prehrani.
+In the app	U aplikaciji
+Training	Trening
+Personal weekly plan, written by me	Osobni tjedni plan koji pišem ja
+Set-by-set logging, rest timer, works offline	Bilježenje serija, tajmer odmora, radi bez interneta
+My feedback on your workouts and week	Moje povratne informacije na treninge i tjedan
+Progress	Napredak
+Weigh-ins, weekly averages, calorie balance	Vaganja, tjedni prosjeci, kalorijski balans
+Weekly check-in, measurements, progress photos	Tjedni check-in, mjere, fotografije napretka
+Daily steps	Dnevni koraci
+Nutrition	Prehrana
+Calorie and macro targets, water tracker	Ciljevi kalorija i makronutrijenata, praćenje vode
+Four personal meal plans with smart swaps	Četiri osobna plana prehrane s pametnim zamjenama
+Automatic shopping list	Automatski popis za kupnju
+Barcode scanner for the foods you have at home	Skener barkoda za namirnice koje imaš kod kuće
+from 180€ / month	od 180€ / mjesečno
+from 280€ / month	od 280€ / mjesečno
+Your data stays between us	Tvoji podaci ostaju između nas
+Your body, your health, your progress. I treat it that way.	Tvoje tijelo, tvoje zdravlje, tvoj napredak. Tako se i odnosim prema njima.
+Only you and me	Samo ti i ja
+The database itself makes sure every client sees only their own data. Progress photos sit in private storage.	Sama baza podataka osigurava da svaki klijent vidi samo svoje podatke. Fotografije napretka su u privatnoj pohrani.
+Stored in the EU	Pohranjeno u EU
+Everything is kept on servers in Frankfurt, Germany, under the GDPR. No ads, no tracking, never sold.	Sve je na poslužiteljima u Frankfurtu u Njemačkoj, u skladu s GDPR-om. Bez oglasa, bez praćenja, nikad se ne prodaje.
+Yours to take or delete	Tvoji za preuzimanje ili brisanje
+Ask for a copy of your data or have it deleted at any time.	Zatraži kopiju svojih podataka ili njihovo brisanje u bilo kojem trenutku.
+Questions	Pitanja
+Do I need to install anything?	Moram li nešto instalirati?
+No. The app runs in your phone's browser after you log in, on iPhone and Android. Add it to your home screen and it opens like any other app.	Ne. Aplikacija radi u pregledniku na mobitelu nakon prijave, na iPhoneu i Androidu. Dodaj je na početni zaslon i otvara se kao svaka druga aplikacija.
+What if there's no signal where I train?	Što ako tamo gdje treniram nema signala?
+Once it's on your home screen, your plan works offline. Everything you log is kept on your phone and sent as soon as you're back online. You can also download a workout as a PDF or an image.	Kad je aplikacija na početnom zaslonu, tvoj plan radi i bez interneta. Sve što upišeš čuva se na mobitelu i pošalje se čim se ponovno spojiš. Trening možeš preuzeti i kao PDF ili sliku.
+Can I still message you on WhatsApp?	Mogu li ti i dalje pisati na WhatsApp?
+Yes. The app holds your plan, results and progress; WhatsApp stays for quick questions and your form videos, 3 or 5 days a week depending on your plan.	Da. Aplikacija čuva tvoj plan, rezultate i napredak, a WhatsApp ostaje za brza pitanja i snimke tvoje tehnike, 3 ili 5 dana tjedno, ovisno o planu.
+Do I have to log everything?	Moram li bilježiti baš sve?
+The more you log, the better I can coach you, but it takes seconds: your workouts, a morning weigh-in and a weekly check-in are the core. Steps, water and measurements are there when you want them.	Što više bilježiš, to te bolje mogu voditi, ali to traje sekunde: treninzi, jutarnje vaganje i tjedni check-in su osnova. Koraci, voda i mjere su tu kad ih želiš.
+How does the meal plan handle allergies and foods I don't like?	Kako plan prehrane uzima u obzir alergije i hranu koju ne voliš?
+You tell me in your starting form. Foods with your allergens or on your avoid list never appear in your plan or in your swap options. And if you have local products at home, scan their barcode and I can build them into your plan.	Napišeš mi to u početnom upitniku. Namirnice s tvojim alergenima ili s tvog popisa za izbjegavanje nikad se ne pojavljuju u planu ni među zamjenama. A ako imaš lokalne proizvode kod kuće, skeniraj im barkod i mogu ih uvrstiti u tvoj plan.
+Who can see my data?	Tko može vidjeti moje podatke?
+Only you and me. Your data is stored in the EU, never shared or sold, and you can ask me to delete it at any time. Details are in the	Samo ti i ja. Podaci su pohranjeni u EU, nikad se ne dijele ni prodaju, a u bilo kojem trenutku možeš zatražiti njihovo brisanje. Detalji su u
+privacy policy	pravilima privatnosti
+Can I switch from REGULAR to PRO later?	Mogu li kasnije prijeći s REGULAR na PRO?
+Yes. Your history stays exactly where it is, and the meal plans, swaps and shopping list unlock in the same app.	Da. Tvoja povijest ostaje točno gdje je, a planovi prehrane, zamjene i popis za kupnju otključavaju se u istoj aplikaciji.
+Is the app in Croatian?	Je li aplikacija na hrvatskom?
+It's in English for now. A Croatian version is on the way.	Zasad je na engleskom. Hrvatska verzija je u pripremi.
+Train with a coach, not with a PDF.	Treniraj s trenerom, a ne s PDF-om.
+Spots are limited, so I can coach every athlete properly.	Broj mjesta je ograničen, kako bih svakog sportaša mogao voditi kako treba.
+Apply now	Prijavi se

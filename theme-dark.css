@@ -401,3 +401,9 @@ a.lang-option:hover { color: #ffffff; }
   height: 44px;
   padding: 0;
 }
+
+/* Logo next to the name in the top bar and the footer (icons/logo-mark.svg) */
+.brand { display: inline-flex; align-items: center; gap: 10px; line-height: 1.15; }
+.brand-mark { width: 30px; height: 30px; flex-shrink: 0; display: block; }
+.brand-footer .brand-mark { width: 40px; height: 40px; }
+@media (max-width: 400px) { .brand { gap: 8px; } .brand-mark { width: 26px; height: 26px; } }

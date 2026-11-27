@@ -51,6 +51,23 @@ function remember() {
 }
 
 const client = () => C.clients.find((c) => c.user_id === C.current);
+const clientName = () => client()?.name || 'The athlete';
+
+// A copied workout day (exercises, title, description), kept while the coach page is open: paste it into any week of any athlete
+let DAY_CLIPBOARD = null;
+
+// Titles like "DAY 3" (or "Dan 3") follow the order of the days; other titles stay as they are
+function renumberDays(days) {
+  days.forEach((d, i) => { const m = String(d.title || '').match(/^(\s*(?:day|dan)\s*)\d+(\s*)$/i); if (m) d.title = `${m[1]}${i + 1}${m[2]}`; });
+}
+
+// The copied day with new ids; columns it uses that this week does not have yet are added to the week
+function pastedDay(content) {
+  const copy = clone(DAY_CLIPBOARD.day);
+  copy.id = uid(); copy.rows.forEach((r) => { r.id = uid(); });
+  for (const col of DAY_CLIPBOARD.columns || []) if (!content.columns.some((c) => c.key === col.key)) content.columns.push(clone(col));
+  return copy;
+}
 
 /* ---------- Layout ---------- */
 
@@ -256,7 +273,13 @@ function renderPlan(body) {
       el('div', { class: 'row' },
         previous ? el('button', { class: 'btn primary', onclick: () => createWeek(clone(previous.content), nextLabel(previous.label)) }, `Copy ${previous.label || 'the previous week'} (${weekRange(previous.week_start)})`) : null,
         el('button', { class: 'btn', onclick: () => createWeek(emptyContent(), previous ? nextLabel(previous.label) : 'Week 1') }, 'Start empty'),
-        el('button', { class: 'btn', onclick: copyFromDialog }, 'Copy from another athlete or week')),
+        el('button', { class: 'btn', onclick: copyFromDialog }, 'Copy from another athlete or week'),
+        // A day copied with ⋮ → Copy day: start this week with just that day
+        DAY_CLIPBOARD ? el('button', { class: 'btn', onclick: () => {
+          const fresh = emptyContent(); fresh.days = []; DAY_CLIPBOARD.columns && (fresh.columns = clone(DAY_CLIPBOARD.columns));
+          fresh.days.push(pastedDay(fresh)); renumberDays(fresh.days);
+          createWeek(fresh, previous ? nextLabel(previous.label) : 'Week 1');
+        } }, `Start with the copied ${DAY_CLIPBOARD.day.title || 'day'}${DAY_CLIPBOARD.from ? ` (${DAY_CLIPBOARD.from})` : ''}`) : null),
       el('p', { class: 'small muted' }, 'Copying keeps every exercise, so the athlete sees "last time" results next to each one. Change only what is different, then publish.')));
     return;
   }
@@ -276,9 +299,11 @@ function renderPlan(body) {
   const resultsWeekPlan = C.d.weeks.find((w) => w.week_start === resultsWeek);
   const logsFor = (i) => C.d.logs.find((l) => l.week_start === resultsWeek && l.day_index === i);
   const resultFor = (dayIndex, row) => {
+    // The same exercise row in any day of that week (it stays found after the days were moved)
+    const byRow = C.d.logs.find((l) => l.week_start === resultsWeek && l.entries?.[row.id]);
+    if (byRow) return resultText(byRow.entries[row.id]);
     const log = logsFor(dayIndex);
     if (!log) return '';
-    if (log.entries?.[row.id]) return resultText(log.entries[row.id]);
     // Same exercise name anywhere in that week's day
     const name = String(row.c.name || '').trim().toLowerCase();
     const other = resultsWeekPlan?.content.days?.[dayIndex]?.rows?.find((r) => String(r.c.name || '').trim().toLowerCase() === name);
@@ -326,17 +351,43 @@ function renderPlan(body) {
     }, 900);
     fb.addEventListener('input', () => { fbState.textContent = 'Saving…'; saveFb(); });
 
-    const move = (to) => { if (to < 0 || to >= content.days.length) return; content.days.splice(to, 0, content.days.splice(i, 1)[0]); drawDays(); changed(); };
+    // Moving, adding or deleting days: titles like "DAY 2" follow the new order, so they never need retyping.
+    // The athlete's results are saved by day position, so warn when this week already has some.
+    const loggedThisWeek = () => C.d.logs.some((l) => l.week_start === C.week);
+    const reorderOk = () => !loggedThisWeek() || confirm(`${clientName()} has already logged workouts this week. Their results are saved by day position, so after this change they may show next to a different day. Continue?`);
+    const restructured = () => { renumberDays(content.days); drawDays(); changed(); };
+    const move = (to) => { if (to < 0 || to >= content.days.length || !reorderOk()) return; content.days.splice(to, 0, content.days.splice(i, 1)[0]); restructured(); };
+    const freshCopy = (d) => { const copy = clone(d); copy.id = uid(); copy.rows.forEach((r) => { r.id = uid(); }); return copy; };
+    const pasteLabel = DAY_CLIPBOARD ? `${DAY_CLIPBOARD.day.title || 'day'}${DAY_CLIPBOARD.from ? ` (${DAY_CLIPBOARD.from})` : ''}` : '';
+    const dayMenu = el('button', { class: 'kebab', type: 'button', 'aria-label': `Options for ${day.title || 'this day'}`, onclick: (e) => popMenu(e.currentTarget, [
+      i > 0 ? ['Move up', () => move(i - 1)] : null,
+      i < content.days.length - 1 ? ['Move down', () => move(i + 1)] : null,
+      ['Duplicate', () => { if (!reorderOk()) return; content.days.splice(i + 1, 0, freshCopy(day)); restructured(); }],
+      ['Copy day', () => {
+        DAY_CLIPBOARD = { day: clone(day), columns: clone(content.columns), from: clientName().split(' ')[0] };
+        toast(`Copied ${day.title || 'the day'}. Open ⋮ on any day, of any athlete and week, and choose Paste.`);
+      }],
+      DAY_CLIPBOARD ? [`Paste ${pasteLabel} after this day`, () => {
+        if (!reorderOk()) return;
+        content.days.splice(i + 1, 0, pastedDay(content)); restructured();
+      }] : null,
+      DAY_CLIPBOARD ? [`Paste ${pasteLabel} over ${day.title || 'this day'}`, () => {
+        if (day.rows.some((r) => String(r.c.name || '').trim()) && !confirm(`Replace every exercise in ${day.title || 'this day'} with the copied ${DAY_CLIPBOARD.day.title || 'day'}?`)) return;
+        const copy = pastedDay(content);
+        Object.assign(day, { subtitle: copy.subtitle, description: copy.description, rows: copy.rows });
+        drawDays(); changed();
+      }] : null,
+      ['Delete day', () => { if (confirm(`Delete ${day.title || 'this day'}?`) && reorderOk()) { content.days.splice(i, 1); restructured(); } }, true]
+    ]) }, '⋮');
     return el('div', { class: 'card day-block' },
       el('div', { class: 'row between', style: 'margin-bottom:10px' },
         el('div', { class: 'row' }, numTag(i + 1), el('span', { class: 'meal-icon' }, icon('pullup', 18)),
           log?.completed_at ? el('span', { class: 'pill good' }, `Done ${niceDate(ymd(log.completed_at))}`) : log ? el('span', { class: 'pill warn' }, 'Started') : null,
           log?.difficulty ? el('span', { class: 'pill' }, `Difficulty ${log.difficulty}/10`) : null),
-        el('div', { class: 'row' },
-          el('button', { class: 'btn small ghost', title: 'Move day up', onclick: () => move(i - 1) }, '↑'),
-          el('button', { class: 'btn small ghost', title: 'Move day down', onclick: () => move(i + 1) }, '↓'),
-          el('button', { class: 'btn small ghost', onclick: () => { const copy = clone(day); copy.id = uid(); copy.rows.forEach((r) => { r.id = uid(); }); content.days.splice(i + 1, 0, copy); drawDays(); changed(); } }, 'Duplicate'),
-          el('button', { class: 'btn small ghost danger', onclick: () => { if (confirm(`Delete ${day.title || 'this day'}?`)) { content.days.splice(i, 1); drawDays(); changed(); } } }, 'Delete day'))),
+        el('div', { class: 'row nowrap', style: 'gap:4px' },
+          el('button', { class: 'btn small ghost', title: 'Move this day up', 'aria-label': 'Move this day up', disabled: i === 0, onclick: () => move(i - 1) }, '↑ Up'),
+          el('button', { class: 'btn small ghost', title: 'Move this day down', 'aria-label': 'Move this day down', disabled: i === content.days.length - 1, onclick: () => move(i + 1) }, '↓ Down'),
+          dayMenu)),
       el('div', { class: 'day-head' }, title, subtitle, desc),
       el('div', { style: 'margin-top:10px' }, sheet.node),
       log?.note ? el('div', { class: 'notice pre', style: 'margin-top:12px' }, el('b', {}, 'Athlete\'s note: '), log.note) : null,

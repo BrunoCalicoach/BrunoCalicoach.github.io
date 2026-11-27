@@ -187,6 +187,16 @@ body{
 <link rel="alternate" hreflang="en" href="https://brunozgela.com/regular.html">
 <link rel="alternate" hreflang="hr" href="https://brunozgela.com/hr/regular.html">
 <link rel="alternate" hreflang="x-default" href="https://brunozgela.com/regular.html">
+<style id="hero-compose">
+  /* Wide screens: the photo is zoomed in and Bruno stands on the right third, beside the text.
+     Set per page with --hero-zoom (photo height) and --hero-x (horizontal position) on the photo. */
+  @media (min-width: 768px) {
+    .hero-photo.hero-photo-wide.hero-photo-right {
+      background-size: auto, auto var(--hero-zoom, 100%) !important;
+      background-position: 0 0, var(--hero-x, 50%) var(--hero-y, 22%) !important;
+    }
+  }
+</style>
 </head>
 
 <!-- PRO PLAN FLOATING POPUP -->
@@ -225,7 +235,7 @@ body{
 <!-- HERO -->
 
 <section class="hero text-white">
-  <div class="hero-photo hero-photo-wide" aria-hidden="true" style="--hero-img:url('folder/regular-wide.webp')"></div>
+  <div class="hero-photo hero-photo-wide hero-photo-right" aria-hidden="true" style="--hero-img:url('folder/regular-wide.webp'); --hero-zoom:143%; --hero-x:38%; --hero-y:100%"></div>
 
 <nav class="max-w-7xl mx-auto px-5 py-6 flex justify-between items-center">
 

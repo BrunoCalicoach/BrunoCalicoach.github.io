@@ -108,6 +108,9 @@ main { max-width: 760px; margin: 0 auto; padding: 20px 16px 110px; }
 }
 textarea.field { min-height: 90px; resize: vertical; }
 .field:focus, .select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,128,128,0.35); }
+/* iPhone (Safari) draws date fields with its own width, which pushed them past the card: use the normal field look instead */
+input.field[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; box-sizing: border-box; min-height: 48px; text-align: left; }
+input.field[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 label.lab { display: block; font-weight: 600; font-size: 14px; }
 label.lab > .field, label.lab > .select { margin-top: 6px; }
 .form-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }

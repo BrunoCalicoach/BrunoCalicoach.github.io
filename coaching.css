@@ -658,6 +658,19 @@ a.chip { text-decoration: none; }
 .video-btn { display: inline-flex; align-items: center; gap: 6px; }
 .video-btn svg { fill: currentColor; }
 .ex-video { position: relative; margin-top: 8px; }
-.ex-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 12px; background: #000; }
-.ex-video.short iframe { aspect-ratio: 9 / 16; max-width: 300px; margin: 0 auto; }
+/* The rounded corners sit on a wrapper with its own layer, not on the iframe: rounding a playing video directly can make it flicker in Safari */
+.ex-video .frame { border-radius: 12px; overflow: hidden; background: #000; isolation: isolate; transform: translateZ(0); -webkit-mask-image: -webkit-radial-gradient(white, black); }
+.ex-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
+.ex-video.short .frame { max-width: 300px; margin: 0 auto; }
+.ex-video.short iframe { aspect-ratio: 9 / 16; }
 .ex-video .video-yt { display: inline-block; margin-top: 4px; }
+/* Exercise library on the Training tab */
+.lib summary { display: flex; align-items: center; gap: 10px; list-style: none; }
+.lib summary::-webkit-details-marker { display: none; }
+.lib-icon { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: rgba(0,128,128,.22); color: var(--accent-soft); }
+.lib-icon svg { fill: currentColor; }
+.lib-list { margin-top: 6px; }
+.lib-item { border-top: 1px solid var(--line); padding: 4px 0 8px; }
+.lib-item:first-child { border-top: 0; }
+.lib-item .video-btn { width: 100%; justify-content: flex-start; border: 0; padding: 10px 2px; font-size: 15px; font-weight: 600; background: none; }
+.lib-item .video-btn.playing { color: var(--accent-soft); }

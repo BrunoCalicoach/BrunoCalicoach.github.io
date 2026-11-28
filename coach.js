@@ -882,7 +882,8 @@ async function renderGuides(content) {
         catch (e) { msg.textContent = 'Not saved: ' + e.message; }
       });
       const def = DEFAULT_GUIDES.find((d) => d.key === g.key);
-      return el('div', { class: 'card stack' }, title, text,
+      const hint = g.key === 'exercise_library' ? el('p', { class: 'small muted' }, 'On the Training tab. One exercise per line: its name, then its YouTube link, for example "Pull ups - https://youtu.be/ZxJQwLQlR8A". Athletes tap a name to watch the video in the app.') : null;
+      return el('div', { class: 'card stack' }, title, hint, text,
         el('div', { class: 'row' }, el('label', { class: 'row small' }, pro, 'PRO only'), el('div', { class: 'grow' }), msg,
           def ? el('button', { class: 'btn ghost small', onclick: async () => { if (confirm('Go back to the default text?')) { await Data.remove('coaching_guides', { key: g.key }); render(); } } }, 'Default text') : null, save));
     })));

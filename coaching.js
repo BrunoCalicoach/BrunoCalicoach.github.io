@@ -412,6 +412,7 @@ function renderTraining(weekStart) {
     el('div', { class: 'section-title' }, 'All weeks'),
     ...history,
     el('div', { class: 'section-title' }, 'Guides'),
+    exerciseLibrary(),
     guideCard('rpe')));
 }
 
@@ -562,24 +563,50 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
     noteWrap);
 }
 
+/* Exercise library (Training tab): Bruno's demonstration videos in one list, each one plays right in the list.
+   The list is the "Exercise library" guide text (one exercise per line), so Bruno edits it under Guide texts. */
+function exerciseLibrary() {
+  const g = guide('exercise_library');
+  const items = parseExerciseLibrary(g?.body);
+  if (!items.length) return null;
+  const list = el('div', { class: 'lib-list' });
+  const draw = (q = '') => {
+    const words = plainSearch(q).split(/\s+/).filter(Boolean);
+    const shown = items.filter((it) => words.every((w) => plainSearch(it.name).includes(w)));
+    list.replaceChildren(...shown.map((it) => el('div', { class: 'lib-item' }, videoBlock(it.url, it.name, it.name))),
+      shown.length ? null : el('p', { class: 'small muted' }, 'No exercise with that name yet.'));
+  };
+  draw();
+  const search = items.length > 6 ? el('input', { class: 'field', type: 'search', placeholder: 'Find an exercise', style: 'margin-top:10px' }) : null;
+  search?.addEventListener('input', () => draw(search.value));
+  return el('details', { class: 'card lib' },
+    el('summary', { style: 'cursor:pointer;font-weight:700' }, el('span', { class: 'lib-icon' }, icon('play', 14)), g.title || 'Exercise library',
+      el('span', { class: 'small muted', style: 'font-weight:500;margin-left:6px' }, `${items.length} video${items.length > 1 ? 's' : ''}`)),
+    el('p', { class: 'small soft', style: 'margin-top:8px' }, 'How I want each exercise done. Tap one to watch it here.'),
+    search, list);
+}
+const plainSearch = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
 /* Exercise video: a YouTube link plays right here (YouTube's privacy-enhanced player, loaded only on a tap, so nothing
    reaches YouTube before that); any other link opens in a new tab as before. */
-function videoBlock(url, name) {
+function videoBlock(url, name, buttonText = 'Watch the video') {
   const yt = youtubeInfo(url);
-  if (!yt) return el('a', { class: 'btn small ghost video-btn', href: url, target: '_blank', rel: 'noopener' }, icon('play', 14), 'Watch the video');
+  if (!yt) return el('a', { class: 'btn small ghost video-btn', href: url, target: '_blank', rel: 'noopener' }, icon('play', 14), buttonText);
   const holder = el('div', { class: 'ex-video hidden' + (yt.short ? ' short' : '') });
-  const label = el('span', {}, 'Watch the video');
+  const label = el('span', {}, buttonText);
   const btn = el('button', { class: 'btn small ghost video-btn', type: 'button', 'aria-expanded': 'false', onclick: () => {
     const open = holder.classList.contains('hidden');
     if (open && !navigator.onLine) { toastMsg('Videos need an internet connection.'); return; }
+    if (open) document.querySelectorAll('.video-btn.playing').forEach((b) => b !== btn && b.click());   // one video at a time
     holder.classList.toggle('hidden', !open);
     btn.setAttribute('aria-expanded', String(open));
-    label.textContent = open ? 'Hide the video' : 'Watch the video';
+    label.textContent = open && buttonText === 'Watch the video' ? 'Hide the video' : buttonText;
+    btn.classList.toggle('playing', open);
     if (open) {
       const q = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0', modestbranding: '1' });
       if (yt.start) q.set('start', String(yt.start));
-      holder.replaceChildren(el('iframe', { src: `https://www.youtube-nocookie.com/embed/${yt.id}?${q}`, title: `Video: ${name || 'exercise'}`,
-        allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, referrerPolicy: 'strict-origin-when-cross-origin' }),
+      holder.replaceChildren(el('div', { class: 'frame' }, el('iframe', { src: `https://www.youtube-nocookie.com/embed/${yt.id}?${q}`, title: `Video: ${name || 'exercise'}`,
+        allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, referrerPolicy: 'strict-origin-when-cross-origin' })),
         el('a', { class: 'tiny muted video-yt', href: `https://www.youtube.com/watch?v=${yt.id}${yt.start ? `&t=${yt.start}s` : ''}`, target: '_blank', rel: 'noopener' }, 'Open in YouTube'));
     } else holder.replaceChildren();   // closing stops the video
   } }, icon('play', 14), label);

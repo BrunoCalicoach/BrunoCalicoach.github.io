@@ -216,7 +216,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v9';
+const DEMO_KEY = 'coaching-demo-db-v10';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -1037,6 +1037,18 @@ const Calc = {
 /* ---------- Guide texts (Bruno can replace any of them in coach.html > Guides) ---------- */
 
 const DEFAULT_GUIDES = [
+  // The exercise library on the Training tab: one exercise per line, its name, then its YouTube link (Bruno edits it under Guide texts)
+  { key: 'exercise_library', title: 'Exercise library', sort: 0, pro_only: false, body:
+`Pull ups - https://youtu.be/ZxJQwLQlR8A
+Chin ups - https://youtu.be/3LJL1SGJRgI
+Tempo pull ups - https://youtu.be/NLXgDuF41TQ
+Scapula pull ups - https://youtu.be/ORZb0jyIqQM
+Pull ups with resistance band - https://youtu.be/nyukMKI-eAw
+Bodyweight rows - https://youtu.be/rZh7jaGAgZQ
+Push ups - https://youtu.be/OmvQXUTFZv8
+Inclined push ups - https://youtu.be/gHReqkXLWWk
+Dips - https://youtu.be/vB0jOPge8s4
+Pistol squats with support - https://youtu.be/lmlGqj43KZ4` },
   { key: 'rpe', title: 'RPE scale (rate of perceived exertion)', sort: 1, pro_only: false, body:
 `Based on reps in reserve: how many more good reps you could have done.
 
@@ -1261,13 +1273,10 @@ function demoSeed() {
   const thisWeek = mondayOf();
   const lastWeek = addDays(thisWeek, -7);
   const twoAgo = addDays(thisWeek, -14);
-  // Bruno's YouTube demonstrations (his own channel), shown in the app's player
-  const VIDEOS = { 'Pull Ups': 'https://youtu.be/ZxJQwLQlR8A', 'Tempo Pull Ups (3 - 1 - 3)': 'https://youtu.be/NLXgDuF41TQ', 'Dips': 'https://youtu.be/vB0jOPge8s4',
-    'Push Ups on Parallettes': 'https://youtu.be/OmvQXUTFZv8', 'Bodyweight Rows + Push Ups SUPERSET': 'https://youtu.be/rZh7jaGAgZQ', 'Dips w/ Top Hold': 'https://youtu.be/vB0jOPge8s4' };
-  const row = (name, weight, sets, reps, rest, rpe, notes = '') => ({ id: uid(), kind: 'ex', c: { name, weight, sets, reps, rest, rpe, notes, ...(VIDEOS[name] ? { video: VIDEOS[name] } : {}) } });
+  const row = (name, weight, sets, reps, rest, rpe, notes = '') => ({ id: uid(), kind: 'ex', c: { name, weight, sets, reps, rest, rpe, notes } });
   const section = (name) => ({ id: uid(), kind: 'section', c: { name } });
   const plan = (pullTop) => ({
-    columns: [...clone(DEFAULT_COLUMNS), { key: 'video', label: 'Video', width: 200 }], note: '',
+    columns: clone(DEFAULT_COLUMNS), note: '',
     days: [
       { id: 'd1', title: 'DAY 1', subtitle: 'PUSH WEIGHTED + BODYWEIGHT PULL', description: '', rows: [
         row('Weighted Dips', '40kg', '3', '3 - 6', '2 - 3 min', '8 - 9'),
@@ -1414,4 +1423,13 @@ const URL_RE = /https?:\/\/[^\s<>"']+/gi;
 function rowVideo(row) {
   const urls = Object.values(row?.c || {}).flatMap((v) => String(v || '').match(URL_RE) || []);
   return urls.find((u) => youtubeInfo(u)) || urls[0] || null;   // a YouTube link first, any other link otherwise
+}
+// The exercise library text -> [{ name, url }]: one exercise per line, "Name - link" (also "Name: link", "Name | link" or "Name link")
+function parseExerciseLibrary(body) {
+  return String(body || '').split(/\r?\n/).map((line) => {
+    const url = (line.match(URL_RE) || [])[0];
+    if (!url) return null;
+    const name = line.replace(url, '').replace(/[\s\-–—:|]+$/, '').replace(/^[\s\-–—•*\d.)]+/, '').trim();
+    return { name: name || 'Video', url };
+  }).filter(Boolean);
 }

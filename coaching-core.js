@@ -1,4 +1,7 @@
-// Shared code for the 1-on-1 coaching app (coaching.html for athletes, coach.html for Bruno).
+function rowVideo(row) {
+  const urls = Object.values(row?.c || {}).flatMap((v) => String(v || '').match(URL_RE) || []);
+  return urls.find((u) => youtubeInfo(u)) || urls[0] || null;   // YouTube first, any other link otherwise
+}// Shared code for the 1-on-1 coaching app (coaching.html for athletes, coach.html for Bruno).
 // Separate from the challenge: own tables (supabase/coaching.sql), same Supabase project and login.
 // The publishable key is public by design; row level security limits every athlete to their own rows.
 // Add ?demo to either page to try everything with sample data kept only in this browser.
@@ -50,6 +53,7 @@ const ICONS = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   timer: '<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 2M10 3h4"/>',
+  play: '<path d="M7 4.5v15l12.5-7.5z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
@@ -212,7 +216,7 @@ const SupabaseBackend = {
 };
 
 /* Demo: the same tables kept in localStorage, shared by coach.html?demo and coaching.html?demo */
-const DEMO_KEY = 'coaching-demo-db-v8';
+const DEMO_KEY = 'coaching-demo-db-v9';
 const DemoBackend = {
   load() {
     try { const saved = JSON.parse(localStorage.getItem(DEMO_KEY)); if (saved) return saved; } catch (e) { /* fall through */ }
@@ -1257,10 +1261,13 @@ function demoSeed() {
   const thisWeek = mondayOf();
   const lastWeek = addDays(thisWeek, -7);
   const twoAgo = addDays(thisWeek, -14);
-  const row = (name, weight, sets, reps, rest, rpe, notes = '') => ({ id: uid(), kind: 'ex', c: { name, weight, sets, reps, rest, rpe, notes } });
+  // Bruno's YouTube demonstrations (his own channel), shown in the app's player
+  const VIDEOS = { 'Pull Ups': 'https://youtu.be/ZxJQwLQlR8A', 'Tempo Pull Ups (3 - 1 - 3)': 'https://youtu.be/NLXgDuF41TQ', 'Dips': 'https://youtu.be/vB0jOPge8s4',
+    'Push Ups on Parallettes': 'https://youtu.be/OmvQXUTFZv8', 'Bodyweight Rows + Push Ups SUPERSET': 'https://youtu.be/rZh7jaGAgZQ', 'Dips w/ Top Hold': 'https://youtu.be/vB0jOPge8s4' };
+  const row = (name, weight, sets, reps, rest, rpe, notes = '') => ({ id: uid(), kind: 'ex', c: { name, weight, sets, reps, rest, rpe, notes, ...(VIDEOS[name] ? { video: VIDEOS[name] } : {}) } });
   const section = (name) => ({ id: uid(), kind: 'section', c: { name } });
   const plan = (pullTop) => ({
-    columns: clone(DEFAULT_COLUMNS), note: '',
+    columns: [...clone(DEFAULT_COLUMNS), { key: 'video', label: 'Video', width: 200 }], note: '',
     days: [
       { id: 'd1', title: 'DAY 1', subtitle: 'PUSH WEIGHTED + BODYWEIGHT PULL', description: '', rows: [
         row('Weighted Dips', '40kg', '3', '3 - 6', '2 - 3 min', '8 - 9'),
@@ -1390,3 +1397,21 @@ function demoSeed() {
     lastTap = now;
   }, { passive: false });
 })();
+
+/* ---------- Exercise videos: Bruno's YouTube links, played inside the app ---------- */
+
+// A YouTube link in any of its forms (youtu.be/…, watch?v=…, shorts/…, embed/…, live/…) -> { id, start, short }, else null
+function youtubeInfo(text) {
+  const s = String(text || '');
+  const m = s.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#\s]*&)?v=|embed\/|shorts\/|live\/|v\/))([\w-]{11})/i);
+  if (!m) return null;
+  const t = s.match(/[?&#](?:t|start)=(?:(\d+)h)?(?:(\d+)m)?(\d+)?s?/i);
+  const start = t ? (Number(t[1] || 0) * 3600 + Number(t[2] || 0) * 60 + Number(t[3] || 0)) : 0;
+  return { id: m[1], start, short: /\/shorts\//i.test(s) };
+}
+const URL_RE = /https?:\/\/[^\s<>"']+/gi;
+// The first video link in an exercise row (a Video column, the notes or any other cell)
+function rowVideo(row) {
+  const urls = Object.values(row?.c || {}).flatMap((v) => String(v || '').match(URL_RE) || []);
+  return urls.find((u) => youtubeInfo(u)) || urls[0] || null;   // a YouTube link first, any other link otherwise
+}

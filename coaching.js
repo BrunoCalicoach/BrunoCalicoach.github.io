@@ -513,7 +513,10 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
   const chips = el('div', { class: 'targets' });
   const chip = (label, value) => { if (value && value !== '/') chips.append(el('div', { class: 'target' }, el('span', { class: 'tlabel' }, label), el('b', {}, value))); };
   chip('Sets', row.c.sets); chip('Reps', row.c.reps); chip('Weight', row.c.weight); chip('Rest', row.c.rest); chip('RPE', row.c.rpe);
-  for (const col of extraCols) chip(col.label, row.c[col.key]);
+  // A cell that is only a link (e.g. a Video column) becomes the video button below, not a tile
+  for (const col of extraCols) { const v = String(row.c[col.key] || '').trim(); if (!/^https?:\/\/\S+$/i.test(v)) chip(col.label, row.c[col.key]); }
+  const videoUrl = rowVideo(row);
+  const notesText = String(row.c.notes || '').replace(URL_RE, '').trim();   // links in the notes show as the video button
 
   const body = el('tbody');
   const weightTargets = (i) => targetForSet(row.c.weight === '/' ? '' : row.c.weight, i, entry.sets.length);
@@ -546,8 +549,8 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
       rest ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: 'Start the rest timer', onclick: () => startTimer(rest, row.c.name) }, icon('timer', 16), 'Rest') : null,
       interval ? el('button', { class: 'btn small rest-btn', type: 'button', 'data-tour': 'rest', title: `Start the interval timer (every ${clock(interval)})`, onclick: () => startInterval(interval, row.c.name, setCount(row)) }, icon('timer', 16), 'Interval') : null),
     chips,
-    row.c.notes ? el('div', { class: 'ex-notes' }, row.c.notes) : null,
-    row.c.video ? el('a', { class: 'small', href: row.c.video, target: '_blank', rel: 'noopener' }, 'Watch the video') : null,
+    notesText ? el('div', { class: 'ex-notes' }, notesText) : null,
+    videoUrl ? videoBlock(videoUrl, row.c.name) : null,
     prev ? el('div', { class: 'ex-last' }, `Last time (${niceDate(prev.log.week_start)}): ${summary(prev.entry)}`) : null,
     el('table', { class: 'sets' },
       el('thead', {}, el('tr', {}, el('th', {}, '#'), el('th', {}, hasLongTargets ? 'Target' : ''), el('th', {}, 'Reps'), el('th', {}, 'Kg'), el('th', {}, 'RPE'))),
@@ -558,6 +561,31 @@ function exerciseCard(row, log, weekStart, extraCols, persist, number = 1) {
       el('button', { class: 'btn small ghost', type: 'button', onclick: () => { noteWrap.classList.toggle('hidden'); exNote.focus(); } }, 'Note')),
     noteWrap);
 }
+
+/* Exercise video: a YouTube link plays right here (YouTube's privacy-enhanced player, loaded only on a tap, so nothing
+   reaches YouTube before that); any other link opens in a new tab as before. */
+function videoBlock(url, name) {
+  const yt = youtubeInfo(url);
+  if (!yt) return el('a', { class: 'btn small ghost video-btn', href: url, target: '_blank', rel: 'noopener' }, icon('play', 14), 'Watch the video');
+  const holder = el('div', { class: 'ex-video hidden' + (yt.short ? ' short' : '') });
+  const label = el('span', {}, 'Watch the video');
+  const btn = el('button', { class: 'btn small ghost video-btn', type: 'button', 'aria-expanded': 'false', onclick: () => {
+    const open = holder.classList.contains('hidden');
+    if (open && !navigator.onLine) { toastMsg('Videos need an internet connection.'); return; }
+    holder.classList.toggle('hidden', !open);
+    btn.setAttribute('aria-expanded', String(open));
+    label.textContent = open ? 'Hide the video' : 'Watch the video';
+    if (open) {
+      const q = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0', modestbranding: '1' });
+      if (yt.start) q.set('start', String(yt.start));
+      holder.replaceChildren(el('iframe', { src: `https://www.youtube-nocookie.com/embed/${yt.id}?${q}`, title: `Video: ${name || 'exercise'}`,
+        allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowFullscreen: true, referrerPolicy: 'strict-origin-when-cross-origin' }),
+        el('a', { class: 'tiny muted video-yt', href: `https://www.youtube.com/watch?v=${yt.id}${yt.start ? `&t=${yt.start}s` : ''}`, target: '_blank', rel: 'noopener' }, 'Open in YouTube'));
+    } else holder.replaceChildren();   // closing stops the video
+  } }, icon('play', 14), label);
+  return el('div', { class: 'video-wrap' }, btn, holder);
+}
+const toastMsg = (text) => (typeof toast === 'function' ? toast(text) : alert(text));
 
 function rpeHelp() {
   const g = guide('rpe');

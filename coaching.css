@@ -652,3 +652,12 @@ a.chip { text-decoration: none; }
 .food-sheet { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 .lightbox { padding-top: max(16px, env(safe-area-inset-top)); }
 .modal-back { padding-top: env(safe-area-inset-top); }
+
+/* Exercise videos (YouTube, played in the card) */
+.video-wrap { margin-top: 8px; }
+.video-btn { display: inline-flex; align-items: center; gap: 6px; }
+.video-btn svg { fill: currentColor; }
+.ex-video { position: relative; margin-top: 8px; }
+.ex-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 12px; background: #000; }
+.ex-video.short iframe { aspect-ratio: 9 / 16; max-width: 300px; margin: 0 auto; }
+.ex-video .video-yt { display: inline-block; margin-top: 4px; }

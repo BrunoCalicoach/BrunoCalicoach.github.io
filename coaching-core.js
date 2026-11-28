@@ -1361,3 +1361,32 @@ function demoSeed() {
     files: {}
   };
 }
+
+/* ---------- No zoom on a quick double tap in the installed app ----------
+   Safari follows touch-action: manipulation (coaching.css), but an iPhone home-screen app still zooms on a double tap.
+   There, the second of two quick taps is handled here instead: the zoom is cancelled and the tap still counts as a click.
+   Only short, still, one-finger taps are touched; scrolling, pinch-to-zoom and typing in fields work as usual. */
+(function noDoubleTapZoom() {
+  const installed = window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches;
+  if (!installed || !('ontouchend' in window)) return;
+  let lastTap = 0, start = null;
+  document.addEventListener('touchstart', (e) => {
+    start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const t = e.changedTouches[0];
+    const tap = start && e.touches.length === 0 && t && Math.abs(t.clientX - start.x) < 10 && Math.abs(t.clientY - start.y) < 10 && Date.now() - start.t < 400;
+    start = null;
+    if (!tap) { lastTap = 0; return; }
+    const now = Date.now();
+    const field = e.target.closest?.('input, textarea, select, [contenteditable="true"]');
+    if (now - lastTap < 350 && !field) {
+      e.preventDefault();                            // no zoom (this also cancels the browser's own click)
+      const target = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+      target?.click?.();                             // so the second tap still does what a tap does
+      lastTap = 0;
+      return;
+    }
+    lastTap = now;
+  }, { passive: false });
+})();

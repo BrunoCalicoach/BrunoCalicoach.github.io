@@ -2,8 +2,8 @@
 // App files: network first so updates arrive at once, the saved copy when offline.
 // Libraries and fonts from CDNs: saved copy first. Supabase requests are never cached here
 // (the app keeps its own copy of the athlete's data and queues changes made offline).
-const CACHE = 'coaching-v43';
-const APP_FILES = ['coaching.html', 'coaching.css?v=29', 'coaching-foods.js?v=1', 'coaching-core.js?v=20', 'coaching-intake.js?v=2', 'coaching.js?v=14', 'coaching-tour.js?v=4', 'coaching-mealplan.js?v=18', 'coaching.webmanifest',
+const CACHE = 'coaching-v44';
+const APP_FILES = ['coaching.html', 'coaching.css?v=29', 'coaching-foods.js?v=1', 'coaching-core.js?v=21', 'coaching-intake.js?v=2', 'coaching.js?v=14', 'coaching-tour.js?v=4', 'coaching-mealplan.js?v=18', 'coaching.webmanifest',
   'media/coaching-icon-192.png', 'media/coaching-icon-512.png', 'icons/logo-mark.svg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js'];
 
